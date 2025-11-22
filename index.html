@@ -34,13 +34,13 @@
         <div class="p-6"><h2 class="text-xl font-bold tracking-wider">ADAMART</h2><p class="text-xs opacity-70">Management System</p></div>
         <nav class="flex-1 py-4 space-y-1">
             <a onclick="navigate('dashboard')" class="sidebar-item px-6 py-3 cursor-pointer flex items-center gap-3 hover:bg-white/10"><span>📊</span> Dashboard</a>
-            <a onclick="navigate('shifts')" class="sidebar-item px-6 py-3 cursor-pointer flex items-center gap-3 hover:bg-white/10 bg-white/10 text-yellow-300"><span>🕒</span> Laporan Shift (Keuangan)</a>
+            <a onclick="navigate('shifts')" class="sidebar-item px-6 py-3 cursor-pointer flex items-center gap-3 hover:bg-white/10 bg-white/10 text-yellow-300"><span>🕒</span> Laporan Shift</a>
             <a onclick="navigate('purchase')" class="sidebar-item px-6 py-3 cursor-pointer flex items-center gap-3 hover:bg-white/10"><span>🛒</span> Purchase Order</a>
             <a onclick="navigate('requisition')" class="sidebar-item px-6 py-3 cursor-pointer flex items-center gap-3 hover:bg-white/10"><span>📥</span> Inbox Request</a>
             <a onclick="navigate('inventory')" class="sidebar-item px-6 py-3 cursor-pointer flex items-center gap-3 hover:bg-white/10"><span>📦</span> Inventory</a>
             <a onclick="navigate('reports')" class="sidebar-item px-6 py-3 cursor-pointer flex items-center gap-3 hover:bg-white/10"><span>📈</span> Analisa Bisnis</a>
         </nav>
-        <div class="p-4 text-xs opacity-50 text-center">v3.4 Real Revenue</div>
+        <div class="p-4 text-xs opacity-50 text-center">v3.8 Full Scroll</div>
     </aside>
     <div class="flex-1 flex flex-col min-w-0 overflow-hidden">
         <header class="bg-white p-4 border-b shadow-sm flex justify-between items-center z-10">
@@ -86,7 +86,7 @@
             
             switch (State.currentPage) {
                 case 'dashboard': title.innerText = 'Dashboard Overview'; container.innerHTML = Pages.Dashboard(); break;
-                case 'shifts': title.innerText = 'Laporan Keuangan Harian (Shift)'; container.innerHTML = Pages.Shifts(); break; // Updated Title
+                case 'shifts': title.innerText = 'Laporan Shift & Keuangan'; container.innerHTML = Pages.Shifts(); break;
                 case 'purchase': title.innerText = 'Purchase Orders'; container.innerHTML = Pages.Purchase(); break;
                 case 'requisition': title.innerText = 'Inbox Permintaan'; container.innerHTML = Pages.Requisition(); break;
                 case 'inventory': title.innerText = 'Inventory & Stok'; container.innerHTML = Pages.Inventory(); setupInventoryListeners(); break;
@@ -106,16 +106,16 @@
                 return `<div class="grid grid-cols-1 md:grid-cols-3 gap-6"><div class="bg-gradient-to-r from-green-500 to-green-700 text-white p-6 rounded-xl shadow-lg"><div>Total Pendapatan</div><div class="text-3xl font-bold">Rp ${revenue.toLocaleString('id-ID')}</div></div><div class="bg-gradient-to-r from-blue-500 to-blue-700 text-white p-6 rounded-xl shadow-lg"><div>Total Transaksi</div><div class="text-3xl font-bold">${State.data.sales.length}</div></div><div class="bg-gradient-to-r from-orange-500 to-red-600 text-white p-6 rounded-xl shadow-lg"><div>Pending Request</div><div class="text-3xl font-bold">${pendingReq}</div></div></div><div class="grid grid-cols-1 md:grid-cols-2 gap-6"><div class="bg-white rounded-xl shadow p-4 border-l-4 border-red-500"><h3 class="font-bold text-red-600 mb-3">⚠️ Stok Menipis (< 10)</h3><div class="max-h-60 overflow-y-auto">${lowStockHtml || '<p class="text-gray-400 text-sm">Aman</p>'}</div></div><div class="bg-white rounded-xl shadow p-4 border-l-4 border-orange-500"><h3 class="font-bold text-orange-600 mb-3">⏰ Akan Kadaluarsa (< 2 Bulan)</h3><div class="max-h-60 overflow-y-auto">${expiryHtml || '<p class="text-gray-400 text-sm">Aman</p>'}</div></div></div>`;
             },
             
-            // --- SHIFT REPORT (UPDATED FOR REAL REVENUE) ---
+            // --- SHIFT REPORT WITH SMART SCROLL ---
             Shifts: () => `
-                <div class="bg-white rounded-xl shadow overflow-hidden">
-                    <div class="p-6 border-b bg-blue-50">
+                <div class="bg-white rounded-xl shadow overflow-hidden flex flex-col h-[calc(100vh-140px)]">
+                    <div class="p-6 border-b bg-blue-50 shrink-0">
                         <h3 class="font-bold text-gray-700 text-lg">Laporan Keuangan Harian</h3>
-                        <p class="text-sm text-gray-600">Rincian pendapatan per shift berdasarkan sumber dana (Fisik, QRIS, Kasbon).</p>
+                        <p class="text-sm text-gray-600">Rincian pendapatan per shift berdasarkan sumber dana.</p>
                     </div>
-                    <div class="overflow-x-auto">
+                    <div class="overflow-auto flex-1">
                         <table class="w-full text-left text-sm whitespace-nowrap">
-                            <thead class="bg-gray-100 text-gray-600 uppercase text-xs">
+                            <thead class="bg-gray-100 text-gray-600 uppercase text-xs sticky top-0 z-10 shadow-sm">
                                 <tr>
                                     <th class="p-4">Waktu / Kasir</th>
                                     <th class="p-4 text-right bg-green-50">Tunai (Fisik)</th>
@@ -127,11 +127,10 @@
                             </thead>
                             <tbody class="divide-y">
                                 ${State.data.shifts.map(s => {
-                                    const cashNet = s.actualCash - s.startCash; // Uang tunai bersih (tanpa modal)
+                                    const cashNet = s.actualCash - s.startCash;
                                     const qris = s.totalQris || 0;
                                     const kasbon = s.totalKasbon || 0;
-                                    const totalRealRevenue = cashNet + qris + kasbon; // Total Pendapatan Hari Ini
-                                    
+                                    const totalReal = cashNet + qris + kasbon;
                                     return `
                                     <tr class="hover:bg-gray-50">
                                         <td class="p-4">
@@ -146,8 +145,7 @@
                                         <td class="p-4 text-right bg-blue-50 font-bold text-blue-700">${formatRp(qris)}</td>
                                         <td class="p-4 text-right bg-orange-50 font-bold text-orange-700">${formatRp(kasbon)}</td>
                                         <td class="p-4 text-right">
-                                            <div class="font-extrabold text-lg text-gray-800">${formatRp(totalRealRevenue)}</div>
-                                            <div class="text-xs text-gray-400">Net Revenue</div>
+                                            <div class="font-extrabold text-lg text-gray-800">${formatRp(totalReal)}</div>
                                         </td>
                                         <td class="p-4 text-right font-bold ${s.difference < 0 ? 'text-red-600' : 'text-green-600'}">
                                             ${s.difference === 0 ? '✅ Pas' : formatRp(s.difference)}
@@ -160,10 +158,139 @@
                 </div>
             `,
 
-            Purchase: () => `<div class="flex justify-end mb-4"><button onclick="Modals.openBatchPO()" class="bg-blue-600 text-white px-4 py-2 rounded font-bold">+ Buat Batch PO</button></div><div class="bg-white rounded shadow overflow-hidden"><table class="w-full text-sm text-left"><thead class="bg-gray-100"><tr><th class="p-3">Batch</th><th class="p-3">Supplier</th><th class="p-3">Cabang</th><th class="p-3">Status</th><th class="p-3">Items</th></tr></thead><tbody>${State.data.purchases.map(p=>`<tr><td class="p-3 text-blue-600">${p.batchNumber}</td><td class="p-3">${p.supplier}</td><td class="p-3"><span class="px-2 py-1 bg-purple-100 text-purple-800 rounded text-xs font-bold">${p.branch}</span></td><td class="p-3">${getStatusBadge(p.status)}</td><td class="p-3">${JSON.parse(p.items).length} items</td></tr>`).join('')}</tbody></table></div>`,
-            Requisition: () => { const pending=State.data.requisitions.filter(r=>r.status==='pending'); return `<div class="bg-white rounded shadow overflow-hidden mb-6"><h3 class="p-4 font-bold border-b text-orange-600">Inbox (${pending.length})</h3><table class="w-full text-sm text-left"><thead class="bg-orange-50"><tr><th class="p-3">Date</th><th class="p-3">Branch</th><th class="p-3">Items</th><th class="p-3">Action</th></tr></thead><tbody>${pending.map(r=>`<tr><td class="p-3">${new Date(r.createdAt).toLocaleDateString()}</td><td class="p-3 font-bold">${r.branch}</td><td class="p-3 truncate max-w-xs">${JSON.parse(r.items).map(i=>`${i.name}(${i.qty})`).join(', ')}</td><td class="p-3"><button onclick="Actions.approveReq('${r.id}')" class="text-green-600 font-bold mr-2">✓</button><button onclick="Actions.rejectReq('${r.id}')" class="text-red-600 font-bold">✗</button></td></tr>`).join('')}</tbody></table></div>`; },
-            Inventory: () => `<div class="grid grid-cols-1 lg:grid-cols-3 gap-6"><div class="bg-white rounded-xl shadow p-6 lg:col-span-1 h-fit"><h3 class="font-bold text-gray-800 mb-4">📦 Input / Update Stok</h3><form id="stockForm" class="space-y-3"><div><label class="text-xs font-bold text-gray-500">Barcode</label><input type="text" id="barcode" class="w-full p-2 border rounded bg-gray-50" placeholder="Scan/Ketik..." required oninput="autoFill()"></div><div><label class="text-xs font-bold text-gray-500">Nama Produk</label><input type="text" id="productName" class="w-full p-2 border rounded" required></div><div class="grid grid-cols-2 gap-2"><div><label class="text-xs font-bold text-gray-500">HPP (Beli)</label><input type="number" id="hpp" class="w-full p-2 border rounded" placeholder="0"></div><div><label class="text-xs font-bold text-gray-500">Harga Jual</label><input type="number" id="price" class="w-full p-2 border rounded" placeholder="0" required></div></div><div><label class="text-xs font-bold text-gray-500">Target Cabang</label><select id="targetArea" class="w-full p-2 border rounded bg-white"><option value="adamart 73">Adamart 73</option><option value="adamart induksi">Induksi</option><option value="adamart kelanis">Kelanis</option></select></div><div class="grid grid-cols-2 gap-2"><div><label class="text-xs font-bold text-gray-500">Tambah Qty</label><input type="number" id="stockAmount" class="w-full p-2 border rounded" placeholder="0" required></div><div><label class="text-xs font-bold text-gray-500">Exp Date</label><input type="date" id="expiryDate" class="w-full p-2 border rounded"></div></div><button type="submit" class="w-full bg-blue-600 text-white py-2 rounded font-bold hover:bg-blue-700 mt-4">Simpan Stok</button></form></div><div class="bg-white rounded-xl shadow overflow-hidden lg:col-span-2"><div class="p-4 border-b bg-gray-50"><input type="text" placeholder="🔍 Cari produk di inventory..." class="w-full p-2 border rounded" oninput="filterInventory(this.value)"></div><div class="overflow-x-auto max-h-[600px]"><table class="w-full text-left text-sm"><thead class="bg-gray-100 text-gray-600 uppercase font-bold sticky top-0"><tr><th class="p-4">Produk</th><th class="p-4">HPP/Jual</th><th class="p-4 text-center">73</th><th class="p-4 text-center">Induksi</th><th class="p-4 text-center">Kelanis</th></tr></thead><tbody class="divide-y product-row-container">${State.data.products.map(p=>`<tr class="hover:bg-gray-50 product-row"><td class="p-4"><div class="font-bold">${p['Nama Produk']}</div><div class="text-xs text-gray-500 font-mono">${p.Barcode}</div></td><td class="p-4"><div class="text-xs text-gray-500">B: ${formatRp(p.HPP)}</div><div class="font-bold text-green-600">J: ${formatRp(p.Harga)}</div></td><td class="p-4 text-center font-bold ${checkStock(p['Stok Area Kasir adamart 73'])}">${p['Stok Area Kasir adamart 73']||0}</td><td class="p-4 text-center font-bold ${checkStock(p['Stok Area Kasir adamart induksi'])}">${p['Stok Area Kasir adamart induksi']||0}</td><td class="p-4 text-center font-bold ${checkStock(p['Stok Area Kasir adamart kelanis'])}">${p['Stok Area Kasir adamart kelanis']||0}</td></tr>`).join('')}</tbody></table></div></div></div>`,
-            Reports: () => `<div class="space-y-6"><div class="grid grid-cols-2 md:grid-cols-4 gap-4"><div class="bg-white p-4 rounded-lg shadow"><div class="text-xs text-gray-500">Total Omzet</div><div class="text-2xl font-bold text-blue-600" id="rep-omzet">-</div></div><div class="bg-white p-4 rounded-lg shadow"><div class="text-xs text-gray-500">Estimasi Laba Kotor</div><div class="text-2xl font-bold text-green-600" id="rep-profit">-</div></div><div class="bg-white p-4 rounded-lg shadow"><div class="text-xs text-gray-500">Total Transaksi</div><div class="text-2xl font-bold text-gray-700" id="rep-trx">-</div></div><div class="bg-white p-4 rounded-lg shadow"><div class="text-xs text-gray-500">Rata-rata Keranjang</div><div class="text-2xl font-bold text-purple-600" id="rep-avg">-</div></div></div><div class="grid grid-cols-1 md:grid-cols-3 gap-6"><div class="bg-white p-4 rounded-xl shadow md:col-span-2"><h4 class="font-bold mb-4 text-gray-700">Tren Penjualan & Laba</h4><canvas id="salesChart" style="max-height: 300px;"></canvas></div><div class="bg-white p-4 rounded-xl shadow"><h4 class="font-bold mb-4 text-gray-700">Metode Pembayaran</h4><canvas id="paymentChart" style="max-height: 300px;"></canvas></div></div><div class="grid grid-cols-1 md:grid-cols-2 gap-6"><div class="bg-white rounded-xl shadow overflow-hidden"><div class="p-4 border-b bg-gray-50 font-bold text-gray-700">🔥 Top 5 Produk Terlaris</div><table class="w-full text-sm text-left"><thead class="bg-gray-100"><tr><th class="p-3">Produk</th><th class="p-3 text-right">Qty Terjual</th><th class="p-3 text-right">Omzet</th></tr></thead><tbody id="topProductBody"></tbody></table></div><div class="bg-white rounded-xl shadow p-4"><h4 class="font-bold mb-4 text-gray-700">Download Data</h4><div class="space-y-3"><select id="reportPeriod" onchange="Pages.updateCharts()" class="w-full p-2 border rounded bg-white"><option value="monthly">Bulanan</option><option value="weekly">Mingguan</option></select><button onclick="exportReportToCSV()" class="w-full bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700 font-bold text-sm flex items-center justify-center gap-2"><span>📥</span> Download CSV</button></div></div></div></div>`,
+            // --- PURCHASE ORDER WITH SMART SCROLL ---
+            Purchase: () => `
+                <div class="flex justify-end mb-4">
+                    <button onclick="Modals.openBatchPO()" class="bg-blue-600 text-white px-4 py-2 rounded font-bold hover:bg-blue-700 shadow transition">+ Buat Batch PO</button>
+                </div>
+                <div class="bg-white rounded shadow overflow-hidden flex flex-col h-[calc(100vh-200px)]">
+                    <div class="overflow-auto flex-1">
+                        <table class="w-full text-sm text-left">
+                            <thead class="bg-gray-100 text-gray-600 uppercase sticky top-0 z-10 shadow-sm">
+                                <tr>
+                                    <th class="p-4">Batch ID</th>
+                                    <th class="p-4">Supplier</th>
+                                    <th class="p-4">Cabang</th>
+                                    <th class="p-4">Status</th>
+                                    <th class="p-4">Items</th>
+                                </tr>
+                            </thead>
+                            <tbody class="divide-y">
+                                ${State.data.purchases.length === 0 ? '<tr><td colspan="5" class="p-10 text-center text-gray-400 italic">Belum ada Purchase Order. Klik tombol di atas untuk membuat baru.</td></tr>' : 
+                                State.data.purchases.map(p => `
+                                    <tr class="hover:bg-gray-50 transition">
+                                        <td class="p-4 font-mono text-blue-600 font-bold">${p.batchNumber}</td>
+                                        <td class="p-4">${p.supplier}</td>
+                                        <td class="p-4"><span class="px-2 py-1 bg-purple-100 text-purple-800 rounded text-xs font-bold border border-purple-200">${p.branch}</span></td>
+                                        <td class="p-4">${getStatusBadge(p.status)}</td>
+                                        <td class="p-4 text-gray-500 font-medium">${JSON.parse(p.items).length} items</td>
+                                    </tr>
+                                `).join('')}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            `,
+
+            // --- REQUISITION (INBOX) WITH SMART SCROLL ---
+            Requisition: () => { 
+                const pending = State.data.requisitions.filter(r => r.status === 'pending');
+                const history = State.data.requisitions.filter(r => r.status !== 'pending');
+                
+                return `
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 h-[calc(100vh-140px)]">
+                    <!-- PENDING REQUESTS -->
+                    <div class="bg-white rounded-xl shadow overflow-hidden flex flex-col border border-orange-200">
+                        <div class="p-4 border-b bg-orange-50 shrink-0">
+                            <h3 class="font-bold text-orange-700 text-lg">📥 Menunggu Persetujuan (${pending.length})</h3>
+                        </div>
+                        <div class="overflow-auto flex-1">
+                            ${pending.length === 0 ? '<p class="p-10 text-center text-gray-400">Tidak ada permintaan baru</p>' : 
+                            `<table class="w-full text-left text-sm">
+                                <thead class="bg-orange-50 text-orange-800 sticky top-0 z-10 shadow-sm">
+                                    <tr><th class="p-3">Tgl</th><th class="p-3">Cabang</th><th class="p-3">Item</th><th class="p-3">Aksi</th></tr>
+                                </thead>
+                                <tbody class="divide-y">
+                                    ${pending.map(r => `
+                                        <tr class="hover:bg-orange-50/50">
+                                            <td class="p-3 text-xs">${new Date(r.createdAt).toLocaleDateString()}</td>
+                                            <td class="p-3 font-bold">${r.branch}</td>
+                                            <td class="p-3 text-xs truncate max-w-[150px]">${JSON.parse(r.items).map(i => `${i.name}(${i.qty})`).join(', ')}</td>
+                                            <td class="p-3">
+                                                <button onclick="Actions.approveReq('${r.id}')" class="bg-green-600 text-white px-2 py-1 rounded text-xs font-bold mr-1 hover:bg-green-700">✓</button>
+                                                <button onclick="Actions.rejectReq('${r.id}')" class="bg-red-600 text-white px-2 py-1 rounded text-xs font-bold hover:bg-red-700">✗</button>
+                                            </td>
+                                        </tr>
+                                    `).join('')}
+                                </tbody>
+                            </table>`}
+                        </div>
+                    </div>
+
+                    <!-- HISTORY REQUESTS -->
+                    <div class="bg-white rounded-xl shadow overflow-hidden flex flex-col opacity-75 hover:opacity-100 transition">
+                        <div class="p-4 border-b bg-gray-50 shrink-0"><h3 class="font-bold text-gray-600">Riwayat Permintaan</h3></div>
+                        <div class="overflow-auto flex-1">
+                            <table class="w-full text-left text-sm">
+                                <thead class="bg-gray-100 sticky top-0 z-10 shadow-sm"><tr><th class="p-3">Tgl</th><th class="p-3">Cabang</th><th class="p-3">Status</th></tr></thead>
+                                <tbody class="divide-y">
+                                    ${history.map(r => `<tr><td class="p-3 text-xs">${new Date(r.createdAt).toLocaleDateString()}</td><td class="p-3 font-bold text-gray-600">${r.branch}</td><td class="p-3">${getStatusBadge(r.status)}</td></tr>`).join('')}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            `; },
+
+            Inventory: () => `<div class="grid grid-cols-1 lg:grid-cols-3 gap-6"><div class="bg-white rounded-xl shadow p-6 lg:col-span-1 h-fit"><h3 class="font-bold text-gray-800 mb-4">📦 Input / Update Stok</h3><form id="stockForm" class="space-y-3"><div><label class="text-xs font-bold text-gray-500">Barcode</label><input type="text" id="barcode" class="w-full p-2 border rounded bg-gray-50" placeholder="Scan/Ketik..." required oninput="autoFill()"></div><div><label class="text-xs font-bold text-gray-500">Nama Produk</label><input type="text" id="productName" class="w-full p-2 border rounded" required></div><div class="grid grid-cols-2 gap-2"><div><label class="text-xs font-bold text-gray-500">HPP (Beli)</label><input type="number" id="hpp" class="w-full p-2 border rounded" placeholder="0"></div><div><label class="text-xs font-bold text-gray-500">Harga Jual</label><input type="number" id="price" class="w-full p-2 border rounded" placeholder="0" required></div></div><div><label class="text-xs font-bold text-gray-500">Target Cabang</label><select id="targetArea" class="w-full p-2 border rounded bg-white"><option value="adamart 73">Adamart 73</option><option value="adamart induksi">Induksi</option><option value="adamart kelanis">Kelanis</option></select></div><div class="grid grid-cols-2 gap-2"><div><label class="text-xs font-bold text-gray-500">Tambah Qty</label><input type="number" id="stockAmount" class="w-full p-2 border rounded" placeholder="0" required></div><div><label class="text-xs font-bold text-gray-500">Exp Date</label><input type="date" id="expiryDate" class="w-full p-2 border rounded"></div></div><button type="submit" class="w-full bg-blue-600 text-white py-2 rounded font-bold hover:bg-blue-700 mt-4">Simpan Stok</button></form></div><div class="bg-white rounded-xl shadow overflow-hidden lg:col-span-2 flex flex-col h-[calc(100vh-200px)]"><div class="p-4 border-b bg-gray-50 shrink-0"><input type="text" placeholder="🔍 Cari produk di inventory..." class="w-full p-2 border rounded" oninput="filterInventory(this.value)"></div><div class="overflow-auto flex-1"><table class="w-full text-left text-sm"><thead class="bg-gray-100 text-gray-600 uppercase font-bold sticky top-0 z-10 shadow-sm"><tr><th class="p-4">Produk</th><th class="p-4">HPP/Jual</th><th class="p-4 text-center">73</th><th class="p-4 text-center">Induksi</th><th class="p-4 text-center">Kelanis</th></tr></thead><tbody class="divide-y product-row-container">${State.data.products.map(p => { const hpp = p.HPP || 0; const hppClass = hpp === 0 ? 'text-red-500 font-bold' : 'text-gray-500'; return `<tr class="hover:bg-gray-50 product-row"><td class="p-4"><div class="font-bold">${p['Nama Produk']}</div><div class="text-xs text-gray-500 font-mono">${p.Barcode}</div></td><td class="p-4"><div class="text-xs ${hppClass}">B: ${formatRp(hpp)}</div><div class="font-bold text-green-600">J: ${formatRp(p.Harga)}</div></td><td class="p-4 text-center font-bold ${checkStock(p['Stok Area Kasir adamart 73'])}">${p['Stok Area Kasir adamart 73']||0}</td><td class="p-4 text-center font-bold ${checkStock(p['Stok Area Kasir adamart induksi'])}">${p['Stok Area Kasir adamart induksi']||0}</td><td class="p-4 text-center font-bold ${checkStock(p['Stok Area Kasir adamart kelanis'])}">${p['Stok Area Kasir adamart kelanis']||0}</td></tr>`; }).join('')}</tbody></table></div></div></div>`,
+            
+            Reports: () => `
+                <div class="space-y-6">
+                    <!-- KPI Cards -->
+                    <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+                        <div class="bg-white p-4 rounded-lg shadow"><div class="text-xs text-gray-500">Total Omzet</div><div class="text-2xl font-bold text-blue-600" id="rep-omzet">-</div></div>
+                        <div class="bg-white p-4 rounded-lg shadow"><div class="text-xs text-gray-500">Estimasi Laba Kotor</div><div class="text-2xl font-bold text-green-600" id="rep-profit">-</div></div>
+                        <div class="bg-white p-4 rounded-lg shadow"><div class="text-xs text-gray-500">Total Transaksi</div><div class="text-2xl font-bold text-gray-700" id="rep-trx">-</div></div>
+                        <div class="bg-white p-4 rounded-lg shadow"><div class="text-xs text-gray-500">Rata-rata Keranjang</div><div class="text-2xl font-bold text-purple-600" id="rep-avg">-</div></div>
+                    </div>
+
+                    <!-- Charts -->
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                        <div class="bg-white p-4 rounded-xl shadow md:col-span-2"><h4 class="font-bold mb-4 text-gray-700">Tren Penjualan & Laba</h4><canvas id="salesChart" style="max-height: 300px;"></canvas></div>
+                        <div class="bg-white p-4 rounded-xl shadow"><h4 class="font-bold mb-4 text-gray-700">Metode Pembayaran</h4><canvas id="paymentChart" style="max-height: 300px;"></canvas></div>
+                    </div>
+
+                    <!-- Download Section -->
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                         <!-- Top Products -->
+                        <div class="bg-white rounded-xl shadow overflow-hidden">
+                            <div class="p-4 border-b bg-gray-50 font-bold text-gray-700">🔥 Top 5 Produk Terlaris</div>
+                            <table class="w-full text-sm text-left"><thead class="bg-gray-100"><tr><th class="p-3">Produk</th><th class="p-3 text-right">Qty Terjual</th><th class="p-3 text-right">Omzet</th></tr></thead><tbody id="topProductBody"></tbody></table>
+                        </div>
+                        
+                         <!-- Downloads -->
+                         <div class="bg-white rounded-xl shadow p-4">
+                            <h4 class="font-bold mb-4 text-gray-700">Download Laporan (Excel/CSV)</h4>
+                             <div class="space-y-3">
+                                <select id="reportPeriod" onchange="Pages.updateCharts()" class="w-full p-2 border rounded bg-white">
+                                    <option value="monthly">Bulanan</option>
+                                    <option value="weekly">Mingguan</option>
+                                </select>
+                                <div class="flex gap-2">
+                                    <button onclick="exportFinancialReportToCSV()" class="flex-1 bg-blue-600 text-white px-3 py-2 rounded hover:bg-blue-700 font-bold text-sm">
+                                        📥 Lap. Keuangan
+                                    </button>
+                                    <button onclick="exportProductPerformanceCSV()" class="flex-1 bg-green-600 text-white px-3 py-2 rounded hover:bg-green-700 font-bold text-sm">
+                                        📦 Lap. Produk
+                                    </button>
+                                </div>
+                                <p class="text-xs text-gray-500 mt-2">*Laporan Produk berisi detail Nama, Qty Terjual, HPP, dan Profit per Barang.</p>
+                             </div>
+                         </div>
+                    </div>
+                </div>
+            `,
+
             initReportCharts: () => { Pages.updateCharts(); },
             updateCharts: () => {
                 const period = document.getElementById('reportPeriod').value;
@@ -174,30 +301,50 @@
                     const key = period === 'monthly' ? d.toLocaleDateString('id-ID', {month:'long', year:'numeric'}) : `Minggu ${Math.ceil(d.getDate()/7)} ${d.toLocaleDateString('id-ID', {month:'short'})}`;
                     if(!grouped[key]) grouped[key] = {rev:0, cost:0, count:0};
                     let saleCost = 0;
-                    s.items.split(', ').forEach(itemStr => {
-                        const parts = itemStr.split(' x');
-                        if(parts.length === 2) {
-                            const name = parts[0], qty = parseInt(parts[1]);
-                            const product = State.data.products.find(p => p['Nama Produk'] === name);
-                            const hpp = product ? (product.HPP || 0) : 0;
-                            const price = product ? product.Harga : 0;
-                            saleCost += (hpp * qty);
-                            if(!productPerformance[name]) productPerformance[name] = {qty:0, rev:0};
-                            productPerformance[name].qty += qty;
-                            productPerformance[name].rev += (price * qty);
-                        }
+
+                    // Better Item Parsing (Handling "Cart" array or fallback "String")
+                    let itemsList = [];
+                    if(s.cart) {
+                         itemsList = s.cart;
+                    } else if (s.items) {
+                         s.items.split(', ').forEach(itemStr => {
+                            const parts = itemStr.split(' x');
+                            if(parts.length === 2) itemsList.push({name: parts[0].trim(), quantity: parseInt(parts[1])});
+                         });
+                    }
+
+                    itemsList.forEach(item => {
+                        // Robust matching
+                        const product = State.data.products.find(p => p['Nama Produk'].trim().toLowerCase() === item.name.toLowerCase());
+                        const hpp = product ? (parseInt(product.HPP) || 0) : 0;
+                        const price = product ? product.Harga : 0;
+                        const cost = hpp * item.quantity;
+                        const revenue = (item.price || price) * item.quantity; // Use sale price if available, else master price
+                        
+                        saleCost += cost;
+
+                        // Product Performance Data
+                        if(!productPerformance[item.name]) productPerformance[item.name] = {qty:0, rev:0};
+                        productPerformance[item.name].qty += item.quantity;
+                        productPerformance[item.name].rev += revenue;
                     });
+
                     grouped[key].rev += s.total; grouped[key].cost += saleCost; grouped[key].count++;
                     totalOmzet += s.total; totalProfit += (s.total - saleCost);
                     payments[s.method || 'Unknown'] = (payments[s.method] || 0) + s.total;
                 });
-                document.getElementById('rep-omzet').innerText = formatRp(totalOmzet); document.getElementById('rep-profit').innerText = formatRp(totalProfit); document.getElementById('rep-trx').innerText = State.data.sales.length; document.getElementById('rep-avg').innerText = formatRp(State.data.sales.length ? totalOmzet / State.data.sales.length : 0);
+
+                document.getElementById('rep-omzet').innerText = formatRp(totalOmzet);
+                document.getElementById('rep-profit').innerText = formatRp(totalProfit);
+                document.getElementById('rep-trx').innerText = State.data.sales.length;
+                document.getElementById('rep-avg').innerText = formatRp(State.data.sales.length ? totalOmzet / State.data.sales.length : 0);
+
                 const labels = Object.keys(grouped).reverse();
                 if(State.charts.line) State.charts.line.destroy();
                 State.charts.line = new Chart(document.getElementById('salesChart'), { type: 'line', data: { labels, datasets: [{ label: 'Omzet', data: labels.map(k => grouped[k].rev), borderColor: '#3b82f6', tension: 0.1, fill: true, backgroundColor: 'rgba(59, 130, 246, 0.1)' }, { label: 'Laba Kotor', data: labels.map(k => grouped[k].rev - grouped[k].cost), borderColor: '#10b981', tension: 0.1, fill: true, backgroundColor: 'rgba(16, 185, 129, 0.1)' }] } });
                 if(State.charts.doughnut) State.charts.doughnut.destroy();
                 State.charts.doughnut = new Chart(document.getElementById('paymentChart'), { type: 'doughnut', data: { labels: Object.keys(payments), datasets: [{ data: Object.values(payments), backgroundColor: ['#3b82f6', '#10b981', '#f59e0b', '#ef4444'] }] } });
-                document.getElementById('topProductBody').innerHTML = Object.entries(productPerformance).sort((a,b) => b[1].qty - a[1].qty).slice(0, 5).map(([n, d]) => `<tr class="border-b"><td class="p-3 font-medium">${n}</td><td class="p-3 text-right">${d.qty}</td><td class="p-3 text-right font-bold text-blue-600">${formatRp(d.rev)}</td></tr>`).join('');
+                document.getElementById('topProductBody').innerHTML = Object.entries(productPerformance).sort((a,b) => b[1].rev - a[1].rev).slice(0, 5).map(([n, d]) => `<tr class="border-b"><td class="p-3 font-medium">${n}</td><td class="p-3 text-right">${d.qty}</td><td class="p-3 text-right font-bold text-blue-600">${formatRp(d.rev)}</td></tr>`).join('');
             }
         };
 
@@ -206,45 +353,25 @@
                 e.preventDefault();
                 const btn = e.target.querySelector('button[type="submit"]');
                 btn.disabled = true; btn.innerText = "Memproses...";
-                
                 try {
                     const form = e.target;
                     const selectVal = document.getElementById('supplierSelect').value;
                     let supplier = selectVal === 'custom' ? document.getElementById('customSupplier').value.trim() : selectVal;
                     if(selectVal === 'custom' && !supplier) throw new Error("Nama Supplier Manual harus diisi!");
                     if(State.tempBatchItems.length === 0) throw new Error("Belum ada item dalam PO!");
-
                     const batchId = 'BATCH-' + Date.now();
                     const promises = [];
                     const orderDate = form.elements['orderDate'].value;
-
                     BRANCHES.forEach(branch => {
                         const safeBranchId = branch.replace(/\s+/g, '-');
                         const checkbox = document.getElementById(`branch-${safeBranchId}`);
                         if(checkbox && checkbox.checked) {
-                            const poData = {
-                                type: 'purchase',
-                                batchNumber: batchId,
-                                branch: branch,
-                                supplier: supplier,
-                                orderDate: orderDate,
-                                status: 'pending',
-                                items: JSON.stringify(State.tempBatchItems),
-                                createdAt: new Date().toISOString()
-                            };
+                            const poData = { type: 'purchase', batchNumber: batchId, branch: branch, supplier: supplier, orderDate: orderDate, status: 'pending', items: JSON.stringify(State.tempBatchItems), createdAt: new Date().toISOString() };
                             promises.push(window.addDoc(window.collection(window.db, "purchases"), poData));
                         }
                     });
-
-                    await Promise.all(promises);
-                    closeModal();
-                    alert("Sukses! PO Batch berhasil dibuat dan dikirim ke cabang.");
-                    loadAllData();
-                } catch (err) {
-                    alert("Gagal membuat PO: " + err.message);
-                } finally {
-                    btn.disabled = false; btn.innerText = "Buat & Kirim PO";
-                }
+                    await Promise.all(promises); closeModal(); alert("Sukses! PO Batch berhasil dibuat."); loadAllData();
+                } catch (err) { alert("Gagal membuat PO: " + err.message); } finally { btn.disabled = false; btn.innerText = "Buat & Kirim PO"; }
             },
             approveReq: async (id) => { if(confirm("Setujui permintaan ini?")) { await window.updateDoc(window.doc(window.db, "requisitions", id), { status: 'approved' }); loadAllData(); } },
             rejectReq: async (id) => { if(confirm("Tolak permintaan ini?")) { await window.updateDoc(window.doc(window.db, "requisitions", id), { status: 'rejected' }); loadAllData(); } },
@@ -252,7 +379,6 @@
                 e.preventDefault();
                 const btn = e.target.querySelector('button[type="submit"]');
                 btn.disabled = true; btn.innerText = "Menyimpan...";
-                
                 const barcode = document.getElementById('barcode').value;
                 const area = document.getElementById('targetArea').value;
                 const qty = parseInt(document.getElementById('stockAmount').value);
@@ -261,11 +387,9 @@
                 const name = document.getElementById('productName').value;
                 const expiry = document.getElementById('expiryDate').value;
                 const stockKey = `Stok Area Kasir ${area.toLowerCase()}`;
-
                 try {
                     const q = window.query(window.collection(window.db, "products"), window.where("Barcode", "==", barcode));
                     const snapshot = await window.getDocs(q);
-
                     if (!snapshot.empty) {
                         const docRef = snapshot.docs[0].ref;
                         const updateData = { "Nama Produk": name, "Harga": price, "HPP": hpp };
@@ -284,64 +408,104 @@
         };
 
         function setupInventoryListeners() { const form = document.getElementById('stockForm'); if(form) form.addEventListener('submit', Actions.updateStock); }
-
         const Modals = {
             openBatchPO: () => {
                 State.tempBatchItems = [];
-                const content = `
-                    <h3 class="text-xl font-bold mb-4">Buat Batch PO</h3>
-                    <form onsubmit="Actions.createBatchPO(event)">
-                        <div class="grid grid-cols-2 gap-4 mb-4">
-                            <div><select id="supplierSelect" class="p-2 border rounded w-full bg-white text-sm" required onchange="toggleSupplierInput(this)"><option value="">Pilih Supplier</option>${SUPPLIERS.map(s => `<option value="${s}">${s}</option>`).join('')}<option value="custom" class="font-bold text-blue-600">+ Input Manual</option></select><input id="customSupplier" type="text" placeholder="Nama Supplier..." class="p-2 border rounded w-full mt-2 hidden text-sm" disabled></div>
-                            <input type="date" name="orderDate" class="p-2 border rounded w-full h-[38px] text-sm" required>
-                        </div>
-                        
-                        <div class="relative mb-4">
-                            <input id="smartSearchPO" placeholder="🔍 Cari Barang / Scan Barcode..." class="w-full p-3 border-2 border-blue-400 rounded-lg font-bold focus:outline-none focus:ring-2 focus:ring-blue-600" autocomplete="off" oninput="searchProductForPO(this.value)">
-                            <div id="po-search-results" class="absolute z-50 w-full bg-white shadow-xl rounded-b-lg border border-gray-200 max-h-60 overflow-y-auto hidden"></div>
-                        </div>
-
-                        <div class="bg-blue-50 p-4 rounded-lg mb-4 border border-blue-100">
-                            <div class="flex items-center gap-2 mb-2">
-                                <div class="w-32"><input id="item-barcode" placeholder="Barcode" class="w-full p-2 border rounded text-sm" readonly></div>
-                                <div class="flex-1"><input id="item-name" placeholder="Nama Barang" class="w-full p-2 border rounded text-sm" readonly></div>
-                                <div class="w-20"><input id="item-qty" type="number" placeholder="Qty" class="w-full p-2 border rounded text-sm font-bold bg-white border-blue-300"></div>
-                                <div class="w-24"><input id="item-hpp" type="number" placeholder="HPP" class="w-full p-2 border rounded text-sm"></div>
-                                <div class="w-24"><input id="item-price" type="number" placeholder="Jual" class="w-full p-2 border rounded text-sm"></div>
-                                <button type="button" onclick="addItemToTemp()" class="bg-blue-600 text-white px-3 py-1.5 rounded hover:bg-blue-700 font-bold">+</button>
-                            </div>
-                            <div id="temp-items-list" class="text-sm text-gray-600 max-h-40 overflow-y-auto space-y-1">
-                                <p class="text-xs text-gray-400 italic p-2">Belum ada item.</p>
-                            </div>
-                        </div>
-                        <div class="mb-6"><label class="font-bold block mb-2 text-sm">Kirim ke:</label><div class="flex gap-4 flex-wrap">${BRANCHES.map(b => `<label class="flex items-center gap-2 text-sm"><input type="checkbox" id="branch-${b.replace(/\s+/g, '-')}" checked> ${b}</label>`).join('')}</div></div>
-                        <button type="submit" class="w-full btn-primary py-2.5 rounded-lg bg-blue-600 text-white font-bold">Buat & Kirim PO</button>
-                    </form>`;
+                const content = `<h3 class="text-xl font-bold mb-4">Buat Batch PO</h3><form onsubmit="Actions.createBatchPO(event)"><div class="grid grid-cols-2 gap-4 mb-4"><div><select id="supplierSelect" class="p-2 border rounded w-full bg-white text-sm" required onchange="toggleSupplierInput(this)"><option value="">Pilih Supplier</option>${SUPPLIERS.map(s => `<option value="${s}">${s}</option>`).join('')}<option value="custom" class="font-bold text-blue-600">+ Input Manual</option></select><input id="customSupplier" type="text" placeholder="Nama Supplier..." class="p-2 border rounded w-full mt-2 hidden text-sm" disabled></div><input type="date" name="orderDate" class="p-2 border rounded w-full h-[38px] text-sm" required></div><div class="relative mb-4"><input id="smartSearchPO" placeholder="🔍 Cari Barang / Scan Barcode..." class="w-full p-3 border-2 border-blue-400 rounded-lg font-bold focus:outline-none focus:ring-2 focus:ring-blue-600" autocomplete="off" oninput="searchProductForPO(this.value)"><div id="po-search-results" class="absolute z-50 w-full bg-white shadow-xl rounded-b-lg border border-gray-200 max-h-60 overflow-y-auto hidden"></div></div><div class="bg-blue-50 p-4 rounded-lg mb-4 border border-blue-100"><div class="flex items-center gap-2 mb-2"><div class="w-32"><input id="item-barcode" placeholder="Barcode" class="w-full p-2 border rounded text-sm" readonly></div><div class="flex-1"><input id="item-name" placeholder="Nama Barang" class="w-full p-2 border rounded text-sm" readonly></div><div class="w-20"><input id="item-qty" type="number" placeholder="Qty" class="w-full p-2 border rounded text-sm font-bold bg-white border-blue-300"></div><div class="w-24"><input id="item-hpp" type="number" placeholder="HPP" class="w-full p-2 border rounded text-sm"></div><div class="w-24"><input id="item-price" type="number" placeholder="Jual" class="w-full p-2 border rounded text-sm"></div><button type="button" onclick="addItemToTemp()" class="bg-blue-600 text-white px-3 py-1.5 rounded hover:bg-blue-700 font-bold">+</button></div><div id="temp-items-list" class="text-sm text-gray-600 max-h-40 overflow-y-auto space-y-1"><p class="text-xs text-gray-400 italic p-2">Belum ada item.</p></div></div><div class="mb-6"><label class="font-bold block mb-2 text-sm">Kirim ke:</label><div class="flex gap-4 flex-wrap">${BRANCHES.map(b => `<label class="flex items-center gap-2 text-sm"><input type="checkbox" id="branch-${b.replace(/\s+/g, '-')}" checked> ${b}</label>`).join('')}</div></div><button type="submit" class="w-full btn-primary py-2.5 rounded-lg bg-blue-600 text-white font-bold">Buat & Kirim PO</button></form>`;
                 showModal(content);
             }
         };
 
-        window.searchProductForPO = (val) => {
-            const container = document.getElementById('po-search-results');
-            if(val.length < 2) { container.classList.add('hidden'); return; }
-            const matches = State.data.products.filter(p => p['Nama Produk'].toLowerCase().includes(val.toLowerCase()) || String(p.Barcode).includes(val)).slice(0, 10);
-            if(matches.length === 0) { container.innerHTML = '<div class="p-2 text-sm text-gray-500">Tidak ditemukan. Input manual di bawah.</div>'; } else { container.innerHTML = matches.map(p => `<div class="p-2 hover:bg-blue-50 cursor-pointer border-b text-sm" onclick="selectProductForPO('${p.Barcode}')"><div class="font-bold text-gray-800">${p['Nama Produk']}</div><div class="text-xs text-gray-500 flex justify-between"><span>${p.Barcode}</span><span>HPP: ${formatRp(p.HPP || 0)}</span></div></div>`).join(''); }
-            container.classList.remove('hidden');
+        // --- EXPORT FUNCTIONS (DATA DRIVEN) ---
+        
+        // 1. Laporan Keuangan (Financial)
+        window.exportFinancialReportToCSV = () => {
+            const grouped = {};
+            const period = document.getElementById('reportPeriod').value;
+            
+            State.data.sales.forEach(s => {
+                const d = new Date(s.timestamp);
+                const key = period === 'monthly' ? d.toLocaleDateString('id-ID', {month:'long', year:'numeric'}) : `Minggu ${Math.ceil(d.getDate()/7)} ${d.toLocaleDateString('id-ID', {month:'short'})}`;
+                if(!grouped[key]) grouped[key] = {rev:0, cost:0, count:0};
+                
+                let saleCost = 0;
+                let itemsList = s.cart || [];
+                if(itemsList.length === 0 && s.items) { // Fallback parse string
+                     s.items.split(', ').forEach(str => {
+                        const parts = str.split(' x');
+                        if(parts.length === 2) itemsList.push({name: parts[0].trim(), quantity: parseInt(parts[1])});
+                     });
+                }
+
+                itemsList.forEach(i => {
+                    const p = State.data.products.find(prod => prod['Nama Produk'].trim().toLowerCase() === i.name.toLowerCase());
+                    saleCost += (p ? (parseInt(p.HPP)||0) : 0) * i.quantity;
+                });
+
+                grouped[key].rev += s.total; grouped[key].cost += saleCost; grouped[key].count++;
+            });
+
+            const rows = [['Periode', 'Total Transaksi', 'Total Omzet', 'Total HPP', 'Laba Kotor']];
+            Object.keys(grouped).reverse().forEach(key => {
+                rows.push([key, grouped[key].count, grouped[key].rev, grouped[key].cost, grouped[key].rev - grouped[key].cost]);
+            });
+            downloadCSV(rows, "Laporan_Keuangan_Adamart.csv");
         };
 
-        window.selectProductForPO = (barcode) => {
-            const p = State.data.products.find(i => String(i.Barcode) === barcode);
-            if(p) {
-                document.getElementById('item-barcode').value = p.Barcode;
-                document.getElementById('item-name').value = p['Nama Produk'];
-                document.getElementById('item-hpp').value = p.HPP || 0;
-                document.getElementById('item-price').value = p.Harga || 0;
-                document.getElementById('po-search-results').classList.add('hidden');
-                document.getElementById('smartSearchPO').value = '';
-                document.getElementById('item-qty').focus();
-            }
+        // 2. Laporan Produk (Product Performance)
+        window.exportProductPerformanceCSV = () => {
+            const productStats = {};
+            
+            // Aggregate Sales Data
+            State.data.sales.forEach(s => {
+                let itemsList = s.cart || [];
+                if(itemsList.length === 0 && s.items) {
+                     s.items.split(', ').forEach(str => {
+                        const parts = str.split(' x');
+                        if(parts.length === 2) itemsList.push({name: parts[0].trim(), quantity: parseInt(parts[1])});
+                     });
+                }
+
+                itemsList.forEach(i => {
+                    const name = i.name;
+                    if(!productStats[name]) productStats[name] = {qtySold: 0, revenue: 0};
+                    productStats[name].qtySold += i.quantity;
+                    // Estimate revenue per item if not explicit
+                    const p = State.data.products.find(prod => prod['Nama Produk'].trim().toLowerCase() === name.toLowerCase());
+                    const price = i.price || (p ? p.Harga : 0);
+                    productStats[name].revenue += (price * i.quantity);
+                });
+            });
+
+            const rows = [['Nama Barang', 'Terjual (Qty)', 'Stok Saat Ini (Total)', 'HPP Satuan', 'Total Omzet', 'Laba Kotor']];
+            
+            // Combine with Product Database Info
+            Object.keys(productStats).forEach(name => {
+                const stat = productStats[name];
+                const p = State.data.products.find(prod => prod['Nama Produk'].trim().toLowerCase() === name.toLowerCase());
+                
+                const currentStock = p ? (parseInt(p['Stok Area Kasir adamart 73']||0) + parseInt(p['Stok Area Kasir adamart induksi']||0) + parseInt(p['Stok Area Kasir adamart kelanis']||0)) : 0;
+                const hpp = p ? (parseInt(p.HPP)||0) : 0;
+                const totalHpp = hpp * stat.qtySold;
+                const grossProfit = stat.revenue - totalHpp;
+
+                rows.push([name, stat.qtySold, currentStock, hpp, stat.revenue, grossProfit]);
+            });
+
+            downloadCSV(rows, "Laporan_Performa_Produk_Adamart.csv");
         };
 
+        function downloadCSV(rows, filename) {
+            const csvContent = "data:text/csv;charset=utf-8," + rows.map(e => e.join(",")).join("\n");
+            const link = document.createElement("a");
+            link.href = encodeURI(csvContent);
+            link.download = filename;
+            link.click();
+        }
+
+        // ... [Helpers: showModal, closeModal, autoFill, etc. same as before] ...
+        window.searchProductForPO = (val) => { const container = document.getElementById('po-search-results'); if(val.length < 2) { container.classList.add('hidden'); return; } const matches = State.data.products.filter(p => p['Nama Produk'].toLowerCase().includes(val.toLowerCase()) || String(p.Barcode).includes(val)).slice(0, 10); if(matches.length === 0) { container.innerHTML = '<div class="p-2 text-sm text-gray-500">Tidak ditemukan. Input manual di bawah.</div>'; } else { container.innerHTML = matches.map(p => `<div class="p-2 hover:bg-blue-50 cursor-pointer border-b text-sm" onclick="selectProductForPO('${p.Barcode}')"><div class="font-bold text-gray-800">${p['Nama Produk']}</div><div class="text-xs text-gray-500 flex justify-between"><span>${p.Barcode}</span><span>HPP: ${formatRp(p.HPP || 0)}</span></div></div>`).join(''); } container.classList.remove('hidden'); };
+        window.selectProductForPO = (barcode) => { const p = State.data.products.find(i => String(i.Barcode) === barcode); if(p) { document.getElementById('item-barcode').value = p.Barcode; document.getElementById('item-name').value = p['Nama Produk']; document.getElementById('item-hpp').value = p.HPP || 0; document.getElementById('item-price').value = p.Harga || 0; document.getElementById('po-search-results').classList.add('hidden'); document.getElementById('smartSearchPO').value = ''; document.getElementById('item-qty').focus(); } };
         function showModal(c){ const d=document.createElement('div'); d.className='modal-overlay'; d.innerHTML=`<div class="modal-content p-6 relative shadow-2xl"><button onclick="closeModal()" class="absolute top-4 right-4">✕</button>${c}</div>`; document.body.appendChild(d); }
         function closeModal(){ document.querySelector('.modal-overlay')?.remove(); }
         window.autoFill = () => { const bc = document.getElementById('barcode').value; const p = State.data.products.find(i => String(i.Barcode) === bc); if (p) { document.getElementById('productName').value = p['Nama Produk']; document.getElementById('price').value = p['Harga']; document.getElementById('hpp').value = p['HPP'] || 0; } };
@@ -350,12 +514,11 @@
         window.removeItemFromTemp = (i) => { State.tempBatchItems.splice(i,1); document.getElementById('temp-items-list').innerHTML=State.tempBatchItems.map((i,x)=>`<div class="flex justify-between items-center bg-white p-2 rounded border"><div><span class="font-bold">${i.name}</span> x${i.qty}</div><button onclick="removeItemFromTemp(${x})" class="text-red-500 px-2">✕</button></div>`).join(''); };
         window.toggleSupplierInput = (el) => { const i=document.getElementById('customSupplier'); if(el.value==='custom'){i.classList.remove('hidden');i.disabled=false;i.focus();}else{i.classList.add('hidden');i.disabled=true;} };
         window.filterInventory = (v) => { document.querySelectorAll('.product-row').forEach(r => r.style.display = r.innerText.toLowerCase().includes(v.toLowerCase()) ? '' : 'none'); };
-        window.exportReportToCSV = () => { const rows = [['Periode', 'Transaksi', 'Omzet']]; document.querySelectorAll('#reportTableBody tr').forEach(tr => { const cols = tr.querySelectorAll('td'); rows.push([cols[0].innerText, cols[1].innerText, cols[2].innerText.replace('Rp ','').replace(/\./g,'')]); }); const link = document.createElement("a"); link.href = encodeURI("data:text/csv;charset=utf-8," + rows.map(e => e.join(",")).join("\n")); link.download = "Laporan_Adamart.csv"; link.click(); };
         function formatRp(n) { return "Rp " + (n || 0).toLocaleString('id-ID'); }
         function checkStock(v) { return (v || 0) < 10 ? 'text-red-600' : 'text-gray-800'; }
         function getStatusBadge(s) { return `<span class="px-2 py-1 rounded text-xs font-bold bg-gray-100">${s.toUpperCase()}</span>`; }
-        
-        // Expose Modules to Window (Fixing Scope Issues)
+
+        // Explicitly expose Modules to Window scope
         window.Actions = Actions;
         window.Modals = Modals;
         window.Pages = Pages;
