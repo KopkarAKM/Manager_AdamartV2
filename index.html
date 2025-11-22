@@ -5,7 +5,6 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Adamart - Manager Dashboard</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <!-- Chart.js untuk Grafik -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     
     <!-- Firebase SDKs -->
@@ -55,33 +54,21 @@
 </head>
 <body class="flex h-full">
 
-    <!-- SIDEBAR -->
     <aside class="sidebar w-64 flex flex-col hidden md:flex">
         <div class="p-6">
             <h2 class="text-xl font-bold tracking-wider">ADAMART</h2>
             <p class="text-xs opacity-70">Management System</p>
         </div>
         <nav class="flex-1 py-4 space-y-1">
-            <a onclick="navigate('dashboard')" class="sidebar-item px-6 py-3 cursor-pointer flex items-center gap-3 hover:bg-white/10">
-                <span>📊</span> Dashboard
-            </a>
-            <a onclick="navigate('purchase')" class="sidebar-item px-6 py-3 cursor-pointer flex items-center gap-3 hover:bg-white/10">
-                <span>🛒</span> Purchase Order
-            </a>
-            <a onclick="navigate('requisition')" class="sidebar-item px-6 py-3 cursor-pointer flex items-center gap-3 hover:bg-white/10">
-                <span>📥</span> Inbox Request
-            </a>
-            <a onclick="navigate('inventory')" class="sidebar-item px-6 py-3 cursor-pointer flex items-center gap-3 hover:bg-white/10">
-                <span>📦</span> Inventory
-            </a>
-            <a onclick="navigate('reports')" class="sidebar-item px-6 py-3 cursor-pointer flex items-center gap-3 hover:bg-white/10">
-                <span>📈</span> Laporan & Grafik
-            </a>
+            <a onclick="navigate('dashboard')" class="sidebar-item px-6 py-3 cursor-pointer flex items-center gap-3 hover:bg-white/10"><span>📊</span> Dashboard</a>
+            <a onclick="navigate('purchase')" class="sidebar-item px-6 py-3 cursor-pointer flex items-center gap-3 hover:bg-white/10"><span>🛒</span> Purchase Order</a>
+            <a onclick="navigate('requisition')" class="sidebar-item px-6 py-3 cursor-pointer flex items-center gap-3 hover:bg-white/10"><span>📥</span> Inbox Request</a>
+            <a onclick="navigate('inventory')" class="sidebar-item px-6 py-3 cursor-pointer flex items-center gap-3 hover:bg-white/10"><span>📦</span> Inventory</a>
+            <a onclick="navigate('reports')" class="sidebar-item px-6 py-3 cursor-pointer flex items-center gap-3 hover:bg-white/10"><span>📈</span> Laporan & Grafik</a>
         </nav>
-        <div class="p-4 text-xs opacity-50 text-center">v2.0 Hybrid</div>
+        <div class="p-4 text-xs opacity-50 text-center">v2.2 Sync</div>
     </aside>
 
-    <!-- MAIN CONTENT -->
     <div class="flex-1 flex flex-col min-w-0 overflow-hidden">
         <header class="bg-white p-4 border-b shadow-sm flex justify-between items-center z-10">
             <h1 id="page-title" class="text-xl font-bold text-gray-800">Dashboard</h1>
@@ -95,13 +82,10 @@
         </header>
 
         <main class="flex-1 overflow-y-auto p-6" id="main-container">
-            <!-- Loading -->
             <div id="loadingState" class="text-center py-20">
                 <div class="animate-spin text-4xl mb-4">⏳</div>
                 <p class="text-gray-500">Mengambil data...</p>
             </div>
-
-            <!-- DYNAMIC CONTENT AREA -->
             <div id="content-area" class="hidden space-y-6"></div>
         </main>
     </div>
@@ -111,7 +95,6 @@
         const BRANCHES = ["Adamart 73", "Adamart Kelanis", "Adamart Induksi"];
         const SUPPLIERS = ["PT Sumber Makmur", "CV Mitra Jaya", "Toko Grosir Berkah", "PT Indo Supplier"];
 
-        // STATE
         const State = {
             currentPage: 'dashboard',
             data: { products: [], sales: [], purchases: [], requisitions: [] },
@@ -119,18 +102,13 @@
             chartInstance: null
         };
 
-        // INIT
-        document.addEventListener('firebase-ready', () => {
-            loadAllData();
-        });
+        document.addEventListener('firebase-ready', () => { loadAllData(); });
 
-        // DATA FETCHING
         async function loadAllData() {
             try {
                 document.getElementById('loadingState').classList.remove('hidden');
                 document.getElementById('content-area').classList.add('hidden');
 
-                // Fetch All Collections Parallel
                 const [pSnap, sSnap, poSnap, rSnap] = await Promise.all([
                     window.getDocs(window.collection(window.db, "products")),
                     window.getDocs(window.query(window.collection(window.db, "sales"), window.orderBy("timestamp", "desc"))),
@@ -152,11 +130,7 @@
             }
         }
 
-        // NAVIGATION
-        window.navigate = (page) => {
-            State.currentPage = page;
-            renderPage();
-        };
+        window.navigate = (page) => { State.currentPage = page; renderPage(); };
 
         function renderPage() {
             const container = document.getElementById('content-area');
@@ -164,54 +138,29 @@
             container.innerHTML = '';
 
             switch (State.currentPage) {
-                case 'dashboard':
-                    title.innerText = 'Dashboard Overview';
-                    container.innerHTML = Pages.Dashboard();
-                    break;
-                case 'purchase':
-                    title.innerText = 'Purchase Orders (Barang Keluar)';
-                    container.innerHTML = Pages.Purchase();
-                    break;
-                case 'requisition':
-                    title.innerText = 'Inbox Permintaan (Masuk)';
-                    container.innerHTML = Pages.Requisition();
-                    break;
-                case 'inventory':
-                    title.innerText = 'Inventory & Stok';
-                    container.innerHTML = Pages.Inventory();
-                    break;
-                case 'reports':
-                    title.innerText = 'Laporan & Analisa';
-                    container.innerHTML = Pages.Reports();
-                    Pages.initCharts(); // Initialize charts after HTML injection
-                    break;
+                case 'dashboard': title.innerText = 'Dashboard Overview'; container.innerHTML = Pages.Dashboard(); break;
+                case 'purchase': title.innerText = 'Purchase Orders (Barang Keluar)'; container.innerHTML = Pages.Purchase(); break;
+                case 'requisition': title.innerText = 'Inbox Permintaan (Masuk)'; container.innerHTML = Pages.Requisition(); break;
+                case 'inventory': title.innerText = 'Inventory & Stok'; container.innerHTML = Pages.Inventory(); break;
+                case 'reports': title.innerText = 'Laporan & Analisa'; container.innerHTML = Pages.Reports(); Pages.initCharts(); break;
             }
         }
 
-        // PAGES COMPONENTS
         const Pages = {
             Dashboard: () => {
                 const revenue = State.data.sales.reduce((sum, s) => sum + (s.total || 0), 0);
                 const pendingReq = State.data.requisitions.filter(r => r.status === 'pending').length;
-                
-                // Stock Alerts Logic
-                let lowStockHtml = '';
-                let expiryHtml = '';
+                let lowStockHtml = '', expiryHtml = '';
                 
                 State.data.products.forEach(p => {
                     BRANCHES.forEach(area => {
                         const stock = p[`Stok Area Kasir ${area.toLowerCase()}`] || 0;
-                        if (stock > 0 && stock < 10) {
-                            lowStockHtml += `<div class="flex justify-between items-center p-2 bg-red-50 border-b text-sm"><span>${p['Nama Produk']} (${area})</span><span class="font-bold text-red-600">${stock}</span></div>`;
-                        }
+                        if (stock > 0 && stock < 10) lowStockHtml += `<div class="flex justify-between items-center p-2 bg-red-50 border-b text-sm"><span>${p['Nama Produk']} (${area})</span><span class="font-bold text-red-600">${stock}</span></div>`;
                     });
-                    
                     if(p['Tanggal Kadaluarsa']) {
                         const exp = new Date(p['Tanggal Kadaluarsa'].seconds ? p['Tanggal Kadaluarsa'].seconds * 1000 : p['Tanggal Kadaluarsa']);
                         const diffDays = Math.ceil((exp - new Date()) / (1000 * 60 * 60 * 24));
-                        if(diffDays < 60 && diffDays > 0) {
-                            expiryHtml += `<div class="flex justify-between items-center p-2 bg-orange-50 border-b text-sm"><span>${p['Nama Produk']}</span><span class="font-bold text-orange-600">${diffDays} hari</span></div>`;
-                        }
+                        if(diffDays < 60 && diffDays > 0) expiryHtml += `<div class="flex justify-between items-center p-2 bg-orange-50 border-b text-sm"><span>${p['Nama Produk']}</span><span class="font-bold text-orange-600">${diffDays} hari</span></div>`;
                     }
                 });
 
@@ -230,7 +179,6 @@
                             <div class="text-3xl font-bold">${pendingReq}</div>
                         </div>
                     </div>
-
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                         <div class="bg-white rounded-xl shadow p-4 border-l-4 border-red-500">
                             <h3 class="font-bold text-red-600 mb-3">⚠️ Stok Menipis (< 10)</h3>
@@ -243,145 +191,40 @@
                     </div>
                 `;
             },
-
             Purchase: () => `
-                <div class="flex justify-end mb-4">
-                    <button onclick="Modals.openBatchPO()" class="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 font-bold shadow">+ Buat Batch PO</button>
-                </div>
+                <div class="flex justify-end mb-4"><button onclick="Modals.openBatchPO()" class="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 font-bold shadow">+ Buat Batch PO</button></div>
                 <div class="bg-white rounded-xl shadow overflow-hidden">
                     <table class="w-full text-left text-sm">
-                        <thead class="bg-gray-100 text-gray-600 uppercase">
-                            <tr><th class="p-4">Batch ID</th><th class="p-4">Supplier</th><th class="p-4">Cabang</th><th class="p-4">Status</th><th class="p-4">Items</th></tr>
-                        </thead>
+                        <thead class="bg-gray-100 text-gray-600 uppercase"><tr><th class="p-4">Batch ID</th><th class="p-4">Supplier</th><th class="p-4">Cabang</th><th class="p-4">Status</th><th class="p-4">Items</th></tr></thead>
                         <tbody class="divide-y">
-                            ${State.data.purchases.length === 0 ? '<tr><td colspan="5" class="p-4 text-center text-gray-500">Belum ada PO</td></tr>' : 
-                            State.data.purchases.map(p => `
-                                <tr class="hover:bg-gray-50">
-                                    <td class="p-4 font-mono text-blue-600">${p.batchNumber}</td>
-                                    <td class="p-4">${p.supplier}</td>
-                                    <td class="p-4"><span class="px-2 py-1 bg-purple-100 text-purple-800 rounded text-xs font-bold">${p.branch}</span></td>
-                                    <td class="p-4">${getStatusBadge(p.status)}</td>
-                                    <td class="p-4 text-gray-500">${JSON.parse(p.items).length} items</td>
-                                </tr>
-                            `).join('')}
+                            ${State.data.purchases.map(p => `<tr class="hover:bg-gray-50"><td class="p-4 font-mono text-blue-600">${p.batchNumber}</td><td class="p-4">${p.supplier}</td><td class="p-4"><span class="px-2 py-1 bg-purple-100 text-purple-800 rounded text-xs font-bold">${p.branch}</span></td><td class="p-4">${getStatusBadge(p.status)}</td><td class="p-4 text-gray-500">${JSON.parse(p.items).length} items</td></tr>`).join('')}
                         </tbody>
                     </table>
                 </div>
             `,
-
             Requisition: () => {
                 const pending = State.data.requisitions.filter(r => r.status === 'pending');
-                const history = State.data.requisitions.filter(r => r.status !== 'pending');
                 return `
-                    <div class="space-y-8">
-                        <div>
-                            <h3 class="font-bold text-lg mb-3 text-orange-600 flex items-center gap-2">📥 Menunggu Persetujuan <span class="bg-orange-100 px-2 rounded text-sm">${pending.length}</span></h3>
-                            <div class="bg-white rounded-xl shadow overflow-hidden border border-orange-200">
-                                ${pending.length === 0 ? '<p class="p-6 text-center text-gray-400">Tidak ada permintaan baru</p>' : 
-                                `<table class="w-full text-left text-sm">
-                                    <thead class="bg-orange-50 text-orange-800"><tr><th class="p-3">Tanggal</th><th class="p-3">Cabang</th><th class="p-3">Prioritas</th><th class="p-3">Items</th><th class="p-3">Aksi</th></tr></thead>
-                                    <tbody class="divide-y">
-                                        ${pending.map(r => `
-                                            <tr>
-                                                <td class="p-3">${new Date(r.createdAt).toLocaleDateString()}</td>
-                                                <td class="p-3 font-bold">${r.branch}</td>
-                                                <td class="p-3">${r.priority === 'urgent' ? '🔴 URGENT' : '🟢 Normal'}</td>
-                                                <td class="p-3 max-w-xs truncate">${JSON.parse(r.items).map(i => `${i.name} (${i.qty})`).join(', ')}</td>
-                                                <td class="p-3">
-                                                    <button onclick="Actions.approveReq('${r.id}')" class="bg-green-600 text-white px-3 py-1 rounded text-xs font-bold hover:bg-green-700 mr-2">✓ Setuju</button>
-                                                    <button onclick="Actions.rejectReq('${r.id}')" class="bg-red-100 text-red-600 px-3 py-1 rounded text-xs font-bold hover:bg-red-200">✗ Tolak</button>
-                                                </td>
-                                            </tr>
-                                        `).join('')}
-                                    </tbody>
-                                </table>`}
-                            </div>
-                        </div>
-
-                        <div>
-                            <h3 class="font-bold text-lg mb-3 text-gray-600">Riwayat</h3>
-                            <div class="bg-white rounded-xl shadow overflow-hidden opacity-75">
-                                <table class="w-full text-left text-sm">
-                                    <thead class="bg-gray-100"><tr><th class="p-3">Tanggal</th><th class="p-3">Cabang</th><th class="p-3">Status</th><th class="p-3">Items</th></tr></thead>
-                                    <tbody class="divide-y">
-                                        ${history.map(r => `
-                                            <tr>
-                                                <td class="p-3">${new Date(r.createdAt).toLocaleDateString()}</td>
-                                                <td class="p-3">${r.branch}</td>
-                                                <td class="p-3">${getStatusBadge(r.status)}</td>
-                                                <td class="p-3 text-gray-500">${JSON.parse(r.items).length} items</td>
-                                            </tr>
-                                        `).join('')}
-                                    </tbody>
-                                </table>
-                            </div>
-                        </div>
+                    <div class="bg-white rounded-xl shadow overflow-hidden border border-orange-200">
+                        <h3 class="p-4 font-bold text-orange-600 border-b">Inbox Permintaan (${pending.length})</h3>
+                        ${pending.length === 0 ? '<p class="p-6 text-center text-gray-400">Tidak ada permintaan baru</p>' : 
+                        `<table class="w-full text-left text-sm"><thead class="bg-orange-50 text-orange-800"><tr><th class="p-3">Tgl</th><th class="p-3">Cabang</th><th class="p-3">Prioritas</th><th class="p-3">Items</th><th class="p-3">Aksi</th></tr></thead><tbody>${pending.map(r => `<tr><td class="p-3">${new Date(r.createdAt).toLocaleDateString()}</td><td class="p-3 font-bold">${r.branch}</td><td class="p-3">${r.priority === 'urgent' ? '🔴 URGENT' : '🟢 Normal'}</td><td class="p-3 max-w-xs truncate">${JSON.parse(r.items).map(i => `${i.name} (${i.qty})`).join(', ')}</td><td class="p-3"><button onclick="Actions.approveReq('${r.id}')" class="bg-green-600 text-white px-3 py-1 rounded text-xs font-bold mr-2">✓</button><button onclick="Actions.rejectReq('${r.id}')" class="bg-red-600 text-white px-3 py-1 rounded text-xs font-bold">✗</button></td></tr>`).join('')}</tbody></table>`}
                     </div>
                 `;
             },
-
             Inventory: () => `
                 <div class="bg-white rounded-xl shadow overflow-hidden">
-                    <div class="p-4 border-b bg-gray-50">
-                        <input type="text" placeholder="🔍 Cari produk..." class="w-full p-2 border rounded focus:ring-2 focus:ring-blue-500" oninput="filterInventory(this.value)">
-                    </div>
+                    <div class="p-4 border-b bg-gray-50"><input type="text" placeholder="🔍 Cari produk..." class="w-full p-2 border rounded" oninput="filterInventory(this.value)"></div>
                     <div class="overflow-x-auto">
                         <table class="w-full text-left text-sm">
-                            <thead class="bg-gray-100 text-gray-600 uppercase font-bold">
-                                <tr>
-                                    <th class="p-4">Produk</th>
-                                    <th class="p-4">Harga</th>
-                                    <th class="p-4 text-center">73</th>
-                                    <th class="p-4 text-center">Induksi</th>
-                                    <th class="p-4 text-center">Kelanis</th>
-                                    <th class="p-4">Exp Date</th>
-                                </tr>
-                            </thead>
-                            <tbody class="divide-y" id="inventory-body">
-                                ${State.data.products.map(p => `
-                                    <tr class="hover:bg-gray-50 product-row">
-                                        <td class="p-4">
-                                            <div class="font-bold text-gray-800">${p['Nama Produk']}</div>
-                                            <div class="text-xs text-gray-500 font-mono">${p.Barcode}</div>
-                                        </td>
-                                        <td class="p-4">Rp ${p.Harga.toLocaleString()}</td>
-                                        <td class="p-4 text-center font-bold ${checkStock(p['Stok Area Kasir adamart 73'])}">${p['Stok Area Kasir adamart 73'] || 0}</td>
-                                        <td class="p-4 text-center font-bold ${checkStock(p['Stok Area Kasir adamart induksi'])}">${p['Stok Area Kasir adamart induksi'] || 0}</td>
-                                        <td class="p-4 text-center font-bold ${checkStock(p['Stok Area Kasir adamart kelanis'])}">${p['Stok Area Kasir adamart kelanis'] || 0}</td>
-                                        <td class="p-4 text-xs">${p['Tanggal Kadaluarsa'] ? new Date(p['Tanggal Kadaluarsa']).toLocaleDateString() : '-'}</td>
-                                    </tr>
-                                `).join('')}
-                            </tbody>
+                            <thead class="bg-gray-100 text-gray-600 uppercase font-bold"><tr><th class="p-4">Produk</th><th class="p-4">Harga</th><th class="p-4 text-center">73</th><th class="p-4 text-center">Induksi</th><th class="p-4 text-center">Kelanis</th></tr></thead>
+                            <tbody class="divide-y product-row-container">${State.data.products.map(p => `<tr class="hover:bg-gray-50 product-row"><td class="p-4"><div class="font-bold">${p['Nama Produk']}</div><div class="text-xs text-gray-500 font-mono">${p.Barcode}</div></td><td class="p-4">Rp ${p.Harga.toLocaleString()}</td><td class="p-4 text-center font-bold ${checkStock(p['Stok Area Kasir adamart 73'])}">${p['Stok Area Kasir adamart 73'] || 0}</td><td class="p-4 text-center font-bold ${checkStock(p['Stok Area Kasir adamart induksi'])}">${p['Stok Area Kasir adamart induksi'] || 0}</td><td class="p-4 text-center font-bold ${checkStock(p['Stok Area Kasir adamart kelanis'])}">${p['Stok Area Kasir adamart kelanis'] || 0}</td></tr>`).join('')}</tbody>
                         </table>
                     </div>
                 </div>
             `,
-
-            Reports: () => `
-                <div class="space-y-6">
-                    <div class="flex justify-between items-center">
-                        <select id="reportPeriod" onchange="Pages.renderReportData()" class="p-2 border rounded bg-white">
-                            <option value="monthly">Bulanan</option>
-                            <option value="weekly">Mingguan</option>
-                        </select>
-                        <button onclick="exportReportToCSV()" class="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700 font-bold text-sm">Download CSV</button>
-                    </div>
-                    <div class="bg-white p-6 rounded-xl shadow">
-                        <canvas id="salesChart" style="max-height: 300px;"></canvas>
-                    </div>
-                    <div class="bg-white rounded-xl shadow overflow-hidden">
-                        <table class="w-full text-sm text-left">
-                            <thead class="bg-gray-100 font-bold">
-                                <tr><th class="p-4">Periode</th><th class="p-4 text-right">Transaksi</th><th class="p-4 text-right">Omzet</th></tr>
-                            </thead>
-                            <tbody id="reportTableBody"></tbody>
-                        </table>
-                    </div>
-                </div>
-            `,
-
+            Reports: () => `<div class="space-y-6"><div class="flex justify-between"><select id="reportPeriod" onchange="Pages.renderReportData()" class="p-2 border rounded"><option value="monthly">Bulanan</option><option value="weekly">Mingguan</option></select><button onclick="exportReportToCSV()" class="bg-green-600 text-white px-4 py-2 rounded font-bold text-sm">Download CSV</button></div><div class="bg-white p-6 rounded-xl shadow"><canvas id="salesChart" style="max-height: 300px;"></canvas></div><div class="bg-white rounded-xl shadow overflow-hidden"><table class="w-full text-sm text-left"><thead class="bg-gray-100 font-bold"><tr><th class="p-4">Periode</th><th class="p-4 text-right">Trx</th><th class="p-4 text-right">Omzet</th></tr></thead><tbody id="reportTableBody"></tbody></table></div></div>`,
             initCharts: () => { Pages.renderReportData(); },
-
             renderReportData: () => {
                 const period = document.getElementById('reportPeriod').value;
                 const grouped = {};
@@ -392,48 +235,21 @@
                     grouped[key].rev += s.total;
                     grouped[key].count++;
                 });
-
                 const labels = Object.keys(grouped).reverse();
                 const data = labels.map(k => grouped[k].rev);
-
                 if(State.chartInstance) State.chartInstance.destroy();
-                const ctx = document.getElementById('salesChart').getContext('2d');
-                State.chartInstance = new Chart(ctx, {
-                    type: 'bar',
-                    data: {
-                        labels: labels,
-                        datasets: [{ label: 'Omzet (Rp)', data: data, backgroundColor: '#3b82f6' }]
-                    }
-                });
-
-                document.getElementById('reportTableBody').innerHTML = labels.map(k => `
-                    <tr class="border-b">
-                        <td class="p-4 font-medium">${k}</td>
-                        <td class="p-4 text-right">${grouped[k].count}</td>
-                        <td class="p-4 text-right font-bold text-blue-600">Rp ${grouped[k].rev.toLocaleString('id-ID')}</td>
-                    </tr>
-                `).join('');
+                State.chartInstance = new Chart(document.getElementById('salesChart').getContext('2d'), { type: 'bar', data: { labels, datasets: [{ label: 'Omzet (Rp)', data, backgroundColor: '#3b82f6' }] } });
+                document.getElementById('reportTableBody').innerHTML = labels.map(k => `<tr class="border-b"><td class="p-4 font-medium">${k}</td><td class="p-4 text-right">${grouped[k].count}</td><td class="p-4 text-right font-bold text-blue-600">Rp ${grouped[k].rev.toLocaleString('id-ID')}</td></tr>`).join('');
             }
         };
 
-        // --- ACTIONS & LOGIC ---
         const Actions = {
             createBatchPO: async (e) => {
                 e.preventDefault();
-                // --- MODIFIED LOGIC FOR MANUAL SUPPLIER ---
                 const form = e.target;
                 const selectVal = document.getElementById('supplierSelect').value;
-                let supplier = selectVal;
-                
-                if(selectVal === 'custom') {
-                    const manualInput = document.getElementById('customSupplier').value.trim();
-                    if(!manualInput) return alert("Nama supplier manual wajib diisi!");
-                    supplier = manualInput;
-                }
-                // ------------------------------------------
-
+                let supplier = selectVal === 'custom' ? document.getElementById('customSupplier').value.trim() : selectVal;
                 if(State.tempBatchItems.length === 0) return alert("Belum ada item!");
-
                 const batchId = 'BATCH-' + Date.now();
                 const promises = [];
                 const orderDate = form.elements['orderDate'].value;
@@ -444,7 +260,7 @@
                             type: 'purchase',
                             batchNumber: batchId,
                             branch: branch,
-                            supplier: supplier, // Use resolved supplier name
+                            supplier: supplier,
                             orderDate: orderDate,
                             status: 'pending',
                             items: JSON.stringify(State.tempBatchItems),
@@ -453,125 +269,97 @@
                         promises.push(window.addDoc(window.collection(window.db, "purchases"), poData));
                     }
                 });
-
                 await Promise.all(promises);
                 closeModal();
-                alert("Batch PO Berhasil Dibuat!");
+                alert("Batch PO Berhasil!");
                 loadAllData();
             },
-
-            approveReq: async (id) => {
-                if(!confirm("Setujui permintaan ini?")) return;
-                await window.updateDoc(window.doc(window.db, "requisitions", id), { status: 'approved' });
-                loadAllData();
-            },
-            
-            rejectReq: async (id) => {
-                if(!confirm("Tolak permintaan ini?")) return;
-                await window.updateDoc(window.doc(window.db, "requisitions", id), { status: 'rejected' });
-                loadAllData();
-            }
+            approveReq: async (id) => { if(confirm("Setujui?")) { await window.updateDoc(window.doc(window.db, "requisitions", id), { status: 'approved' }); loadAllData(); } },
+            rejectReq: async (id) => { if(confirm("Tolak?")) { await window.updateDoc(window.doc(window.db, "requisitions", id), { status: 'rejected' }); loadAllData(); } }
         };
 
-        // --- MODALS ---
         const Modals = {
             openBatchPO: () => {
                 State.tempBatchItems = [];
-                // --- MODIFIED HTML FOR MANUAL SUPPLIER ---
                 const content = `
                     <h3 class="text-xl font-bold mb-4">Buat Batch PO</h3>
                     <form onsubmit="Actions.createBatchPO(event)">
                         <div class="grid grid-cols-2 gap-4 mb-4">
                             <div>
-                                <select id="supplierSelect" class="p-2 border rounded w-full bg-white" required onchange="toggleSupplierInput(this)">
+                                <select id="supplierSelect" class="p-2 border rounded w-full bg-white text-sm" required onchange="toggleSupplierInput(this)">
                                     <option value="">Pilih Supplier</option>
                                     ${SUPPLIERS.map(s => `<option value="${s}">${s}</option>`).join('')}
                                     <option value="custom" class="font-bold text-blue-600">+ Input Manual</option>
                                 </select>
-                                <input id="customSupplier" type="text" placeholder="Tulis Nama Supplier..." class="p-2 border rounded w-full mt-2 hidden" disabled>
+                                <input id="customSupplier" type="text" placeholder="Nama Supplier..." class="p-2 border rounded w-full mt-2 hidden text-sm" disabled>
                             </div>
-                            <input type="date" name="orderDate" class="p-2 border rounded w-full h-[42px]" required>
+                            <input type="date" name="orderDate" class="p-2 border rounded w-full h-[38px] text-sm" required>
                         </div>
-                        <div class="bg-blue-50 p-4 rounded mb-4">
-                            <div class="flex gap-2 mb-2">
-                                <input id="item-name" placeholder="Nama Barang" class="flex-1 p-2 border rounded text-sm">
-                                <input id="item-qty" type="number" placeholder="Qty" class="w-20 p-2 border rounded text-sm">
-                                <button type="button" onclick="addItemToTemp()" class="bg-blue-600 text-white px-3 rounded">+</button>
+                        <div class="bg-blue-50 p-4 rounded-lg mb-4 border border-blue-100">
+                            <div class="flex items-center gap-2 mb-2">
+                                <div class="w-32"><input id="item-barcode" placeholder="Barcode" class="w-full p-2 border rounded text-sm" oninput="autoFillPOItem(this.value)"></div>
+                                <div class="flex-1"><input id="item-name" placeholder="Nama Barang" class="w-full p-2 border rounded text-sm"></div>
+                                <div class="w-20"><input id="item-qty" type="number" placeholder="Qty" class="w-full p-2 border rounded text-sm"></div>
+                                <div class="w-24"><input id="item-hpp" type="number" placeholder="HPP" class="w-full p-2 border rounded text-sm"></div>
+                                <div class="w-24"><input id="item-price" type="number" placeholder="Jual" class="w-full p-2 border rounded text-sm"></div>
+                                <button type="button" onclick="addItemToTemp()" class="bg-blue-600 text-white px-3 py-1.5 rounded hover:bg-blue-700 font-bold">+</button>
                             </div>
-                            <div id="temp-items-list" class="text-sm text-gray-600 max-h-32 overflow-y-auto"></div>
+                            <div id="temp-items-list" class="text-sm text-gray-600 max-h-40 overflow-y-auto space-y-1"></div>
                         </div>
-                        <div class="mb-4">
-                            <label class="font-bold block mb-2">Kirim ke:</label>
-                            <div class="flex gap-4 flex-wrap">
-                                ${BRANCHES.map(b => `<label class="flex items-center gap-2 text-sm"><input type="checkbox" id="branch-${b}" checked> ${b}</label>`).join('')}
-                            </div>
-                        </div>
-                        <button type="submit" class="w-full btn-primary py-2 rounded bg-blue-600 text-white font-bold">Buat PO</button>
+                        <div class="mb-6"><label class="font-bold block mb-2 text-sm">Kirim ke:</label><div class="flex gap-4 flex-wrap">${BRANCHES.map(b => `<label class="flex items-center gap-2 text-sm"><input type="checkbox" id="branch-${b}" checked> ${b}</label>`).join('')}</div></div>
+                        <button type="submit" class="w-full btn-primary py-2.5 rounded-lg bg-blue-600 text-white font-bold">Buat & Kirim PO</button>
                     </form>
                 `;
-                // -----------------------------------------
                 showModal(content);
             }
         };
 
-        // HELPERS
         function showModal(content) {
             const el = document.createElement('div');
             el.className = 'modal-overlay';
-            el.innerHTML = `<div class="modal-content p-6 relative"><button onclick="closeModal()" class="absolute top-4 right-4 text-gray-500 hover:text-red-500">✕</button>${content}</div>`;
+            el.innerHTML = `<div class="modal-content p-6 relative shadow-2xl"><button onclick="closeModal()" class="absolute top-4 right-4 text-gray-400 hover:text-red-500 text-xl">✕</button>${content}</div>`;
             document.body.appendChild(el);
         }
         function closeModal() { document.querySelector('.modal-overlay')?.remove(); }
         
+        window.autoFillPOItem = (barcode) => {
+            const p = State.data.products.find(i => String(i.Barcode) === barcode);
+            if (p) {
+                document.getElementById('item-name').value = p['Nama Produk'];
+                document.getElementById('item-price').value = p['Harga'];
+            }
+        };
+
         window.addItemToTemp = () => {
+            const barcode = document.getElementById('item-barcode').value;
             const name = document.getElementById('item-name').value;
             const qty = document.getElementById('item-qty').value;
+            const hpp = document.getElementById('item-hpp').value;
+            const price = document.getElementById('item-price').value;
+            
             if(name && qty) {
-                State.tempBatchItems.push({name, qty});
-                document.getElementById('temp-items-list').innerHTML = State.tempBatchItems.map(i => `<div>• ${i.name} (${i.qty})</div>`).join('');
-                document.getElementById('item-name').value = '';
-                document.getElementById('item-qty').value = '';
+                State.tempBatchItems.push({ barcode, name, qty, hpp, price });
+                const listHtml = State.tempBatchItems.map((i, idx) => `<div class="flex justify-between items-center bg-white p-2 rounded border"><div><span class="font-bold text-xs bg-gray-100 p-1 rounded mr-2">${i.barcode || '-'}</span><span class="font-bold">${i.name}</span> <span class="text-xs bg-gray-200 px-1.5 rounded">x${i.qty}</span><div class="text-xs text-gray-500">Beli: ${formatRp(i.hpp)} | Jual: ${formatRp(i.price)}</div></div><button onclick="removeItemFromTemp(${idx})" class="text-red-500 px-2">✕</button></div>`).join('');
+                document.getElementById('temp-items-list').innerHTML = listHtml;
+                document.getElementById('item-barcode').value = ''; document.getElementById('item-name').value = ''; document.getElementById('item-qty').value = ''; document.getElementById('item-hpp').value = ''; document.getElementById('item-price').value = '';
             }
         };
 
-        window.filterInventory = (val) => {
-            const rows = document.querySelectorAll('.product-row');
-            rows.forEach(row => {
-                row.style.display = row.innerText.toLowerCase().includes(val.toLowerCase()) ? '' : 'none';
-            });
+        window.removeItemFromTemp = (index) => {
+            State.tempBatchItems.splice(index, 1);
+            document.getElementById('temp-items-list').innerHTML = State.tempBatchItems.map((i, idx) => `<div class="flex justify-between items-center bg-white p-2 rounded border"><div><span class="font-bold text-xs bg-gray-100 p-1 rounded mr-2">${i.barcode || '-'}</span><span class="font-bold">${i.name}</span> <span class="text-xs bg-gray-200 px-1.5 rounded">x${i.qty}</span><div class="text-xs text-gray-500">Beli: ${formatRp(i.hpp)} | Jual: ${formatRp(i.price)}</div></div><button onclick="removeItemFromTemp(${idx})" class="text-red-500 px-2">✕</button></div>`).join('');
         };
 
-        // --- NEW FUNCTION FOR SUPPLIER INPUT TOGGLE ---
         window.toggleSupplierInput = (el) => {
             const input = document.getElementById('customSupplier');
-            if (el.value === 'custom') {
-                input.classList.remove('hidden');
-                input.disabled = false;
-                input.focus();
-            } else {
-                input.classList.add('hidden');
-                input.disabled = true;
-            }
-        };
-        // ---------------------------------------------
-
-        window.exportReportToCSV = () => {
-            const rows = [['Periode', 'Transaksi', 'Omzet']];
-            document.querySelectorAll('#reportTableBody tr').forEach(tr => {
-                const cols = tr.querySelectorAll('td');
-                rows.push([cols[0].innerText, cols[1].innerText, cols[2].innerText.replace('Rp ','').replace(/\./g,'')]);
-            });
-            const link = document.createElement("a");
-            link.href = encodeURI("data:text/csv;charset=utf-8," + rows.map(e => e.join(",")).join("\n"));
-            link.download = "Laporan_Adamart.csv";
-            link.click();
+            if (el.value === 'custom') { input.classList.remove('hidden'); input.disabled = false; } else { input.classList.add('hidden'); input.disabled = true; }
         };
 
+        window.filterInventory = (val) => { document.querySelectorAll('.product-row').forEach(row => { row.style.display = row.innerText.toLowerCase().includes(val.toLowerCase()) ? '' : 'none'; }); };
+        window.exportReportToCSV = () => { const rows = [['Periode', 'Transaksi', 'Omzet']]; document.querySelectorAll('#reportTableBody tr').forEach(tr => { const cols = tr.querySelectorAll('td'); rows.push([cols[0].innerText, cols[1].innerText, cols[2].innerText.replace('Rp ','').replace(/\./g,'')]); }); const link = document.createElement("a"); link.href = encodeURI("data:text/csv;charset=utf-8," + rows.map(e => e.join(",")).join("\n")); link.download = "Laporan_Adamart.csv"; link.click(); };
+        function formatRp(num) { return "Rp " + (num || 0).toLocaleString('id-ID'); }
         function checkStock(val) { return (val || 0) < 10 ? 'text-red-600' : 'text-gray-800'; }
-        function getStatusBadge(status) {
-            const map = { pending: 'bg-yellow-100 text-yellow-800', approved: 'bg-green-100 text-green-800', completed: 'bg-blue-100 text-blue-800', rejected: 'bg-red-100 text-red-800' };
-            return `<span class="px-2 py-1 rounded text-xs font-bold ${map[status] || 'bg-gray-100'}">${status.toUpperCase()}</span>`;
-        }
+        function getStatusBadge(status) { const map = { pending: 'bg-yellow-100 text-yellow-800', approved: 'bg-green-100 text-green-800', completed: 'bg-blue-100 text-blue-800', rejected: 'bg-red-100 text-red-800' }; return `<span class="px-2 py-1 rounded text-xs font-bold ${map[status] || 'bg-gray-100'}">${status.toUpperCase()}</span>`; }
     </script>
 </body>
 </html>
