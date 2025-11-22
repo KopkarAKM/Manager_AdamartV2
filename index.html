@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Adamart - Manager Dashboard</title>
     <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Chart.js untuk Grafik -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     
     <!-- Firebase SDKs -->
@@ -67,7 +68,7 @@
             <a onclick="navigate('inventory')" class="sidebar-item px-6 py-3 cursor-pointer flex items-center gap-3 hover:bg-white/10"><span>📦</span> Inventory</a>
             <a onclick="navigate('reports')" class="sidebar-item px-6 py-3 cursor-pointer flex items-center gap-3 hover:bg-white/10"><span>📈</span> Laporan & Grafik</a>
         </nav>
-        <div class="p-4 text-xs opacity-50 text-center">v2.3 Stock+</div>
+        <div class="p-4 text-xs opacity-50 text-center">v2.4 Analytics</div>
     </aside>
 
     <div class="flex-1 flex flex-col min-w-0 overflow-hidden">
@@ -100,7 +101,7 @@
             currentPage: 'dashboard',
             data: { products: [], sales: [], purchases: [], requisitions: [] },
             tempBatchItems: [],
-            chartInstance: null
+            charts: {} // Store chart instances
         };
 
         document.addEventListener('firebase-ready', () => { loadAllData(); });
@@ -138,12 +139,20 @@
             const title = document.getElementById('page-title');
             container.innerHTML = '';
 
+            // Destroy old charts if any
+            Object.values(State.charts).forEach(c => c.destroy());
+            State.charts = {};
+
             switch (State.currentPage) {
                 case 'dashboard': title.innerText = 'Dashboard Overview'; container.innerHTML = Pages.Dashboard(); break;
                 case 'purchase': title.innerText = 'Purchase Orders (Barang Keluar)'; container.innerHTML = Pages.Purchase(); break;
                 case 'requisition': title.innerText = 'Inbox Permintaan (Masuk)'; container.innerHTML = Pages.Requisition(); break;
-                case 'inventory': title.innerText = 'Inventory & Stok'; container.innerHTML = Pages.Inventory(); setupInventoryListeners(); break; // Add listener setup
-                case 'reports': title.innerText = 'Laporan & Analisa'; container.innerHTML = Pages.Reports(); Pages.initCharts(); break;
+                case 'inventory': title.innerText = 'Inventory & Stok'; container.innerHTML = Pages.Inventory(); setupInventoryListeners(); break; 
+                case 'reports': 
+                    title.innerText = 'Laporan Bisnis & Analisa'; 
+                    container.innerHTML = Pages.Reports(); 
+                    Pages.initReportCharts(); 
+                    break;
             }
         }
 
@@ -271,26 +280,181 @@
                     </div>
                 </div>
             `,
-            Reports: () => `<div class="space-y-6"><div class="flex justify-between"><select id="reportPeriod" onchange="Pages.renderReportData()" class="p-2 border rounded"><option value="monthly">Bulanan</option><option value="weekly">Mingguan</option></select><button onclick="exportReportToCSV()" class="bg-green-600 text-white px-4 py-2 rounded font-bold text-sm">Download CSV</button></div><div class="bg-white p-6 rounded-xl shadow"><canvas id="salesChart" style="max-height: 300px;"></canvas></div><div class="bg-white rounded-xl shadow overflow-hidden"><table class="w-full text-sm text-left"><thead class="bg-gray-100 font-bold"><tr><th class="p-4">Periode</th><th class="p-4 text-right">Trx</th><th class="p-4 text-right">Omzet</th></tr></thead><tbody id="reportTableBody"></tbody></table></div></div>`,
-            initCharts: () => { Pages.renderReportData(); },
-            renderReportData: () => {
+            // MODUL LAPORAN BARU (DIPERLUAS)
+            Reports: () => `
+                <div class="space-y-6">
+                    <!-- KPI CARDS -->
+                    <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+                        <div class="bg-white p-4 rounded-lg shadow">
+                            <div class="text-xs text-gray-500">Total Omzet</div>
+                            <div class="text-2xl font-bold text-blue-600" id="rep-omzet">-</div>
+                        </div>
+                        <div class="bg-white p-4 rounded-lg shadow">
+                            <div class="text-xs text-gray-500">Estimasi Laba Kotor</div>
+                            <div class="text-2xl font-bold text-green-600" id="rep-profit">-</div>
+                        </div>
+                        <div class="bg-white p-4 rounded-lg shadow">
+                            <div class="text-xs text-gray-500">Total Transaksi</div>
+                            <div class="text-2xl font-bold text-gray-700" id="rep-trx">-</div>
+                        </div>
+                        <div class="bg-white p-4 rounded-lg shadow">
+                            <div class="text-xs text-gray-500">Rata-rata Keranjang</div>
+                            <div class="text-2xl font-bold text-purple-600" id="rep-avg">-</div>
+                        </div>
+                    </div>
+
+                    <!-- CHART SECTION -->
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                        <div class="bg-white p-4 rounded-xl shadow md:col-span-2">
+                            <h4 class="font-bold mb-4 text-gray-700">Tren Penjualan & Laba</h4>
+                            <canvas id="salesChart" style="max-height: 300px;"></canvas>
+                        </div>
+                        <div class="bg-white p-4 rounded-xl shadow">
+                            <h4 class="font-bold mb-4 text-gray-700">Metode Pembayaran</h4>
+                            <canvas id="paymentChart" style="max-height: 300px;"></canvas>
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                         <!-- TOP PRODUCTS TABLE -->
+                        <div class="bg-white rounded-xl shadow overflow-hidden">
+                            <div class="p-4 border-b bg-gray-50 font-bold text-gray-700">🔥 Top 5 Produk Terlaris</div>
+                            <table class="w-full text-sm text-left">
+                                <thead class="bg-gray-100"><tr><th class="p-3">Produk</th><th class="p-3 text-right">Qty Terjual</th><th class="p-3 text-right">Omzet</th></tr></thead>
+                                <tbody id="topProductBody"></tbody>
+                            </table>
+                        </div>
+                        
+                         <!-- DATA TABLE CONTROLS -->
+                         <div class="bg-white rounded-xl shadow p-4">
+                            <h4 class="font-bold mb-4 text-gray-700">Download Data Laporan</h4>
+                             <div class="space-y-3">
+                                <select id="reportPeriod" onchange="Pages.updateCharts()" class="w-full p-2 border rounded bg-white">
+                                    <option value="monthly">Bulanan (Tahun Ini)</option>
+                                    <option value="weekly">Mingguan (Bulan Ini)</option>
+                                </select>
+                                <button onclick="exportReportToCSV()" class="w-full bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700 font-bold text-sm flex items-center justify-center gap-2">
+                                    <span>📥</span> Download CSV Excel
+                                </button>
+                                <p class="text-xs text-gray-500 mt-2">*Data yang didownload sesuai dengan periode yang dipilih di atas.</p>
+                             </div>
+                         </div>
+                    </div>
+                </div>
+            `,
+
+            initReportCharts: () => { Pages.updateCharts(); },
+
+            updateCharts: () => {
                 const period = document.getElementById('reportPeriod').value;
                 const grouped = {};
+                const payments = {};
+                const productPerformance = {};
+                let totalOmzet = 0;
+                let totalProfit = 0;
+
                 State.data.sales.forEach(s => {
                     const d = new Date(s.timestamp);
-                    let key = period === 'monthly' ? d.toLocaleDateString('id-ID', {month:'long', year:'numeric'}) : `Minggu ${Math.ceil(d.getDate()/7)}, ${d.toLocaleDateString('id-ID', {month:'short'})}`;
-                    if(!grouped[key]) grouped[key] = {rev:0, count:0};
+                    let key;
+                    
+                    // Grouping Logic
+                    if (period === 'monthly') {
+                        key = d.toLocaleDateString('id-ID', {month:'long', year:'numeric'});
+                    } else {
+                        key = `Minggu ${Math.ceil(d.getDate()/7)} ${d.toLocaleDateString('id-ID', {month:'short'})}`;
+                    }
+
+                    if(!grouped[key]) grouped[key] = {rev:0, cost:0, count:0};
+                    
+                    // Calculate Metrics
+                    let saleCost = 0;
+                    const items = s.items.split(', '); // Simple parsing based on text format "Name xQty"
+                    
+                    items.forEach(itemStr => {
+                        const parts = itemStr.split(' x');
+                        if(parts.length === 2) {
+                            const name = parts[0];
+                            const qty = parseInt(parts[1]);
+                            
+                            // Try to find product to get HPP (Approximation)
+                            const product = State.data.products.find(p => p['Nama Produk'] === name);
+                            const hpp = product ? (product.HPP || 0) : 0;
+                            saleCost += (hpp * qty);
+
+                            // Product Performance
+                            if(!productPerformance[name]) productPerformance[name] = {qty:0, rev:0};
+                            productPerformance[name].qty += qty;
+                            // Note: we don't have individual item price in sale record string easily, approximation:
+                            productPerformance[name].rev += (product ? product.Harga * qty : 0); 
+                        }
+                    });
+
                     grouped[key].rev += s.total;
+                    grouped[key].cost += saleCost;
                     grouped[key].count++;
+
+                    // Global Totals
+                    totalOmzet += s.total;
+                    totalProfit += (s.total - saleCost);
+
+                    // Payment Methods
+                    const method = s.method || 'Unknown';
+                    payments[method] = (payments[method] || 0) + s.total;
                 });
+
+                // Update KPI Cards
+                document.getElementById('rep-omzet').innerText = formatRp(totalOmzet);
+                document.getElementById('rep-profit').innerText = formatRp(totalProfit);
+                document.getElementById('rep-trx').innerText = State.data.sales.length;
+                document.getElementById('rep-avg').innerText = formatRp(State.data.sales.length ? totalOmzet / State.data.sales.length : 0);
+
+                // Prepare Chart Data
                 const labels = Object.keys(grouped).reverse();
-                const data = labels.map(k => grouped[k].rev);
-                if(State.chartInstance) State.chartInstance.destroy();
-                State.chartInstance = new Chart(document.getElementById('salesChart').getContext('2d'), { type: 'bar', data: { labels, datasets: [{ label: 'Omzet (Rp)', data, backgroundColor: '#3b82f6' }] } });
-                document.getElementById('reportTableBody').innerHTML = labels.map(k => `<tr class="border-b"><td class="p-4 font-medium">${k}</td><td class="p-4 text-right">${grouped[k].count}</td><td class="p-4 text-right font-bold text-blue-600">Rp ${grouped[k].rev.toLocaleString('id-ID')}</td></tr>`).join('');
+                const revData = labels.map(k => grouped[k].rev);
+                const profitData = labels.map(k => grouped[k].rev - grouped[k].cost);
+
+                // 1. Line Chart (Revenue vs Profit)
+                if(State.charts.line) State.charts.line.destroy();
+                State.charts.line = new Chart(document.getElementById('salesChart'), {
+                    type: 'line',
+                    data: {
+                        labels: labels,
+                        datasets: [
+                            { label: 'Omzet', data: revData, borderColor: '#3b82f6', tension: 0.1, fill: true, backgroundColor: 'rgba(59, 130, 246, 0.1)' },
+                            { label: 'Laba Kotor', data: profitData, borderColor: '#10b981', tension: 0.1, fill: true, backgroundColor: 'rgba(16, 185, 129, 0.1)' }
+                        ]
+                    }
+                });
+
+                // 2. Doughnut Chart (Payment)
+                if(State.charts.doughnut) State.charts.doughnut.destroy();
+                State.charts.doughnut = new Chart(document.getElementById('paymentChart'), {
+                    type: 'doughnut',
+                    data: {
+                        labels: Object.keys(payments),
+                        datasets: [{
+                            data: Object.values(payments),
+                            backgroundColor: ['#3b82f6', '#10b981', '#f59e0b', '#ef4444']
+                        }]
+                    }
+                });
+
+                // 3. Top Products Table
+                const topProducts = Object.entries(productPerformance)
+                    .sort((a,b) => b[1].qty - a[1].qty)
+                    .slice(0, 5);
+                
+                document.getElementById('topProductBody').innerHTML = topProducts.map(([name, data]) => `
+                    <tr class="border-b">
+                        <td class="p-3 text-gray-700 font-medium">${name}</td>
+                        <td class="p-3 text-right">${data.qty}</td>
+                        <td class="p-3 text-right font-bold text-blue-600">${formatRp(data.rev)}</td>
+                    </tr>
+                `).join('');
             }
         };
 
+        // --- ACTIONS & LOGIC ---
         const Actions = {
             createBatchPO: async (e) => {
                 e.preventDefault();
@@ -338,43 +502,26 @@
                 const stockKey = `Stok Area Kasir ${area.toLowerCase()}`;
 
                 try {
-                    // 1. Check Firebase for existing product
                     const q = window.query(window.collection(window.db, "products"), window.where("Barcode", "==", barcode));
                     const snapshot = await window.getDocs(q);
 
                     if (!snapshot.empty) {
-                        // UPDATE EXISTING
                         const docRef = snapshot.docs[0].ref;
-                        const updateData = {
-                            "Nama Produk": name,
-                            "Harga": price,
-                            "HPP": hpp
-                        };
+                        const updateData = { "Nama Produk": name, "Harga": price, "HPP": hpp };
                         if (qty !== 0) updateData[stockKey] = window.increment(qty);
                         if (expiry) updateData["Tanggal Kadaluarsa"] = new Date(expiry).toISOString();
-                        
                         await window.updateDoc(docRef, updateData);
                     } else {
-                        // CREATE NEW
-                        const newData = {
-                            Barcode: barcode,
-                            "Nama Produk": name,
-                            "Harga": price,
-                            "HPP": hpp,
-                            [stockKey]: qty
-                        };
+                        const newData = { Barcode: barcode, "Nama Produk": name, "Harga": price, "HPP": hpp, [stockKey]: qty };
                         if (expiry) newData["Tanggal Kadaluarsa"] = new Date(expiry).toISOString();
                         await window.addDoc(window.collection(window.db, "products"), newData);
                     }
 
-                    // 2. Sync to Sheets (Hybrid)
                     fetch(APPS_SCRIPT_URL, {
                         method: 'POST',
                         body: JSON.stringify({
                             action: 'update_stock', 
-                            data: { 
-                                barcode, name, price, hpp, area: area.toLowerCase(), quantity: qty, expiryDate: expiry 
-                            }
+                            data: { barcode, name, price, hpp, area: area.toLowerCase(), quantity: qty, expiryDate: expiry }
                         })
                     });
 
