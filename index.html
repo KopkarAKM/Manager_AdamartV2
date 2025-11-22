@@ -7,7 +7,6 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     
-    <!-- Firebase SDKs -->
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
         import { getFirestore, collection, getDocs, addDoc, updateDoc, deleteDoc, doc, query, where, orderBy, increment } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
@@ -23,12 +22,21 @@
 
         const app = initializeApp(firebaseConfig);
         const db = getFirestore(app);
+        
         window.db = db; window.collection = collection; window.getDocs = getDocs; window.addDoc = addDoc; window.updateDoc = updateDoc; window.deleteDoc = deleteDoc; window.doc = doc; window.query = query; window.where = where; window.orderBy = orderBy; window.increment = increment;
         document.dispatchEvent(new Event('firebase-ready'));
     </script>
 
     <script>tailwind.config = { theme: { extend: { colors: { 'adamart': { 50: '#f0f9ff', 500: '#0ea5e9', 600: '#0284c7', 900: '#0c4a6e' } } } } }</script>
-    <style>body { font-family: 'Inter', sans-serif; background: #f3f4f6; height: 100vh; overflow: hidden; } .sidebar { transition: width 0.3s ease; background: linear-gradient(180deg, #0F2C59 0%, #1e3a5f 100%); color: white; } .sidebar-item:hover { background: rgba(255,255,255,0.1); } .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.5); display: flex; align-items: center; justify-content: center; z-index: 50; } .modal-content { background: white; border-radius: 1rem; max-width: 800px; width: 90%; max-height: 90vh; overflow-y: auto; } .animate-spin { animation: spin 1s linear infinite; } @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }</style>
+    <style>
+        body { font-family: 'Inter', sans-serif; background: #f3f4f6; height: 100vh; overflow: hidden; } 
+        .sidebar { transition: width 0.3s ease; background: linear-gradient(180deg, #0F2C59 0%, #1e3a5f 100%); color: white; } 
+        .sidebar-item:hover { background: rgba(255,255,255,0.1); } 
+        .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.5); display: flex; align-items: center; justify-content: center; z-index: 50; } 
+        .modal-content { background: white; border-radius: 1rem; max-width: 800px; width: 90%; max-height: 90vh; overflow-y: auto; } 
+        .animate-spin { animation: spin 1s linear infinite; } 
+        @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+    </style>
 </head>
 <body class="flex h-full">
     <aside class="sidebar w-64 flex flex-col hidden md:flex">
@@ -41,7 +49,7 @@
             <a onclick="navigate('inventory')" class="sidebar-item px-6 py-3 cursor-pointer flex items-center gap-3 hover:bg-white/10"><span>📦</span> Inventory</a>
             <a onclick="navigate('reports')" class="sidebar-item px-6 py-3 cursor-pointer flex items-center gap-3 hover:bg-white/10"><span>📈</span> Analisa Bisnis</a>
         </nav>
-        <div class="p-4 text-xs opacity-50 text-center">v3.2 Smart PO</div>
+        <div class="p-4 text-xs opacity-50 text-center">v3.3 Analytics+</div>
     </aside>
     <div class="flex-1 flex flex-col min-w-0 overflow-hidden">
         <header class="bg-white p-4 border-b shadow-sm flex justify-between items-center z-10">
@@ -110,41 +118,148 @@
             Purchase: () => `<div class="flex justify-end mb-4"><button onclick="Modals.openBatchPO()" class="bg-blue-600 text-white px-4 py-2 rounded font-bold">+ Buat Batch PO</button></div><div class="bg-white rounded shadow overflow-hidden"><table class="w-full text-sm text-left"><thead class="bg-gray-100"><tr><th class="p-3">Batch</th><th class="p-3">Supplier</th><th class="p-3">Cabang</th><th class="p-3">Status</th><th class="p-3">Items</th></tr></thead><tbody>${State.data.purchases.map(p=>`<tr><td class="p-3 text-blue-600">${p.batchNumber}</td><td class="p-3">${p.supplier}</td><td class="p-3"><span class="px-2 py-1 bg-purple-100 text-purple-800 rounded text-xs font-bold">${p.branch}</span></td><td class="p-3">${getStatusBadge(p.status)}</td><td class="p-3">${JSON.parse(p.items).length} items</td></tr>`).join('')}</tbody></table></div>`,
             Requisition: () => { const pending=State.data.requisitions.filter(r=>r.status==='pending'); return `<div class="bg-white rounded shadow overflow-hidden mb-6"><h3 class="p-4 font-bold border-b text-orange-600">Inbox (${pending.length})</h3><table class="w-full text-sm text-left"><thead class="bg-orange-50"><tr><th class="p-3">Date</th><th class="p-3">Branch</th><th class="p-3">Items</th><th class="p-3">Action</th></tr></thead><tbody>${pending.map(r=>`<tr><td class="p-3">${new Date(r.createdAt).toLocaleDateString()}</td><td class="p-3 font-bold">${r.branch}</td><td class="p-3 truncate max-w-xs">${JSON.parse(r.items).map(i=>`${i.name}(${i.qty})`).join(', ')}</td><td class="p-3"><button onclick="Actions.approveReq('${r.id}')" class="text-green-600 font-bold mr-2">✓</button><button onclick="Actions.rejectReq('${r.id}')" class="text-red-600 font-bold">✗</button></td></tr>`).join('')}</tbody></table></div>`; },
             Inventory: () => `<div class="grid grid-cols-1 lg:grid-cols-3 gap-6"><div class="bg-white rounded-xl shadow p-6 lg:col-span-1 h-fit"><h3 class="font-bold text-gray-800 mb-4">📦 Input / Update Stok</h3><form id="stockForm" class="space-y-3"><div><label class="text-xs font-bold text-gray-500">Barcode</label><input type="text" id="barcode" class="w-full p-2 border rounded bg-gray-50" placeholder="Scan/Ketik..." required oninput="autoFill()"></div><div><label class="text-xs font-bold text-gray-500">Nama Produk</label><input type="text" id="productName" class="w-full p-2 border rounded" required></div><div class="grid grid-cols-2 gap-2"><div><label class="text-xs font-bold text-gray-500">HPP (Beli)</label><input type="number" id="hpp" class="w-full p-2 border rounded" placeholder="0"></div><div><label class="text-xs font-bold text-gray-500">Harga Jual</label><input type="number" id="price" class="w-full p-2 border rounded" placeholder="0" required></div></div><div><label class="text-xs font-bold text-gray-500">Target Cabang</label><select id="targetArea" class="w-full p-2 border rounded bg-white"><option value="adamart 73">Adamart 73</option><option value="adamart induksi">Induksi</option><option value="adamart kelanis">Kelanis</option></select></div><div class="grid grid-cols-2 gap-2"><div><label class="text-xs font-bold text-gray-500">Tambah Qty</label><input type="number" id="stockAmount" class="w-full p-2 border rounded" placeholder="0" required></div><div><label class="text-xs font-bold text-gray-500">Exp Date</label><input type="date" id="expiryDate" class="w-full p-2 border rounded"></div></div><button type="submit" class="w-full bg-blue-600 text-white py-2 rounded font-bold hover:bg-blue-700 mt-4">Simpan Stok</button></form></div><div class="bg-white rounded-xl shadow overflow-hidden lg:col-span-2"><div class="p-4 border-b bg-gray-50"><input type="text" placeholder="🔍 Cari produk di inventory..." class="w-full p-2 border rounded" oninput="filterInventory(this.value)"></div><div class="overflow-x-auto max-h-[600px]"><table class="w-full text-left text-sm"><thead class="bg-gray-100 text-gray-600 uppercase font-bold sticky top-0"><tr><th class="p-4">Produk</th><th class="p-4">HPP/Jual</th><th class="p-4 text-center">73</th><th class="p-4 text-center">Induksi</th><th class="p-4 text-center">Kelanis</th></tr></thead><tbody class="divide-y product-row-container">${State.data.products.map(p=>`<tr class="hover:bg-gray-50 product-row"><td class="p-4"><div class="font-bold">${p['Nama Produk']}</div><div class="text-xs text-gray-500 font-mono">${p.Barcode}</div></td><td class="p-4"><div class="text-xs text-gray-500">B: ${formatRp(p.HPP)}</div><div class="font-bold text-green-600">J: ${formatRp(p.Harga)}</div></td><td class="p-4 text-center font-bold ${checkStock(p['Stok Area Kasir adamart 73'])}">${p['Stok Area Kasir adamart 73']||0}</td><td class="p-4 text-center font-bold ${checkStock(p['Stok Area Kasir adamart induksi'])}">${p['Stok Area Kasir adamart induksi']||0}</td><td class="p-4 text-center font-bold ${checkStock(p['Stok Area Kasir adamart kelanis'])}">${p['Stok Area Kasir adamart kelanis']||0}</td></tr>`).join('')}</tbody></table></div></div></div>`,
-            Reports: () => `<div class="space-y-6"><div class="grid grid-cols-2 md:grid-cols-4 gap-4"><div class="bg-white p-4 rounded-lg shadow"><div class="text-xs text-gray-500">Total Omzet</div><div class="text-2xl font-bold text-blue-600" id="rep-omzet">-</div></div><div class="bg-white p-4 rounded-lg shadow"><div class="text-xs text-gray-500">Estimasi Laba Kotor</div><div class="text-2xl font-bold text-green-600" id="rep-profit">-</div></div><div class="bg-white p-4 rounded-lg shadow"><div class="text-xs text-gray-500">Total Transaksi</div><div class="text-2xl font-bold text-gray-700" id="rep-trx">-</div></div><div class="bg-white p-4 rounded-lg shadow"><div class="text-xs text-gray-500">Rata-rata Keranjang</div><div class="text-2xl font-bold text-purple-600" id="rep-avg">-</div></div></div><div class="grid grid-cols-1 md:grid-cols-3 gap-6"><div class="bg-white p-4 rounded-xl shadow md:col-span-2"><h4 class="font-bold mb-4 text-gray-700">Tren Penjualan & Laba</h4><canvas id="salesChart" style="max-height: 300px;"></canvas></div><div class="bg-white p-4 rounded-xl shadow"><h4 class="font-bold mb-4 text-gray-700">Metode Pembayaran</h4><canvas id="paymentChart" style="max-height: 300px;"></canvas></div></div><div class="grid grid-cols-1 md:grid-cols-2 gap-6"><div class="bg-white rounded-xl shadow overflow-hidden"><div class="p-4 border-b bg-gray-50 font-bold text-gray-700">🔥 Top 5 Produk Terlaris</div><table class="w-full text-sm text-left"><thead class="bg-gray-100"><tr><th class="p-3">Produk</th><th class="p-3 text-right">Qty Terjual</th><th class="p-3 text-right">Omzet</th></tr></thead><tbody id="topProductBody"></tbody></table></div><div class="bg-white rounded-xl shadow p-4"><h4 class="font-bold mb-4 text-gray-700">Download Data</h4><div class="space-y-3"><select id="reportPeriod" onchange="Pages.updateCharts()" class="w-full p-2 border rounded bg-white"><option value="monthly">Bulanan</option><option value="weekly">Mingguan</option></select><button onclick="exportReportToCSV()" class="w-full bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700 font-bold text-sm flex items-center justify-center gap-2"><span>📥</span> Download CSV</button></div></div></div></div>`,
+            
+            // --- REVISED REPORTS PAGE ---
+            Reports: () => `
+                <div class="space-y-6">
+                    <!-- KPI CARDS -->
+                    <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+                        <div class="bg-white p-4 rounded-lg shadow"><div class="text-xs text-gray-500">Total Omzet</div><div class="text-2xl font-bold text-blue-600" id="rep-omzet">Rp 0</div></div>
+                        <div class="bg-white p-4 rounded-lg shadow"><div class="text-xs text-gray-500">Estimasi Profit</div><div class="text-2xl font-bold text-green-600" id="rep-profit">Rp 0</div></div>
+                        <div class="bg-white p-4 rounded-lg shadow"><div class="text-xs text-gray-500">Total Transaksi</div><div class="text-2xl font-bold text-gray-700" id="rep-trx">0</div></div>
+                        <div class="bg-white p-4 rounded-lg shadow"><div class="text-xs text-gray-500">Rata-rata Basket</div><div class="text-2xl font-bold text-purple-600" id="rep-avg">Rp 0</div></div>
+                    </div>
+                    
+                    <!-- CHARTS -->
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div class="bg-white p-4 rounded-xl shadow">
+                            <h4 class="font-bold mb-4 text-gray-700">Tren Penjualan per Cabang</h4>
+                            <canvas id="salesChart" style="max-height: 300px;"></canvas>
+                        </div>
+                        <div class="bg-white p-4 rounded-xl shadow">
+                             <h4 class="font-bold mb-4 text-gray-700">Metode Pembayaran</h4>
+                            <canvas id="paymentChart" style="max-height: 300px;"></canvas>
+                        </div>
+                    </div>
+                    
+                    <!-- CONTROLS -->
+                    <div class="bg-white rounded-xl shadow p-4 flex flex-wrap gap-4 items-center justify-between">
+                        <div>
+                            <label class="text-sm font-bold text-gray-600">Periode:</label>
+                            <select id="reportPeriod" onchange="Pages.updateCharts()" class="ml-2 p-2 border rounded bg-white">
+                                <option value="monthly">Bulanan</option>
+                                <option value="weekly">Mingguan</option>
+                            </select>
+                        </div>
+                         <button onclick="exportReportToCSV()" class="bg-green-600 text-white px-4 py-2 rounded font-bold text-sm hover:bg-green-700">📥 Download Data CSV</button>
+                    </div>
+                </div>
+            `,
+
             initReportCharts: () => { Pages.updateCharts(); },
+
             updateCharts: () => {
                 const period = document.getElementById('reportPeriod').value;
-                const grouped = {}, payments = {}, productPerformance = {};
+                const labels = [];
+                const dataSets = {
+                    "adamart 73": [],
+                    "adamart induksi": [],
+                    "adamart kelanis": []
+                };
+                const paymentCounts = {};
                 let totalOmzet = 0, totalProfit = 0;
-                State.data.sales.forEach(s => {
+
+                // 1. Sorting Data by Date
+                const sortedSales = [...State.data.sales].sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp));
+
+                // 2. Grouping Data
+                const grouped = {};
+
+                sortedSales.forEach(s => {
                     const d = new Date(s.timestamp);
-                    const key = period === 'monthly' ? d.toLocaleDateString('id-ID', {month:'long', year:'numeric'}) : `Minggu ${Math.ceil(d.getDate()/7)} ${d.toLocaleDateString('id-ID', {month:'short'})}`;
-                    if(!grouped[key]) grouped[key] = {rev:0, cost:0, count:0};
+                    let key;
+                    
+                    if (period === 'monthly') {
+                        key = d.toLocaleDateString('id-ID', {month:'short', year:'2-digit'});
+                    } else {
+                        key = `W${Math.ceil(d.getDate()/7)}-${d.toLocaleDateString('id-ID', {month:'short'})}`;
+                    }
+
+                    if (!grouped[key]) {
+                        grouped[key] = { "adamart 73": 0, "adamart induksi": 0, "adamart kelanis": 0 };
+                        if (!labels.includes(key)) labels.push(key);
+                    }
+
+                    // Fix area naming consistency (database might have mixed case)
+                    const area = (s.area || "").toLowerCase();
+                    if (grouped[key][area] !== undefined) {
+                        grouped[key][area] += s.total;
+                    }
+
+                    // Calculations
+                    totalOmzet += s.total;
+                    
+                    // Calculate HPP (Profit)
                     let saleCost = 0;
-                    s.items.split(', ').forEach(itemStr => {
-                        const parts = itemStr.split(' x');
-                        if(parts.length === 2) {
-                            const name = parts[0], qty = parseInt(parts[1]);
-                            const product = State.data.products.find(p => p['Nama Produk'] === name);
-                            const hpp = product ? (product.HPP || 0) : 0;
-                            const price = product ? product.Harga : 0;
-                            saleCost += (hpp * qty);
-                            if(!productPerformance[name]) productPerformance[name] = {qty:0, rev:0};
-                            productPerformance[name].qty += qty;
-                            productPerformance[name].rev += (price * qty);
-                        }
-                    });
-                    grouped[key].rev += s.total; grouped[key].cost += saleCost; grouped[key].count++;
-                    totalOmzet += s.total; totalProfit += (s.total - saleCost);
-                    payments[s.method || 'Unknown'] = (payments[s.method] || 0) + s.total;
+                    if (s.items) {
+                        s.items.split(', ').forEach(itemStr => {
+                            const parts = itemStr.split(' x');
+                            if(parts.length === 2) {
+                                const name = parts[0].trim();
+                                const qty = parseInt(parts[1]);
+                                // Robust matching
+                                const product = State.data.products.find(p => p['Nama Produk'].toLowerCase() === name.toLowerCase());
+                                const hpp = product ? (parseInt(product.HPP) || 0) : 0;
+                                saleCost += (hpp * qty);
+                            }
+                        });
+                    }
+                    totalProfit += (s.total - saleCost);
+
+                    // Payment Methods
+                    const method = s.method || 'Unknown';
+                    paymentCounts[method] = (paymentCounts[method] || 0) + s.total;
                 });
-                document.getElementById('rep-omzet').innerText = formatRp(totalOmzet); document.getElementById('rep-profit').innerText = formatRp(totalProfit); document.getElementById('rep-trx').innerText = State.data.sales.length; document.getElementById('rep-avg').innerText = formatRp(State.data.sales.length ? totalOmzet / State.data.sales.length : 0);
-                const labels = Object.keys(grouped).reverse();
+
+                // 3. Fill Datasets
+                labels.forEach(lbl => {
+                    dataSets["adamart 73"].push(grouped[lbl]["adamart 73"]);
+                    dataSets["adamart induksi"].push(grouped[lbl]["adamart induksi"]);
+                    dataSets["adamart kelanis"].push(grouped[lbl]["adamart kelanis"]);
+                });
+
+                // 4. Update UI Numbers
+                document.getElementById('rep-omzet').innerText = formatRp(totalOmzet);
+                document.getElementById('rep-profit').innerText = formatRp(totalProfit);
+                document.getElementById('rep-trx').innerText = State.data.sales.length;
+                document.getElementById('rep-avg').innerText = formatRp(State.data.sales.length ? totalOmzet / State.data.sales.length : 0);
+
+                // 5. Render Line Chart (Multi-Branch)
                 if(State.charts.line) State.charts.line.destroy();
-                State.charts.line = new Chart(document.getElementById('salesChart'), { type: 'line', data: { labels, datasets: [{ label: 'Omzet', data: labels.map(k => grouped[k].rev), borderColor: '#3b82f6', tension: 0.1, fill: true, backgroundColor: 'rgba(59, 130, 246, 0.1)' }, { label: 'Laba Kotor', data: labels.map(k => grouped[k].rev - grouped[k].cost), borderColor: '#10b981', tension: 0.1, fill: true, backgroundColor: 'rgba(16, 185, 129, 0.1)' }] } });
+                State.charts.line = new Chart(document.getElementById('salesChart'), {
+                    type: 'line',
+                    data: {
+                        labels: labels,
+                        datasets: [
+                            { label: 'Adamart 73', data: dataSets["adamart 73"], borderColor: '#3b82f6', tension: 0.1 },
+                            { label: 'Induksi', data: dataSets["adamart induksi"], borderColor: '#10b981', tension: 0.1 },
+                            { label: 'Kelanis', data: dataSets["adamart kelanis"], borderColor: '#f59e0b', tension: 0.1 }
+                        ]
+                    }
+                });
+
+                // 6. Render Doughnut Chart
                 if(State.charts.doughnut) State.charts.doughnut.destroy();
-                State.charts.doughnut = new Chart(document.getElementById('paymentChart'), { type: 'doughnut', data: { labels: Object.keys(payments), datasets: [{ data: Object.values(payments), backgroundColor: ['#3b82f6', '#10b981', '#f59e0b', '#ef4444'] }] } });
-                document.getElementById('topProductBody').innerHTML = Object.entries(productPerformance).sort((a,b) => b[1].qty - a[1].qty).slice(0, 5).map(([n, d]) => `<tr class="border-b"><td class="p-3 font-medium">${n}</td><td class="p-3 text-right">${d.qty}</td><td class="p-3 text-right font-bold text-blue-600">${formatRp(d.rev)}</td></tr>`).join('');
+                State.charts.doughnut = new Chart(document.getElementById('paymentChart'), {
+                    type: 'doughnut',
+                    data: {
+                        labels: Object.keys(paymentCounts),
+                        datasets: [{
+                            data: Object.values(paymentCounts),
+                            backgroundColor: ['#3b82f6', '#10b981', '#f59e0b', '#ef4444']
+                        }]
+                    }
+                });
             }
         };
 
@@ -185,7 +300,7 @@
 
                     await Promise.all(promises);
                     closeModal();
-                    alert("Sukses! PO Batch berhasil dibuat dan dikirim ke cabang.");
+                    alert("Sukses! PO Batch berhasil dibuat.");
                     loadAllData();
                 } catch (err) {
                     alert("Gagal membuat PO: " + err.message);
@@ -243,7 +358,6 @@
                             <input type="date" name="orderDate" class="p-2 border rounded w-full h-[38px] text-sm" required>
                         </div>
                         
-                        <!-- SMART SEARCH BAR -->
                         <div class="relative mb-4">
                             <input id="smartSearchPO" placeholder="🔍 Cari Barang / Scan Barcode..." class="w-full p-3 border-2 border-blue-400 rounded-lg font-bold focus:outline-none focus:ring-2 focus:ring-blue-600" autocomplete="off" oninput="searchProductForPO(this.value)">
                             <div id="po-search-results" class="absolute z-50 w-full bg-white shadow-xl rounded-b-lg border border-gray-200 max-h-60 overflow-y-auto hidden"></div>
@@ -273,25 +387,8 @@
         window.searchProductForPO = (val) => {
             const container = document.getElementById('po-search-results');
             if(val.length < 2) { container.classList.add('hidden'); return; }
-            
-            const matches = State.data.products.filter(p => 
-                p['Nama Produk'].toLowerCase().includes(val.toLowerCase()) || 
-                String(p.Barcode).includes(val)
-            ).slice(0, 10); // Limit 10 results
-
-            if(matches.length === 0) {
-                container.innerHTML = '<div class="p-2 text-sm text-gray-500">Tidak ditemukan. Input manual di bawah.</div>';
-            } else {
-                container.innerHTML = matches.map(p => `
-                    <div class="p-2 hover:bg-blue-50 cursor-pointer border-b text-sm" onclick="selectProductForPO('${p.Barcode}')">
-                        <div class="font-bold text-gray-800">${p['Nama Produk']}</div>
-                        <div class="text-xs text-gray-500 flex justify-between">
-                            <span>${p.Barcode}</span>
-                            <span>Stok: ${p['Stok Area Kasir adamart 73'] || 0}</span>
-                        </div>
-                    </div>
-                `).join('');
-            }
+            const matches = State.data.products.filter(p => p['Nama Produk'].toLowerCase().includes(val.toLowerCase()) || String(p.Barcode).includes(val)).slice(0, 10);
+            if(matches.length === 0) { container.innerHTML = '<div class="p-2 text-sm text-gray-500">Tidak ditemukan.</div>'; } else { container.innerHTML = matches.map(p => `<div class="p-2 hover:bg-blue-50 cursor-pointer border-b text-sm" onclick="selectProductForPO('${p.Barcode}')"><div class="font-bold text-gray-800">${p['Nama Produk']}</div><div class="text-xs text-gray-500 flex justify-between"><span>${p.Barcode}</span><span>HPP: ${formatRp(p.HPP || 0)}</span></div></div>`).join(''); }
             container.classList.remove('hidden');
         };
 
@@ -302,14 +399,13 @@
                 document.getElementById('item-name').value = p['Nama Produk'];
                 document.getElementById('item-hpp').value = p.HPP || 0;
                 document.getElementById('item-price').value = p.Harga || 0;
-                
                 document.getElementById('po-search-results').classList.add('hidden');
                 document.getElementById('smartSearchPO').value = '';
                 document.getElementById('item-qty').focus();
             }
         };
 
-        function showModal(c){ const d=document.createElement('div'); d.className='modal-overlay'; d.innerHTML=`<div class="modal-content p-6 relative"><button onclick="closeModal()" class="absolute top-4 right-4">✕</button>${c}</div>`; document.body.appendChild(d); }
+        function showModal(c){ const d=document.createElement('div'); d.className='modal-overlay'; d.innerHTML=`<div class="modal-content p-6 relative shadow-2xl"><button onclick="closeModal()" class="absolute top-4 right-4">✕</button>${c}</div>`; document.body.appendChild(d); }
         function closeModal(){ document.querySelector('.modal-overlay')?.remove(); }
         window.autoFill = () => { const bc = document.getElementById('barcode').value; const p = State.data.products.find(i => String(i.Barcode) === bc); if (p) { document.getElementById('productName').value = p['Nama Produk']; document.getElementById('price').value = p['Harga']; document.getElementById('hpp').value = p['HPP'] || 0; } };
         window.autoFillPOItem = (b) => { const p = State.data.products.find(i => String(i.Barcode) === b); if (p) { document.getElementById('item-name').value = p['Nama Produk']; document.getElementById('item-price').value = p['Harga']; document.getElementById('item-hpp').value = p['HPP'] || 0; } };
@@ -317,16 +413,32 @@
         window.removeItemFromTemp = (i) => { State.tempBatchItems.splice(i,1); document.getElementById('temp-items-list').innerHTML=State.tempBatchItems.map((i,x)=>`<div class="flex justify-between items-center bg-white p-2 rounded border"><div><span class="font-bold">${i.name}</span> x${i.qty}</div><button onclick="removeItemFromTemp(${x})" class="text-red-500 px-2">✕</button></div>`).join(''); };
         window.toggleSupplierInput = (el) => { const i=document.getElementById('customSupplier'); if(el.value==='custom'){i.classList.remove('hidden');i.disabled=false;i.focus();}else{i.classList.add('hidden');i.disabled=true;} };
         window.filterInventory = (v) => { document.querySelectorAll('.product-row').forEach(r => r.style.display = r.innerText.toLowerCase().includes(v.toLowerCase()) ? '' : 'none'); };
-        window.exportReportToCSV = () => { const rows = [['Periode', 'Transaksi', 'Omzet']]; document.querySelectorAll('#reportTableBody tr').forEach(tr => { const cols = tr.querySelectorAll('td'); rows.push([cols[0].innerText, cols[1].innerText, cols[2].innerText.replace('Rp ','').replace(/\./g,'')]); }); const link = document.createElement("a"); link.href = encodeURI("data:text/csv;charset=utf-8," + rows.map(e => e.join(",")).join("\n")); link.download = "Laporan_Adamart.csv"; link.click(); };
+        
+        // NEW: Export Function from Data (Not HTML Table)
+        window.exportReportToCSV = () => {
+            const rows = [['Tanggal', 'Cabang', 'Items', 'Total', 'Metode']];
+            State.data.sales.forEach(s => {
+                rows.push([
+                    new Date(s.timestamp).toLocaleDateString(),
+                    s.area,
+                    `"${s.items}"`, // Quote items to prevent CSV break
+                    s.total,
+                    s.method
+                ]);
+            });
+            
+            const csvContent = "data:text/csv;charset=utf-8," + rows.map(e => e.join(",")).join("\n");
+            const link = document.createElement("a");
+            link.href = encodeURI(csvContent);
+            link.download = `Laporan_Adamart_${new Date().toISOString().slice(0,10)}.csv`;
+            link.click();
+        };
+
         function formatRp(n) { return "Rp " + (n || 0).toLocaleString('id-ID'); }
         function checkStock(v) { return (v || 0) < 10 ? 'text-red-600' : 'text-gray-800'; }
         function getStatusBadge(s) { return `<span class="px-2 py-1 rounded text-xs font-bold bg-gray-100">${s.toUpperCase()}</span>`; }
 
-        // Explicitly expose Modules to Window scope
-        window.Actions = Actions;
-        window.Modals = Modals;
-        window.Pages = Pages;
-        window.State = State;
+        window.Actions = Actions; window.Modals = Modals; window.Pages = Pages; window.State = State;
     </script>
 </body>
 </html>
