@@ -10,7 +10,7 @@
     <!-- Firebase SDKs -->
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
-        import { getFirestore, collection, getDocs, addDoc, updateDoc, deleteDoc, doc, query, where, orderBy } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+        import { getFirestore, collection, getDocs, addDoc, updateDoc, deleteDoc, doc, query, where, orderBy, increment } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 
         const firebaseConfig = {
             apiKey: "AIzaSyBApyoL7sczxl1kDq_WgPtnYF4lyujuWgc",
@@ -34,6 +34,7 @@
         window.query = query;
         window.where = where;
         window.orderBy = orderBy;
+        window.increment = increment;
         
         document.dispatchEvent(new Event('firebase-ready'));
     </script>
@@ -66,7 +67,7 @@
             <a onclick="navigate('inventory')" class="sidebar-item px-6 py-3 cursor-pointer flex items-center gap-3 hover:bg-white/10"><span>📦</span> Inventory</a>
             <a onclick="navigate('reports')" class="sidebar-item px-6 py-3 cursor-pointer flex items-center gap-3 hover:bg-white/10"><span>📈</span> Laporan & Grafik</a>
         </nav>
-        <div class="p-4 text-xs opacity-50 text-center">v2.2 Sync</div>
+        <div class="p-4 text-xs opacity-50 text-center">v2.3 Stock+</div>
     </aside>
 
     <div class="flex-1 flex flex-col min-w-0 overflow-hidden">
@@ -141,7 +142,7 @@
                 case 'dashboard': title.innerText = 'Dashboard Overview'; container.innerHTML = Pages.Dashboard(); break;
                 case 'purchase': title.innerText = 'Purchase Orders (Barang Keluar)'; container.innerHTML = Pages.Purchase(); break;
                 case 'requisition': title.innerText = 'Inbox Permintaan (Masuk)'; container.innerHTML = Pages.Requisition(); break;
-                case 'inventory': title.innerText = 'Inventory & Stok'; container.innerHTML = Pages.Inventory(); break;
+                case 'inventory': title.innerText = 'Inventory & Stok'; container.innerHTML = Pages.Inventory(); setupInventoryListeners(); break; // Add listener setup
                 case 'reports': title.innerText = 'Laporan & Analisa'; container.innerHTML = Pages.Reports(); Pages.initCharts(); break;
             }
         }
@@ -213,13 +214,60 @@
                 `;
             },
             Inventory: () => `
-                <div class="bg-white rounded-xl shadow overflow-hidden">
-                    <div class="p-4 border-b bg-gray-50"><input type="text" placeholder="🔍 Cari produk..." class="w-full p-2 border rounded" oninput="filterInventory(this.value)"></div>
-                    <div class="overflow-x-auto">
-                        <table class="w-full text-left text-sm">
-                            <thead class="bg-gray-100 text-gray-600 uppercase font-bold"><tr><th class="p-4">Produk</th><th class="p-4">Harga</th><th class="p-4 text-center">73</th><th class="p-4 text-center">Induksi</th><th class="p-4 text-center">Kelanis</th></tr></thead>
-                            <tbody class="divide-y product-row-container">${State.data.products.map(p => `<tr class="hover:bg-gray-50 product-row"><td class="p-4"><div class="font-bold">${p['Nama Produk']}</div><div class="text-xs text-gray-500 font-mono">${p.Barcode}</div></td><td class="p-4">Rp ${p.Harga.toLocaleString()}</td><td class="p-4 text-center font-bold ${checkStock(p['Stok Area Kasir adamart 73'])}">${p['Stok Area Kasir adamart 73'] || 0}</td><td class="p-4 text-center font-bold ${checkStock(p['Stok Area Kasir adamart induksi'])}">${p['Stok Area Kasir adamart induksi'] || 0}</td><td class="p-4 text-center font-bold ${checkStock(p['Stok Area Kasir adamart kelanis'])}">${p['Stok Area Kasir adamart kelanis'] || 0}</td></tr>`).join('')}</tbody>
-                        </table>
+                <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                    <!-- MANAJEMEN STOK (FORM) -->
+                    <div class="bg-white rounded-xl shadow p-6 lg:col-span-1 h-fit">
+                        <h3 class="font-bold text-gray-800 mb-4">📦 Input / Update Stok</h3>
+                        <form id="stockForm" class="space-y-3">
+                            <div>
+                                <label class="text-xs font-bold text-gray-500">Barcode</label>
+                                <input type="text" id="barcode" class="w-full p-2 border rounded bg-gray-50" placeholder="Scan/Ketik..." required oninput="autoFill()">
+                            </div>
+                            <div>
+                                <label class="text-xs font-bold text-gray-500">Nama Produk</label>
+                                <input type="text" id="productName" class="w-full p-2 border rounded" required>
+                            </div>
+                            <div class="grid grid-cols-2 gap-2">
+                                <div>
+                                    <label class="text-xs font-bold text-gray-500">HPP (Beli)</label>
+                                    <input type="number" id="hpp" class="w-full p-2 border rounded" placeholder="0">
+                                </div>
+                                <div>
+                                    <label class="text-xs font-bold text-gray-500">Harga Jual</label>
+                                    <input type="number" id="price" class="w-full p-2 border rounded" placeholder="0" required>
+                                </div>
+                            </div>
+                            <div>
+                                <label class="text-xs font-bold text-gray-500">Target Cabang</label>
+                                <select id="targetArea" class="w-full p-2 border rounded bg-white">
+                                    <option value="adamart 73">Adamart 73</option>
+                                    <option value="adamart induksi">Induksi</option>
+                                    <option value="adamart kelanis">Kelanis</option>
+                                </select>
+                            </div>
+                            <div class="grid grid-cols-2 gap-2">
+                                <div>
+                                    <label class="text-xs font-bold text-gray-500">Tambah Qty</label>
+                                    <input type="number" id="stockAmount" class="w-full p-2 border rounded" placeholder="0" required>
+                                </div>
+                                <div>
+                                    <label class="text-xs font-bold text-gray-500">Exp Date</label>
+                                    <input type="date" id="expiryDate" class="w-full p-2 border rounded">
+                                </div>
+                            </div>
+                            <button type="submit" class="w-full bg-blue-600 text-white py-2 rounded font-bold hover:bg-blue-700 mt-4">Simpan Stok</button>
+                        </form>
+                    </div>
+
+                    <!-- TABEL STOK -->
+                    <div class="bg-white rounded-xl shadow overflow-hidden lg:col-span-2">
+                        <div class="p-4 border-b bg-gray-50"><input type="text" placeholder="🔍 Cari produk di inventory..." class="w-full p-2 border rounded" oninput="filterInventory(this.value)"></div>
+                        <div class="overflow-x-auto max-h-[600px]">
+                            <table class="w-full text-left text-sm">
+                                <thead class="bg-gray-100 text-gray-600 uppercase font-bold sticky top-0"><tr><th class="p-4">Produk</th><th class="p-4">HPP/Jual</th><th class="p-4 text-center">73</th><th class="p-4 text-center">Induksi</th><th class="p-4 text-center">Kelanis</th></tr></thead>
+                                <tbody class="divide-y product-row-container">${State.data.products.map(p => `<tr class="hover:bg-gray-50 product-row"><td class="p-4"><div class="font-bold">${p['Nama Produk']}</div><div class="text-xs text-gray-500 font-mono">${p.Barcode}</div></td><td class="p-4"><div class="text-xs text-gray-500">B: ${formatRp(p.HPP)}</div><div class="font-bold text-green-600">J: ${formatRp(p.Harga)}</div></td><td class="p-4 text-center font-bold ${checkStock(p['Stok Area Kasir adamart 73'])}">${p['Stok Area Kasir adamart 73'] || 0}</td><td class="p-4 text-center font-bold ${checkStock(p['Stok Area Kasir adamart induksi'])}">${p['Stok Area Kasir adamart induksi'] || 0}</td><td class="p-4 text-center font-bold ${checkStock(p['Stok Area Kasir adamart kelanis'])}">${p['Stok Area Kasir adamart kelanis'] || 0}</td></tr>`).join('')}</tbody>
+                            </table>
+                        </div>
                     </div>
                 </div>
             `,
@@ -275,9 +323,79 @@
                 loadAllData();
             },
             approveReq: async (id) => { if(confirm("Setujui?")) { await window.updateDoc(window.doc(window.db, "requisitions", id), { status: 'approved' }); loadAllData(); } },
-            rejectReq: async (id) => { if(confirm("Tolak?")) { await window.updateDoc(window.doc(window.db, "requisitions", id), { status: 'rejected' }); loadAllData(); } }
+            rejectReq: async (id) => { if(confirm("Tolak?")) { await window.updateDoc(window.doc(window.db, "requisitions", id), { status: 'rejected' }); loadAllData(); } },
+            
+            updateStock: async (e) => {
+                e.preventDefault();
+                const barcode = document.getElementById('barcode').value;
+                const area = document.getElementById('targetArea').value;
+                const qty = parseInt(document.getElementById('stockAmount').value);
+                const hpp = parseInt(document.getElementById('hpp').value) || 0;
+                const price = parseInt(document.getElementById('price').value) || 0;
+                const name = document.getElementById('productName').value;
+                const expiry = document.getElementById('expiryDate').value;
+                
+                const stockKey = `Stok Area Kasir ${area.toLowerCase()}`;
+
+                try {
+                    // 1. Check Firebase for existing product
+                    const q = window.query(window.collection(window.db, "products"), window.where("Barcode", "==", barcode));
+                    const snapshot = await window.getDocs(q);
+
+                    if (!snapshot.empty) {
+                        // UPDATE EXISTING
+                        const docRef = snapshot.docs[0].ref;
+                        const updateData = {
+                            "Nama Produk": name,
+                            "Harga": price,
+                            "HPP": hpp
+                        };
+                        if (qty !== 0) updateData[stockKey] = window.increment(qty);
+                        if (expiry) updateData["Tanggal Kadaluarsa"] = new Date(expiry).toISOString();
+                        
+                        await window.updateDoc(docRef, updateData);
+                    } else {
+                        // CREATE NEW
+                        const newData = {
+                            Barcode: barcode,
+                            "Nama Produk": name,
+                            "Harga": price,
+                            "HPP": hpp,
+                            [stockKey]: qty
+                        };
+                        if (expiry) newData["Tanggal Kadaluarsa"] = new Date(expiry).toISOString();
+                        await window.addDoc(window.collection(window.db, "products"), newData);
+                    }
+
+                    // 2. Sync to Sheets (Hybrid)
+                    fetch(APPS_SCRIPT_URL, {
+                        method: 'POST',
+                        body: JSON.stringify({
+                            action: 'update_stock', 
+                            data: { 
+                                barcode, name, price, hpp, area: area.toLowerCase(), quantity: qty, expiryDate: expiry 
+                            }
+                        })
+                    });
+
+                    alert("Stok & Harga berhasil diupdate!");
+                    document.getElementById('stockForm').reset();
+                    loadAllData();
+
+                } catch (err) {
+                    console.error(err);
+                    alert("Gagal update stok: " + err.message);
+                }
+            }
         };
 
+        // --- LISTENERS SETUP ---
+        function setupInventoryListeners() {
+            const form = document.getElementById('stockForm');
+            if(form) form.addEventListener('submit', Actions.updateStock);
+        }
+
+        // --- MODALS ---
         const Modals = {
             openBatchPO: () => {
                 State.tempBatchItems = [];
@@ -322,11 +440,22 @@
         }
         function closeModal() { document.querySelector('.modal-overlay')?.remove(); }
         
+        window.autoFill = () => {
+            const bc = document.getElementById('barcode').value;
+            const p = State.data.products.find(i => String(i.Barcode) === bc);
+            if (p) {
+                document.getElementById('productName').value = p['Nama Produk'];
+                document.getElementById('price').value = p['Harga'];
+                document.getElementById('hpp').value = p['HPP'] || 0;
+            }
+        };
+
         window.autoFillPOItem = (barcode) => {
             const p = State.data.products.find(i => String(i.Barcode) === barcode);
             if (p) {
                 document.getElementById('item-name').value = p['Nama Produk'];
                 document.getElementById('item-price').value = p['Harga'];
+                document.getElementById('item-hpp').value = p['HPP'] || 0;
             }
         };
 
