@@ -1,0 +1,582 @@
+<!doctype html>
+<html lang="id">
+ <head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Adamart Management System</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&amp;display=swap" rel="stylesheet">
+  
+  <!-- FIREBASE SDK -->
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+    import { getFirestore, collection, getDocs, addDoc, updateDoc, deleteDoc, doc, query, where, orderBy, increment, getDoc } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+
+    const firebaseConfig = {
+      apiKey: "AIzaSyBApyoL7sczxl1kDq_WgPtnYF4lyujuWgc",
+      authDomain: "adamart-pos.firebaseapp.com",
+      projectId: "adamart-pos",
+      storageBucket: "adamart-pos.firebasestorage.app",
+      messagingSenderId: "754641758734",
+      appId: "1:754641758734:web:8eaa07cf10ead6ea02aa5f"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const db = getFirestore(app);
+    
+    // Expose to global
+    window.db = db;
+    window.collection = collection;
+    window.getDocs = getDocs;
+    window.addDoc = addDoc;
+    window.updateDoc = updateDoc;
+    window.deleteDoc = deleteDoc;
+    window.doc = doc;
+    window.query = query;
+    window.where = where;
+    window.orderBy = orderBy;
+    window.increment = increment;
+    window.getDoc = getDoc;
+    
+    // Start App after Firebase loads
+    document.dispatchEvent(new Event('firebase-ready'));
+  </script>
+
+  <style>
+    body { font-family: 'Inter', sans-serif; background: #f3f4f6; height: 100vh; overflow: hidden; }
+    .sidebar { transition: width 0.3s ease; background: linear-gradient(180deg, #0F2C59 0%, #1e3a5f 100%); color: white; }
+    .sidebar-item:hover { background: rgba(255,255,255,0.1); }
+    .card { background: white; border-radius: 1rem; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1); transition: transform 0.2s; }
+    .metric-card { color: white; }
+    .btn { padding: 0.5rem 1rem; border-radius: 0.5rem; font-weight: 600; transition: all 0.2s; }
+    .btn:hover { opacity: 0.9; transform: translateY(-1px); }
+    .btn-primary { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; }
+    .btn-secondary { background: #e5e7eb; color: #374151; }
+    .status-badge { padding: 0.25rem 0.75rem; border-radius: 9999px; font-size: 0.75rem; font-weight: 600; }
+    .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.5); display: flex; align-items: center; justify-content: center; z-index: 50; }
+    .modal-content { background: white; border-radius: 1rem; max-width: 800px; width: 90%; max-height: 90vh; overflow-y: auto; animation: slideUp 0.3s ease; }
+    @keyframes slideUp { from { transform: translateY(20px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+    .toast { position: fixed; bottom: 2rem; right: 2rem; padding: 1rem; border-radius: 0.5rem; color: white; z-index: 60; animation: slideUp 0.3s; }
+  </style>
+ </head>
+ <body>
+  <div id="app" class="flex h-full"></div>
+
+  <script>
+    const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbwkZVsoGXdgxck4xwOXk2fW4Oawn6diXu2bUX0sAIRFCfGeS1jTr6QjEH6Fr6-RFbnDAw/exec';
+    const BRANCHES = ["Adamart 73", "Adamart Kelanis", "Adamart Induksi"];
+    const SUPPLIERS = ["PT Sumber Makmur", "CV Mitra Jaya", "Toko Grosir Berkah", "PT Indo Supplier"];
+
+    const State = {
+      currentUser: { name: "Manager", role: "Super Admin", branch: "All Branches" },
+      currentPage: "dashboard",
+      sidebarCollapsed: false,
+      data: { products: [], sales: [], purchases: [], requisitions: [] }, // Data Containers
+      tempBatchItems: []
+    };
+
+    // --- CORE FUNCTIONS ---
+
+    async function initApp() {
+      renderApp();
+      await loadAllData();
+    }
+
+    async function loadAllData() {
+      try {
+        // 1. Fetch Products
+        const pSnap = await window.getDocs(window.collection(window.db, "products"));
+        State.data.products = [];
+        pSnap.forEach(d => State.data.products.push({ id: d.id, ...d.data() }));
+
+        // 2. Fetch Sales
+        const sSnap = await window.getDocs(window.query(window.collection(window.db, "sales"), window.orderBy("timestamp", "desc")));
+        State.data.sales = [];
+        sSnap.forEach(d => State.data.sales.push({ id: d.id, ...d.data(), type: 'sale' }));
+
+        // 3. Fetch Purchases (PO)
+        const poSnap = await window.getDocs(window.collection(window.db, "purchases"));
+        State.data.purchases = [];
+        poSnap.forEach(d => State.data.purchases.push({ id: d.id, ...d.data(), type: 'purchase' }));
+
+        // 4. Fetch Requisitions
+        const rSnap = await window.getDocs(window.collection(window.db, "requisitions"));
+        State.data.requisitions = [];
+        rSnap.forEach(d => State.data.requisitions.push({ id: d.id, ...d.data(), type: 'requisition' }));
+
+        renderCurrentPage();
+        UI.showToast("Data synced successfully", "bg-green-600");
+      } catch (e) {
+        console.error(e);
+        UI.showToast("Error syncing data", "bg-red-600");
+      }
+    }
+
+    // --- UI RENDERING ---
+
+    function renderApp() {
+      const app = document.getElementById('app');
+      app.innerHTML = `
+        ${renderSidebar()}
+        <div class="flex-1 flex flex-col min-w-0">
+          ${renderHeader()}
+          <main id="main-content" class="flex-1 p-8 overflow-y-auto">
+            <div id="page-content">Loading...</div>
+          </main>
+        </div>
+      `;
+    }
+
+    function renderSidebar() {
+      const w = State.sidebarCollapsed ? 'w-16' : 'w-64';
+      const items = [
+        { id: 'dashboard', icon: '📊', label: 'Dashboard' },
+        { id: 'purchase', icon: '🛒', label: 'Purchase Order' },
+        { id: 'receiving', icon: '📦', label: 'Receiving' },
+        { id: 'requisition', icon: '📝', label: 'Requisition' },
+        { id: 'inventory', icon: '📋', label: 'Inventory' }
+      ];
+
+      return `
+        <aside class="sidebar ${w} flex flex-col">
+          <div class="p-4 flex justify-between items-center">
+            ${!State.sidebarCollapsed ? '<h2 class="font-bold text-lg">Adamart</h2>' : ''}
+            <button onclick="toggleSidebar()" class="p-1 rounded hover:bg-white/10 text-white">⇄</button>
+          </div>
+          <nav class="flex-1 py-4">
+            ${items.map(i => `
+              <div onclick="navigate('${i.id}')" class="sidebar-item px-4 py-3 cursor-pointer flex items-center gap-3 ${State.currentPage === i.id ? 'bg-white/20' : ''}">
+                <span class="text-xl">${i.icon}</span>
+                ${!State.sidebarCollapsed ? `<span>${i.label}</span>` : ''}
+              </div>
+            `).join('')}
+          </nav>
+        </aside>
+      `;
+    }
+
+    function renderHeader() {
+      return `
+        <header class="bg-white p-4 border-b flex justify-between items-center shadow-sm">
+          <h1 class="text-xl font-bold text-gray-800">Adamart Management System</h1>
+          <div class="flex items-center gap-4">
+            <button onclick="loadAllData()" class="p-2 bg-gray-100 rounded hover:bg-gray-200">🔄 Sync</button>
+            <div class="flex items-center gap-2 bg-gray-100 px-3 py-1.5 rounded-full">
+              <div class="w-8 h-8 rounded-full bg-blue-600 text-white flex items-center justify-center font-bold">M</div>
+              <div class="text-sm">
+                <div class="font-bold">${State.currentUser.name}</div>
+                <div class="text-xs text-gray-500">${State.currentUser.branch}</div>
+              </div>
+            </div>
+          </div>
+        </header>
+      `;
+    }
+
+    function renderCurrentPage() {
+      const container = document.getElementById('page-content');
+      if (!container) return;
+
+      let content = '';
+      switch (State.currentPage) {
+        case 'dashboard': content = Pages.Dashboard(); break;
+        case 'purchase': content = Pages.Purchase(); break;
+        case 'receiving': content = Pages.Receiving(); break;
+        case 'requisition': content = Pages.Requisition(); break;
+        case 'inventory': content = Pages.Inventory(); break;
+      }
+      container.innerHTML = content;
+    }
+
+    // --- PAGES LOGIC ---
+
+    const Pages = {
+      Dashboard: () => {
+        const sales = State.data.sales;
+        const revenue = sales.reduce((sum, s) => sum + (s.total || 0), 0);
+        const lowStock = State.data.products.filter(p => {
+            return (p['Stok Area Kasir adamart 73'] < 10) || (p['Stok Area Kasir adamart induksi'] < 10);
+        }).length;
+
+        return `
+          <h2 class="text-2xl font-bold mb-6 text-gray-800">Dashboard Overview</h2>
+          <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+            ${MetricCard('💵', 'Total Revenue', formatRp(revenue), 'bg-gradient-to-r from-green-400 to-green-600')}
+            ${MetricCard('📦', 'Total Orders', sales.length, 'bg-gradient-to-r from-blue-400 to-blue-600')}
+            ${MetricCard('⚠️', 'Low Stock Items', lowStock, 'bg-gradient-to-r from-orange-400 to-red-500')}
+          </div>
+          <div class="bg-white p-6 rounded-xl shadow-sm">
+            <h3 class="font-bold mb-4">Recent Transactions</h3>
+            ${Table(sales.slice(0, 5), ['ID', 'Area', 'Total', 'Date'], (s) => `
+              <td>${s.id ? s.id.substr(0,8) : '-'}</td>
+              <td><span class="px-2 py-1 bg-blue-100 text-blue-800 rounded text-xs font-bold">${s.area}</span></td>
+              <td>${formatRp(s.total)}</td>
+              <td>${new Date(s.timestamp).toLocaleDateString()}</td>
+            `)}
+          </div>
+        `;
+      },
+
+      Purchase: () => {
+        return `
+          <div class="flex justify-between items-center mb-6">
+            <h2 class="text-2xl font-bold text-gray-800">Purchase Orders</h2>
+            <button onclick="Modals.openBatchPO()" class="btn btn-primary">🛒 Buat Batch PO</button>
+          </div>
+          <div class="bg-white rounded-xl shadow-sm overflow-hidden">
+            ${Table(State.data.purchases, ['Batch ID', 'Supplier', 'Branch', 'Status', 'Items'], (p) => `
+              <td class="font-mono text-sm">${p.batchNumber}</td>
+              <td>${p.supplier}</td>
+              <td><span class="px-2 py-1 bg-purple-100 text-purple-800 rounded text-xs">${p.branch}</span></td>
+              <td>${StatusBadge(p.status)}</td>
+              <td>${JSON.parse(p.items).length} items</td>
+            `)}
+          </div>
+        `;
+      },
+
+      Receiving: () => {
+        const pending = State.data.purchases.filter(p => p.status === 'pending');
+        return `
+          <h2 class="text-2xl font-bold mb-6 text-gray-800">Receiving Goods</h2>
+          <div class="bg-white rounded-xl shadow-sm p-6 mb-6">
+            <h3 class="font-bold mb-4">Pending Orders</h3>
+            ${pending.length === 0 ? '<p class="text-gray-500">Tidak ada PO yang menunggu.</p>' : 
+              Table(pending, ['Batch ID', 'Branch', 'Action'], (p) => `
+                <td>${p.batchNumber}</td>
+                <td>${p.branch}</td>
+                <td><button onclick="Modals.openReceiving('${p.id}')" class="btn btn-primary text-sm">📦 Receive</button></td>
+              `)
+            }
+          </div>
+        `;
+      },
+
+      Requisition: () => {
+        return `
+          <div class="flex justify-between items-center mb-6">
+            <h2 class="text-2xl font-bold text-gray-800">Requisition Requests</h2>
+            <button onclick="Modals.openRequisition()" class="btn btn-primary">📝 Request Barang</button>
+          </div>
+          <div class="bg-white rounded-xl shadow-sm overflow-hidden">
+            ${Table(State.data.requisitions, ['ID', 'Branch', 'Priority', 'Status', 'Items', 'Action'], (r) => `
+              <td class="font-mono text-sm">${r.id ? r.id.substr(0,8) : '-'}</td>
+              <td>${r.branch}</td>
+              <td>${r.priority === 'urgent' ? '🔴 Urgent' : '🟢 Normal'}</td>
+              <td>${StatusBadge(r.status)}</td>
+              <td>${JSON.parse(r.items).length} items</td>
+              <td>
+                ${r.status === 'pending' ? `
+                  <button onclick="Actions.approveReq('${r.id}')" class="text-green-600 font-bold mr-2">✓</button>
+                  <button onclick="Actions.rejectReq('${r.id}')" class="text-red-600 font-bold">✗</button>
+                ` : '-'}
+              </td>
+            `)}
+          </div>
+        `;
+      },
+
+      Inventory: () => {
+        const products = State.data.products;
+        return `
+          <div class="flex justify-between items-center mb-6">
+            <h2 class="text-2xl font-bold text-gray-800">Inventory Management</h2>
+            <input type="text" placeholder="Cari produk..." class="p-2 border rounded" oninput="searchInventory(this.value)">
+          </div>
+          <div class="bg-white rounded-xl shadow-sm overflow-hidden">
+            <table class="w-full text-sm text-left">
+              <thead class="bg-gray-50 text-gray-600">
+                <tr>
+                  <th class="p-3">Produk</th>
+                  <th class="p-3">Harga</th>
+                  <th class="p-3 text-center">73</th>
+                  <th class="p-3 text-center">Induksi</th>
+                  <th class="p-3 text-center">Kelanis</th>
+                  <th class="p-3">Exp Date</th>
+                </tr>
+              </thead>
+              <tbody id="inventory-body">
+                ${products.map(p => `
+                  <tr class="border-b hover:bg-gray-50">
+                    <td class="p-3">
+                      <div class="font-bold">${p['Nama Produk']}</div>
+                      <div class="text-xs text-gray-500">${p.Barcode}</div>
+                    </td>
+                    <td class="p-3">${formatRp(p.Harga)}</td>
+                    <td class="p-3 text-center font-bold ${p['Stok Area Kasir adamart 73'] < 5 ? 'text-red-600' : ''}">${p['Stok Area Kasir adamart 73'] || 0}</td>
+                    <td class="p-3 text-center font-bold ${p['Stok Area Kasir adamart induksi'] < 5 ? 'text-red-600' : ''}">${p['Stok Area Kasir adamart induksi'] || 0}</td>
+                    <td class="p-3 text-center font-bold ${p['Stok Area Kasir adamart kelanis'] < 5 ? 'text-red-600' : ''}">${p['Stok Area Kasir adamart kelanis'] || 0}</td>
+                    <td class="p-3 text-xs">${p['Tanggal Kadaluarsa'] ? new Date(p['Tanggal Kadaluarsa']).toLocaleDateString() : '-'}</td>
+                  </tr>
+                `).join('')}
+              </tbody>
+            </table>
+          </div>
+        `;
+      }
+    };
+
+    // --- ACTIONS & LOGIC ---
+
+    const Actions = {
+      createBatchPO: async (e) => {
+        e.preventDefault();
+        const form = e.target;
+        const formData = new FormData(form);
+        const items = State.tempBatchItems;
+
+        if(items.length === 0) return alert("Belum ada item!");
+
+        // Group items by destination logic (Simplified: Distribute to selected branch for now)
+        // In real implementation, iterate checkboxes. Here assuming bulk create.
+        
+        const batchId = 'BATCH-' + Date.now();
+        const promises = [];
+
+        BRANCHES.forEach(branch => {
+            const checkbox = document.getElementById(`branch-${branch}`);
+            if(checkbox && checkbox.checked) {
+                // Create PO for this branch
+                const poData = {
+                    type: 'purchase',
+                    batchNumber: batchId,
+                    branch: branch,
+                    supplier: formData.get('supplier'),
+                    orderDate: formData.get('orderDate'),
+                    status: 'pending',
+                    items: JSON.stringify(items), // In real app, qty per branch differs
+                    createdAt: new Date().toISOString()
+                };
+                promises.push(window.addDoc(window.collection(window.db, "purchases"), poData));
+            }
+        });
+
+        await Promise.all(promises);
+        UI.closeModal();
+        UI.showToast("Batch PO Created!", "bg-green-600");
+        loadAllData();
+      },
+
+      receiveGoods: async (e, poId) => {
+        e.preventDefault();
+        const po = State.data.purchases.find(p => p.id === poId);
+        if(!po) return;
+
+        // 1. Update PO Status
+        const poRef = window.doc(window.db, "purchases", poId);
+        await window.updateDoc(poRef, { status: 'completed', receivedAt: new Date().toISOString() });
+
+        // 2. Update Inventory (Firebase) & 3. Trigger Sheet Backup
+        const items = JSON.parse(po.items);
+        const stockKey = `Stok Area Kasir ${po.branch.toLowerCase()}`; // Make sure casing matches DB keys
+
+        for (const item of items) {
+            // Find product by name/barcode logic needed. 
+            // For simplicity, assuming item has 'name'. Real app needs barcode match.
+            // We'll update existing or create new.
+            
+            // Simple logic: Just sending stock update to Sheet via GAS for reliability
+            fetch(APPS_SCRIPT_URL, {
+                method: 'POST',
+                body: JSON.stringify({
+                    action: 'update_stock',
+                    data: {
+                        barcode: item.barcode || '000', // Needs barcode in item obj
+                        name: item.name,
+                        price: item.price,
+                        area: po.branch.toLowerCase(),
+                        quantity: parseInt(item.qty),
+                        expiryDate: document.getElementById('rec-date').value
+                    }
+                })
+            });
+        }
+
+        UI.closeModal();
+        UI.showToast("Goods Received & Stock Updated", "bg-green-600");
+        loadAllData();
+      },
+
+      createRequisition: async (e) => {
+        e.preventDefault();
+        const form = e.target;
+        const formData = new FormData(form);
+        
+        await window.addDoc(window.collection(window.db, "requisitions"), {
+            branch: formData.get('branch'),
+            priority: formData.get('priority'),
+            items: JSON.stringify(State.tempBatchItems), // Using same temp array for ease
+            status: 'pending',
+            createdAt: new Date().toISOString()
+        });
+
+        UI.closeModal();
+        UI.showToast("Request Submitted", "bg-green-600");
+        loadAllData();
+      },
+
+      approveReq: async (id) => {
+        await window.updateDoc(window.doc(window.db, "requisitions", id), { status: 'approved' });
+        loadAllData();
+      },
+      
+      rejectReq: async (id) => {
+        await window.updateDoc(window.doc(window.db, "requisitions", id), { status: 'rejected' });
+        loadAllData();
+      }
+    };
+
+    // --- MODALS & HELPERS ---
+
+    const Modals = {
+      openBatchPO: () => {
+        State.tempBatchItems = [];
+        const content = `
+          <h3 class="text-xl font-bold mb-4">Buat Batch Purchase Order</h3>
+          <form onsubmit="Actions.createBatchPO(event)">
+            <div class="grid grid-cols-2 gap-4 mb-4">
+              <select name="supplier" class="p-2 border rounded" required>
+                <option value="">Pilih Supplier</option>
+                ${SUPPLIERS.map(s => `<option value="${s}">${s}</option>`).join('')}
+              </select>
+              <input type="date" name="orderDate" class="p-2 border rounded" required>
+            </div>
+            
+            <div class="bg-blue-50 p-4 rounded mb-4">
+              <h4 class="font-bold text-sm mb-2">Tambah Item</h4>
+              <div class="flex gap-2 mb-2">
+                <input id="item-name" placeholder="Nama Barang" class="flex-1 p-2 border rounded">
+                <input id="item-qty" type="number" placeholder="Qty" class="w-20 p-2 border rounded">
+                <input id="item-price" type="number" placeholder="Harga" class="w-24 p-2 border rounded">
+                <button type="button" onclick="addItemToTemp()" class="bg-blue-600 text-white px-4 rounded">+</button>
+              </div>
+              <div id="temp-items-list" class="text-sm text-gray-600"></div>
+            </div>
+
+            <div class="mb-4">
+              <label class="block font-bold mb-2">Distribusikan ke:</label>
+              <div class="flex gap-4">
+                ${BRANCHES.map(b => `
+                  <label class="flex items-center gap-2">
+                    <input type="checkbox" id="branch-${b}" value="${b}" checked> ${b}
+                  </label>
+                `).join('')}
+              </div>
+            </div>
+
+            <button type="submit" class="w-full btn-primary py-2 rounded">Buat PO</button>
+          </form>
+        `;
+        UI.showModal(content);
+      },
+
+      openReceiving: (id) => {
+        const content = `
+          <h3 class="text-xl font-bold mb-4">Terima Barang (PO: ${id.substr(0,8)})</h3>
+          <form onsubmit="Actions.receiveGoods(event, '${id}')">
+            <div class="mb-4">
+              <label>Tanggal Kadaluarsa (Umum)</label>
+              <input type="date" id="rec-date" class="w-full p-2 border rounded">
+            </div>
+            <button type="submit" class="w-full btn-primary py-2 rounded">Konfirmasi Terima & Update Stok</button>
+          </form>
+        `;
+        UI.showModal(content);
+      },
+
+      openRequisition: () => {
+        State.tempBatchItems = [];
+        const content = `
+          <h3 class="text-xl font-bold mb-4">Request Barang</h3>
+          <form onsubmit="Actions.createRequisition(event)">
+            <div class="grid grid-cols-2 gap-4 mb-4">
+              <select name="branch" class="p-2 border rounded" required>
+                ${BRANCHES.map(b => `<option value="${b}">${b}</option>`).join('')}
+              </select>
+              <select name="priority" class="p-2 border rounded">
+                <option value="normal">Normal</option>
+                <option value="urgent">Urgent</option>
+              </select>
+            </div>
+            
+            <!-- Reusing simple item adder logic for demo -->
+            <div class="bg-orange-50 p-4 rounded mb-4">
+              <h4 class="font-bold text-sm mb-2">List Item</h4>
+              <div class="flex gap-2 mb-2">
+                <input id="item-name" placeholder="Nama Barang" class="flex-1 p-2 border rounded">
+                <input id="item-qty" type="number" placeholder="Qty" class="w-20 p-2 border rounded">
+                <button type="button" onclick="addItemToTemp()" class="bg-orange-500 text-white px-4 rounded">+</button>
+              </div>
+              <div id="temp-items-list" class="text-sm text-gray-600"></div>
+            </div>
+
+            <button type="submit" class="w-full btn-primary py-2 rounded">Kirim Request</button>
+          </form>
+        `;
+        UI.showModal(content);
+      }
+    };
+
+    // --- GLOBAL HELPERS ---
+
+    window.toggleSidebar = () => {
+      State.sidebarCollapsed = !State.sidebarCollapsed;
+      renderApp();
+      loadAllData(); // Re-render current page logic
+    };
+
+    window.navigate = (page) => {
+      State.currentPage = page;
+      renderCurrentPage();
+    };
+
+    window.addItemToTemp = () => {
+        const name = document.getElementById('item-name').value;
+        const qty = document.getElementById('item-qty').value;
+        const price = document.getElementById('item-price')?.value || 0;
+        
+        if(name && qty) {
+            State.tempBatchItems.push({ name, qty, price });
+            document.getElementById('temp-items-list').innerHTML = State.tempBatchItems.map(i => `<div>• ${i.name} (x${i.qty})</div>`).join('');
+            document.getElementById('item-name').value = '';
+            document.getElementById('item-qty').value = '';
+        }
+    };
+
+    const UI = {
+      showModal: (content) => {
+        const el = document.createElement('div');
+        el.className = 'modal-overlay';
+        el.innerHTML = `<div class="modal-content p-6 relative"><button onclick="this.closest('.modal-overlay').remove()" class="absolute top-4 right-4 text-gray-500">✕</button>${content}</div>`;
+        document.body.appendChild(el);
+      },
+      closeModal: () => document.querySelector('.modal-overlay')?.remove(),
+      showToast: (msg, color) => {
+        const el = document.createElement('div');
+        el.className = `toast ${color}`;
+        el.innerText = msg;
+        document.body.appendChild(el);
+        setTimeout(() => el.remove(), 3000);
+      }
+    };
+
+    function formatRp(num) { return "Rp " + (num || 0).toLocaleString('id-ID'); }
+    function StatusBadge(status) {
+        const colors = { pending: 'bg-yellow-100 text-yellow-800', approved: 'bg-green-100 text-green-800', completed: 'bg-blue-100 text-blue-800', rejected: 'bg-red-100 text-red-800' };
+        return `<span class="status-badge ${colors[status] || 'bg-gray-100'}">${status.toUpperCase()}</span>`;
+    }
+    function MetricCard(icon, label, val, bg) {
+        return `<div class="metric-card ${bg} p-6 rounded-xl shadow-lg flex items-center justify-between"><div><div class="text-sm opacity-90">${label}</div><div class="text-3xl font-bold">${val}</div></div><div class="text-4xl opacity-50">${icon}</div></div>`;
+    }
+    function Table(data, headers, rowMapper) {
+        return `<table class="w-full text-left">
+            <thead class="bg-gray-50 text-gray-600 border-b"><tr>${headers.map(h => `<th class="p-3">${h}</th>`).join('')}</tr></thead>
+            <tbody>${data.map(d => `<tr class="border-b hover:bg-gray-50">${rowMapper(d)}</tr>`).join('')}</tbody>
+        </table>`;
+    }
+
+    // Init
+    document.addEventListener('firebase-ready', initApp);
+  </script>
+ </body>
+</html>
