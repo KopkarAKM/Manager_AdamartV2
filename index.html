@@ -3,14 +3,14 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Adamart - Manager Dashboard</title>
+    <title>Adamart - Manager Dashboard (Integrated)</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     
     <!-- Firebase SDKs -->
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
-        import { getFirestore, collection, getDocs, addDoc, updateDoc, deleteDoc, doc, query, where, orderBy, increment } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+        import { getFirestore, collection, getDocs, addDoc, updateDoc, deleteDoc, doc, query, where, orderBy, limit, increment } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 
         const firebaseConfig = {
             apiKey: "AIzaSyBApyoL7sczxl1kDq_WgPtnYF4lyujuWgc",
@@ -23,100 +23,314 @@
 
         const app = initializeApp(firebaseConfig);
         const db = getFirestore(app);
-        window.db = db; window.collection = collection; window.getDocs = getDocs; window.addDoc = addDoc; window.updateDoc = updateDoc; window.deleteDoc = deleteDoc; window.doc = doc; window.query = query; window.where = where; window.orderBy = orderBy; window.increment = increment;
+        // Expose Firebase functions globally
+        window.db = db; window.collection = collection; window.getDocs = getDocs; 
+        window.addDoc = addDoc; window.updateDoc = updateDoc; window.deleteDoc = deleteDoc; 
+        window.doc = doc; window.query = query; window.where = where; 
+        window.orderBy = orderBy; window.limit = limit; window.increment = increment;
+        
         document.dispatchEvent(new Event('firebase-ready'));
     </script>
 
     <script>tailwind.config = { theme: { extend: { colors: { 'adamart': { 50: '#f0f9ff', 500: '#0ea5e9', 600: '#0284c7', 900: '#0c4a6e' } } } } }</script>
-    <style>body { font-family: 'Inter', sans-serif; background: #f3f4f6; height: 100vh; overflow: hidden; } .sidebar { transition: width 0.3s ease; background: linear-gradient(180deg, #0F2C59 0%, #1e3a5f 100%); color: white; } .sidebar-item:hover { background: rgba(255,255,255,0.1); } .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.5); display: flex; align-items: center; justify-content: center; z-index: 50; } .modal-content { background: white; border-radius: 1rem; max-width: 800px; width: 90%; max-height: 90vh; overflow-y: auto; } .animate-spin { animation: spin 1s linear infinite; } @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }</style>
+    <style>
+        body { font-family: 'Inter', sans-serif; background: #f3f4f6; height: 100vh; overflow: hidden; } 
+        .sidebar { transition: width 0.3s ease; background: linear-gradient(180deg, #0F2C59 0%, #1e3a5f 100%); color: white; } 
+        .sidebar-item:hover { background: rgba(255,255,255,0.1); } 
+        .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.5); display: flex; align-items: center; justify-content: center; z-index: 50; } 
+        .modal-content { background: white; border-radius: 1rem; max-width: 800px; width: 90%; max-height: 90vh; overflow-y: auto; } 
+        .animate-spin { animation: spin 1s linear infinite; } 
+        @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+    </style>
 </head>
 <body class="flex h-full">
+    <!-- SIDEBAR -->
     <aside class="sidebar w-64 flex flex-col hidden md:flex">
-        <div class="p-6"><h2 class="text-xl font-bold tracking-wider">ADAMART</h2><p class="text-xs opacity-70">Management System</p></div>
+        <div class="p-6">
+            <h2 class="text-xl font-bold tracking-wider">ADAMART</h2>
+            <p class="text-xs opacity-70">Integrated System</p>
+        </div>
         <nav class="flex-1 py-4 space-y-1">
             <a onclick="navigate('dashboard')" class="sidebar-item px-6 py-3 cursor-pointer flex items-center gap-3 hover:bg-white/10"><span>📊</span> Dashboard</a>
-            <a onclick="navigate('evoucher')" class="sidebar-item px-6 py-3 cursor-pointer flex items-center gap-3 hover:bg-white/10 bg-white/5 border-l-4 border-yellow-400 text-yellow-100"><span>🎫</span> E-Voucher System</a>
-            <a onclick="navigate('shifts')" class="sidebar-item px-6 py-3 cursor-pointer flex items-center gap-3 hover:bg-white/10"><span>🕒</span> Laporan Shift</a>
-            <a onclick="navigate('purchase')" class="sidebar-item px-6 py-3 cursor-pointer flex items-center gap-3 hover:bg-white/10"><span>🛒</span> Purchase Order</a>
+            <a onclick="navigate('logistics')" class="sidebar-item px-6 py-3 cursor-pointer flex items-center gap-3 hover:bg-white/10 bg-white/5 border-l-4 border-blue-400"><span>🚛</span> Logistik Toko</a>
             <a onclick="navigate('requisition')" class="sidebar-item px-6 py-3 cursor-pointer flex items-center gap-3 hover:bg-white/10"><span>📥</span> Inbox Request</a>
-            <a onclick="navigate('inventory')" class="sidebar-item px-6 py-3 cursor-pointer flex items-center gap-3 hover:bg-white/10"><span>📦</span> Inventory</a>
+            <a onclick="navigate('inventory')" class="sidebar-item px-6 py-3 cursor-pointer flex items-center gap-3 hover:bg-white/10"><span>📦</span> Inventory Master</a>
+            <a onclick="navigate('purchase')" class="sidebar-item px-6 py-3 cursor-pointer flex items-center gap-3 hover:bg-white/10"><span>🛒</span> Purchase Order</a>
+            <a onclick="navigate('shifts')" class="sidebar-item px-6 py-3 cursor-pointer flex items-center gap-3 hover:bg-white/10"><span>🕒</span> Laporan Shift</a>
+            <a onclick="navigate('evoucher')" class="sidebar-item px-6 py-3 cursor-pointer flex items-center gap-3 hover:bg-white/10 text-yellow-100"><span>🎫</span> E-Voucher</a>
             <a onclick="navigate('reports')" class="sidebar-item px-6 py-3 cursor-pointer flex items-center gap-3 hover:bg-white/10"><span>📈</span> Analisa Bisnis</a>
         </nav>
-        <div class="p-4 text-xs opacity-50 text-center">v4.2 Chart Fix</div>
+        <div class="p-4 text-xs opacity-50 text-center">v5.0 Connected</div>
     </aside>
+
+    <!-- MAIN CONTENT -->
     <div class="flex-1 flex flex-col min-w-0 overflow-hidden">
         <header class="bg-white p-4 border-b shadow-sm flex justify-between items-center z-10">
             <h1 id="page-title" class="text-xl font-bold text-gray-800">Dashboard</h1>
-            <div class="flex items-center gap-4"><button onclick="loadAllData()" class="p-2 bg-gray-100 rounded-full hover:bg-gray-200">🔄</button><div class="text-sm text-right"><div class="font-bold text-gray-800">Manager</div><div class="text-xs text-green-600">● Online</div></div></div>
+            <div class="flex items-center gap-4">
+                <button onclick="loadAllData()" class="p-2 bg-gray-100 rounded-full hover:bg-gray-200" title="Refresh Data">🔄</button>
+                <div class="text-sm text-right">
+                    <div class="font-bold text-gray-800">Manager</div>
+                    <div class="text-xs text-green-600">● Firebase Online</div>
+                </div>
+            </div>
         </header>
         <main class="flex-1 overflow-y-auto p-6" id="main-container">
-            <div id="loadingState" class="text-center py-20"><div class="animate-spin text-4xl mb-4">⏳</div><p class="text-gray-500">Mengambil data...</p></div>
+            <div id="loadingState" class="text-center py-20">
+                <div class="animate-spin text-4xl mb-4">⏳</div>
+                <p class="text-gray-500">Mengambil data Real-time...</p>
+            </div>
             <div id="content-area" class="hidden space-y-6"></div>
         </main>
     </div>
+
     <script>
         const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbwkZVsoGXdgxck4xwOXk2fW4Oawn6diXu2bUX0sAIRFCfGeS1jTr6QjEH6Fr6-RFbnDAw/exec';
         const EVOUCHER_API_URL = "https://script.google.com/macros/s/AKfycbyQFkZW0QuBXi082jgXTsVBIy1OfVfhaQYVogvr7uBJBrCuGtkM73tTGqA1dl9ThlfL/exec";
 
         const BRANCHES = ["Adamart 73", "Adamart Kelanis", "Adamart Induksi"];
         const SUPPLIERS = ["PT Sumber Makmur", "CV Mitra Jaya", "Toko Grosir Berkah", "PT Indo Supplier"];
-        const State = { currentPage: 'dashboard', data: { products: [], sales: [], purchases: [], requisitions: [], shifts: [] }, tempBatchItems: [], charts: { line: null, doughnut: null } };
+        
+        // GLOBAL STATE
+        const State = { 
+            currentPage: 'dashboard', 
+            data: { products: [], sales: [], purchases: [], requisitions: [], shifts: [], logs: [] }, 
+            tempBatchItems: [], 
+            charts: { line: null, doughnut: null } 
+        };
 
         const EvoucherState = { view: 'login', users: [], selectedPeriod: '', loading: false, foundUser: null };
 
+        // INITIAL LOAD
         document.addEventListener('firebase-ready', () => { loadAllData(); });
 
+        // DATA FETCHING (Sekarang termasuk logs)
         async function loadAllData() {
             try {
-                document.getElementById('loadingState').classList.remove('hidden'); document.getElementById('content-area').classList.add('hidden');
-                const [pSnap, sSnap, poSnap, rSnap, shiftSnap] = await Promise.all([
+                document.getElementById('loadingState').classList.remove('hidden'); 
+                document.getElementById('content-area').classList.add('hidden');
+                
+                // Fetching all necessary collections concurrently
+                const [pSnap, sSnap, poSnap, rSnap, shiftSnap, logSnap] = await Promise.all([
                     window.getDocs(window.collection(window.db, "products")),
-                    window.getDocs(window.query(window.collection(window.db, "sales"), window.orderBy("timestamp", "desc"))),
+                    window.getDocs(window.query(window.collection(window.db, "sales"), window.orderBy("timestamp", "desc"), window.limit(100))),
                     window.getDocs(window.collection(window.db, "purchases")),
-                    window.getDocs(window.collection(window.db, "requisitions")),
-                    window.getDocs(window.query(window.collection(window.db, "shifts"), window.orderBy("openTime", "desc")))
+                    window.getDocs(window.query(window.collection(window.db, "requisitions"), window.orderBy("timestamp", "desc"))),
+                    window.getDocs(window.query(window.collection(window.db, "shifts"), window.orderBy("openTime", "desc"), window.limit(50))),
+                    window.getDocs(window.query(window.collection(window.db, "inventory_logs"), window.orderBy("timestamp", "desc"), window.limit(50)))
                 ]);
                 
+                // Parsing Data
                 State.data.products = []; pSnap.forEach(d => State.data.products.push({ id: d.id, ...d.data() }));
                 State.data.sales = []; sSnap.forEach(d => State.data.sales.push({ id: d.id, ...d.data() }));
                 State.data.purchases = []; poSnap.forEach(d => State.data.purchases.push({ id: d.id, ...d.data() }));
                 State.data.requisitions = []; rSnap.forEach(d => State.data.requisitions.push({ id: d.id, ...d.data() }));
                 State.data.shifts = []; shiftSnap.forEach(d => State.data.shifts.push({ id: d.id, ...d.data() }));
+                State.data.logs = []; logSnap.forEach(d => State.data.logs.push({ id: d.id, ...d.data() }));
                 
                 renderPage(); 
                 document.getElementById('loadingState').classList.add('hidden'); 
                 document.getElementById('content-area').classList.remove('hidden');
-            } catch (e) { console.error(e); alert("Gagal sinkronisasi data: " + e.message); }
+            } catch (e) { 
+                console.error(e); 
+                alert("Gagal sinkronisasi data: " + e.message); 
+            }
         }
 
         window.navigate = (page) => { State.currentPage = page; renderPage(); };
 
+        // ROUTER / PAGE RENDERER
         function renderPage() {
-            const container = document.getElementById('content-area'); const title = document.getElementById('page-title'); container.innerHTML = '';
+            const container = document.getElementById('content-area'); 
+            const title = document.getElementById('page-title'); 
+            container.innerHTML = '';
             
-            // Force Cleanup Charts
+            // Cleanup Charts
             if(State.charts.line) { State.charts.line.destroy(); State.charts.line = null; }
             if(State.charts.doughnut) { State.charts.doughnut.destroy(); State.charts.doughnut = null; }
 
             switch (State.currentPage) {
                 case 'dashboard': title.innerText = 'Dashboard Overview'; container.innerHTML = Pages.Dashboard(); break;
-                case 'evoucher': title.innerText = 'E-Voucher System (Kopkar)'; const today = new Date(); EvoucherState.selectedPeriod = `${today.getMonth() + 1}-${today.getFullYear()}`; EvoucherActions.render(); break;
+                case 'logistics': title.innerText = 'Logistik Toko (Barang Masuk)'; container.innerHTML = Pages.Logistics(); break;
+                case 'requisition': title.innerText = 'Inbox Permintaan Barang'; container.innerHTML = Pages.Requisition(); break;
+                case 'inventory': title.innerText = 'Inventory Master'; container.innerHTML = Pages.Inventory(); setupInventoryListeners(); break;
+                case 'purchase': title.innerText = 'Purchase Orders (Supplier)'; container.innerHTML = Pages.Purchase(); break;
                 case 'shifts': title.innerText = 'Laporan Shift & Keuangan'; container.innerHTML = Pages.Shifts(); break;
-                case 'purchase': title.innerText = 'Purchase Orders'; container.innerHTML = Pages.Purchase(); break;
-                case 'requisition': title.innerText = 'Inbox Permintaan'; container.innerHTML = Pages.Requisition(); break;
-                case 'inventory': title.innerText = 'Inventory & Stok'; container.innerHTML = Pages.Inventory(); setupInventoryListeners(); break;
-                case 'reports': title.innerText = 'Analisa Bisnis Lengkap'; container.innerHTML = Pages.Reports(); setTimeout(Pages.initReportCharts, 100); break; // Small timeout for canvas rendering
+                case 'evoucher': title.innerText = 'E-Voucher System (Kopkar)'; const today = new Date(); EvoucherState.selectedPeriod = `${today.getMonth() + 1}-${today.getFullYear()}`; EvoucherActions.render(); break;
+                case 'reports': title.innerText = 'Analisa Bisnis Lengkap'; container.innerHTML = Pages.Reports(); setTimeout(Pages.initReportCharts, 100); break;
             }
         }
 
+        // PAGES COMPONENTS
         const Pages = {
-            Dashboard: () => { /* ... same ... */ return `<div class="grid grid-cols-1 md:grid-cols-3 gap-6"><div class="bg-gradient-to-r from-green-500 to-green-700 text-white p-6 rounded-xl shadow-lg"><div>Total Pendapatan</div><div class="text-3xl font-bold">${formatRp(State.data.sales.reduce((s, i) => s + (i.total || 0), 0))}</div></div><div class="bg-gradient-to-r from-blue-500 to-blue-700 text-white p-6 rounded-xl shadow-lg"><div>Total Transaksi</div><div class="text-3xl font-bold">${State.data.sales.length}</div></div><div class="bg-gradient-to-r from-orange-500 to-red-600 text-white p-6 rounded-xl shadow-lg"><div>Pending Request</div><div class="text-3xl font-bold">${State.data.requisitions.filter(r => r.status === 'pending').length}</div></div></div>`; },
+            Dashboard: () => { 
+                const pendingReq = State.data.requisitions.filter(r => r.status === 'PENDING').length;
+                return `
+                <div class="grid grid-cols-1 md:grid-cols-4 gap-6">
+                    <div class="bg-white p-6 rounded-xl shadow border-l-4 border-green-500">
+                        <div class="text-gray-500 text-sm">Total Pendapatan</div>
+                        <div class="text-2xl font-bold text-gray-800">${formatRp(State.data.sales.reduce((s, i) => s + (i.total || 0), 0))}</div>
+                    </div>
+                    <div class="bg-white p-6 rounded-xl shadow border-l-4 border-blue-500">
+                        <div class="text-gray-500 text-sm">Total Transaksi</div>
+                        <div class="text-2xl font-bold text-gray-800">${State.data.sales.length}</div>
+                    </div>
+                    <div class="bg-white p-6 rounded-xl shadow border-l-4 border-orange-500 cursor-pointer hover:bg-orange-50" onclick="navigate('requisition')">
+                        <div class="text-orange-600 text-sm font-bold">Pending Request</div>
+                        <div class="text-2xl font-bold text-orange-700">${pendingReq}</div>
+                        <div class="text-xs text-gray-400">Klik untuk proses</div>
+                    </div>
+                    <div class="bg-white p-6 rounded-xl shadow border-l-4 border-purple-500 cursor-pointer hover:bg-purple-50" onclick="navigate('logistics')">
+                        <div class="text-purple-600 text-sm font-bold">Barang Masuk</div>
+                        <div class="text-2xl font-bold text-purple-700">${State.data.logs.length}</div>
+                        <div class="text-xs text-gray-400">Aktivitas restock</div>
+                    </div>
+                </div>
+                <!-- Recent Activities -->
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mt-6">
+                     <div class="bg-white rounded-xl shadow p-4">
+                        <h3 class="font-bold text-gray-700 mb-4">Aktivitas Penjualan Terakhir</h3>
+                        <div class="overflow-auto max-h-60">
+                            <table class="w-full text-sm text-left">
+                                <tbody class="divide-y">
+                                    ${State.data.sales.slice(0,5).map(s => `<tr><td class="py-2 text-xs text-gray-500">${new Date(s.timestamp).toLocaleTimeString()}</td><td class="py-2 font-bold text-xs">${s.area}</td><td class="py-2 text-right font-bold">${formatRp(s.total)}</td></tr>`).join('')}
+                                </tbody>
+                            </table>
+                        </div>
+                     </div>
+                     <div class="bg-white rounded-xl shadow p-4">
+                        <h3 class="font-bold text-gray-700 mb-4">Aktivitas Logistik Terakhir</h3>
+                        <div class="overflow-auto max-h-60">
+                            <table class="w-full text-sm text-left">
+                                <tbody class="divide-y">
+                                    ${State.data.logs.slice(0,5).map(l => `<tr><td class="py-2 text-xs text-gray-500">${new Date(l.timestamp).toLocaleDateString()}</td><td class="py-2 font-bold text-xs text-blue-600">${l.area}</td><td class="py-2 text-xs text-gray-600 truncate max-w-[150px]">${l.items.length} item diterima</td></tr>`).join('')}
+                                </tbody>
+                            </table>
+                        </div>
+                     </div>
+                </div>
+                `; 
+            },
+
+            // --- PAGE BARU: LOGISTICS (Monitoring Barang Masuk) ---
+            Logistics: () => {
+                const logs = State.data.logs;
+                return `
+                <div class="bg-white rounded-xl shadow overflow-hidden flex flex-col h-[calc(100vh-140px)]">
+                    <div class="p-6 border-b bg-blue-50 shrink-0 flex justify-between items-center">
+                        <div>
+                            <h3 class="font-bold text-gray-700 text-lg">🚛 Riwayat Terima Barang (Receiving)</h3>
+                            <p class="text-xs text-gray-500">Data ini berasal dari kasir saat melakukan 'Terima Barang'</p>
+                        </div>
+                        <button onclick="loadAllData()" class="text-blue-600 text-sm hover:underline">Refresh Data</button>
+                    </div>
+                    <div class="overflow-auto flex-1">
+                        <table class="w-full text-left text-sm">
+                            <thead class="bg-gray-100 sticky top-0 z-10">
+                                <tr>
+                                    <th class="p-4">Waktu</th>
+                                    <th class="p-4">Area / Toko</th>
+                                    <th class="p-4">User</th>
+                                    <th class="p-4">Detail Barang Masuk</th>
+                                </tr>
+                            </thead>
+                            <tbody class="divide-y">
+                                ${logs.length === 0 ? '<tr><td colspan="4" class="p-8 text-center text-gray-400">Belum ada data barang masuk.</td></tr>' : 
+                                  logs.map(l => {
+                                    // Parse items safely
+                                    let itemsDisplay = '-';
+                                    if(Array.isArray(l.items)) {
+                                        itemsDisplay = l.items.map(i => `<span class="inline-block bg-green-100 text-green-800 px-2 py-1 rounded text-xs mr-1 mb-1 border border-green-200"><b>${i.name}</b>: ${i.qty}</span>`).join('');
+                                    }
+                                    return `
+                                    <tr class="hover:bg-blue-50/30 transition">
+                                        <td class="p-4 text-gray-600 whitespace-nowrap">${new Date(l.timestamp).toLocaleString('id-ID')}</td>
+                                        <td class="p-4 font-bold text-blue-800">${l.area}</td>
+                                        <td class="p-4 text-gray-600">${l.user || 'Admin'}</td>
+                                        <td class="p-4">${itemsDisplay}</td>
+                                    </tr>`;
+                                }).join('')}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>`;
+            },
+
+            // --- PAGE UPDATE: REQUISITION (Sinkron Status) ---
+            Requisition: () => { 
+                const pending = State.data.requisitions.filter(r => r.status === 'PENDING'); 
+                const history = State.data.requisitions.filter(r => r.status !== 'PENDING'); 
+                
+                // Helper to render items
+                const renderItems = (itemsData) => {
+                    if(Array.isArray(itemsData)) return itemsData.map(i => `${i.name} (${i.qty})`).join(', ');
+                    return '-';
+                };
+
+                return `
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 h-[calc(100vh-140px)]">
+                    <!-- Pending Section -->
+                    <div class="bg-white rounded-xl shadow overflow-hidden flex flex-col border border-orange-200">
+                        <div class="p-4 border-b bg-orange-50 shrink-0">
+                            <h3 class="font-bold text-orange-700 text-lg">📥 Inbox Request (${pending.length})</h3>
+                            <p class="text-xs text-orange-600">Permintaan dari kasir yang belum diproses</p>
+                        </div>
+                        <div class="overflow-auto flex-1">
+                            ${pending.length === 0 ? '<p class="p-10 text-center text-gray-400">Tidak ada permintaan baru</p>' : 
+                            `<table class="w-full text-left text-sm">
+                                <thead class="bg-orange-50 text-orange-800 sticky top-0 z-10">
+                                    <tr><th class="p-3">Info</th><th class="p-3">Barang</th><th class="p-3 text-right">Aksi</th></tr>
+                                </thead>
+                                <tbody class="divide-y">
+                                    ${pending.map(r => `
+                                    <tr class="hover:bg-orange-50/50">
+                                        <td class="p-3">
+                                            <div class="font-bold text-gray-700">${r.area}</div>
+                                            <div class="text-xs text-gray-500">${new Date(r.timestamp).toLocaleDateString()}</div>
+                                            <div class="text-xs text-gray-500">${r.user||'-'}</div>
+                                        </td>
+                                        <td class="p-3 text-xs text-gray-700 leading-relaxed">
+                                            ${renderItems(r.items)}
+                                        </td>
+                                        <td class="p-3 text-right">
+                                            <button onclick="Actions.approveReq('${r.id}')" class="bg-green-600 text-white px-3 py-1.5 rounded shadow text-xs font-bold hover:bg-green-700 transition">✅ Kirim & Selesai</button>
+                                        </td>
+                                    </tr>`).join('')}
+                                </tbody>
+                            </table>`}
+                        </div>
+                    </div>
+                    
+                    <!-- History Section -->
+                    <div class="bg-white rounded-xl shadow overflow-hidden flex flex-col opacity-90 hover:opacity-100 transition">
+                        <div class="p-4 border-b bg-gray-50 shrink-0">
+                            <h3 class="font-bold text-gray-600">Riwayat Permintaan</h3>
+                        </div>
+                        <div class="overflow-auto flex-1">
+                            <table class="w-full text-left text-sm">
+                                <thead class="bg-gray-100 sticky top-0 z-10">
+                                    <tr><th class="p-3">Tgl</th><th class="p-3">Area</th><th class="p-3">Status</th></tr>
+                                </thead>
+                                <tbody class="divide-y">
+                                    ${history.map(r => `
+                                    <tr>
+                                        <td class="p-3 text-xs">${new Date(r.timestamp).toLocaleDateString()}</td>
+                                        <td class="p-3 font-bold text-gray-600">${r.area}</td>
+                                        <td class="p-3">${getStatusBadge(r.status)}</td>
+                                    </tr>`).join('')}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>`; 
+            },
+
             Shifts: () => `<div class="bg-white rounded-xl shadow overflow-hidden flex flex-col h-[calc(100vh-140px)]"><div class="p-6 border-b bg-blue-50 shrink-0"><h3 class="font-bold text-gray-700 text-lg">Laporan Keuangan Harian</h3></div><div class="overflow-auto flex-1"><table class="w-full text-left text-sm whitespace-nowrap"><thead class="bg-gray-100 sticky top-0 z-10"><tr><th class="p-4">Waktu / Kasir</th><th class="p-4 text-right">Tunai (Fisik)</th><th class="p-4 text-right">QRIS</th><th class="p-4 text-right">Kasbon</th><th class="p-4 text-right font-bold">Total Real</th><th class="p-4 text-right">Selisih</th></tr></thead><tbody class="divide-y">${State.data.shifts.map(s => { const cashNet = s.actualCash - s.startCash; const totalReal = cashNet + (s.totalQris||0) + (s.totalKasbon||0); return `<tr class="hover:bg-gray-50"><td class="p-4"><div class="font-bold">${s.cashierName}</div><div class="text-xs text-gray-500">${new Date(s.openTime).toLocaleDateString()}</div><span class="bg-gray-200 px-2 rounded text-xs">${s.area}</span></td><td class="p-4 text-right font-bold text-gray-800">${formatRp(s.actualCash)}</td><td class="p-4 text-right text-blue-700">${formatRp(s.totalQris||0)}</td><td class="p-4 text-right text-orange-700">${formatRp(s.totalKasbon||0)}</td><td class="p-4 text-right font-extrabold text-gray-900">${formatRp(totalReal)}</td><td class="p-4 text-right font-bold ${s.difference < 0 ? 'text-red-600' : 'text-green-600'}">${s.difference === 0 ? '✅ Pas' : formatRp(s.difference)}</td></tr>`; }).join('')}</tbody></table></div></div>`,
+            
             Purchase: () => `<div class="flex justify-end mb-4"><button onclick="Modals.openBatchPO()" class="bg-blue-600 text-white px-4 py-2 rounded font-bold">+ Buat Batch PO</button></div><div class="bg-white rounded shadow overflow-hidden h-[calc(100vh-200px)] flex flex-col"><div class="overflow-auto flex-1"><table class="w-full text-sm text-left"><thead class="bg-gray-100 sticky top-0 z-10"><tr><th class="p-4">Batch</th><th class="p-4">Supplier</th><th class="p-4">Cabang</th><th class="p-4">Status</th><th class="p-4">Items</th></tr></thead><tbody class="divide-y">${State.data.purchases.map(p=>`<tr><td class="p-4 text-blue-600 font-mono font-bold">${p.batchNumber}</td><td class="p-4">${p.supplier}</td><td class="p-4"><span class="px-2 py-1 bg-purple-100 text-purple-800 rounded text-xs font-bold border border-purple-200">${p.branch}</span></td><td class="p-4">${getStatusBadge(p.status)}</td><td class="p-4 font-medium text-gray-500">${JSON.parse(p.items).length} items</td></tr>`).join('')}</tbody></table></div></div>`,
-            Requisition: () => { const pending=State.data.requisitions.filter(r=>r.status==='pending'); const history=State.data.requisitions.filter(r=>r.status!=='pending'); return `<div class="grid grid-cols-1 lg:grid-cols-2 gap-6 h-[calc(100vh-140px)]"><div class="bg-white rounded-xl shadow overflow-hidden flex flex-col border border-orange-200"><div class="p-4 border-b bg-orange-50 shrink-0"><h3 class="font-bold text-orange-700 text-lg">📥 Menunggu Persetujuan (${pending.length})</h3></div><div class="overflow-auto flex-1">${pending.length===0?'<p class="p-10 text-center text-gray-400">Tidak ada permintaan baru</p>':`<table class="w-full text-left text-sm"><thead class="bg-orange-50 text-orange-800 sticky top-0 z-10"><tr><th class="p-3">Tgl</th><th class="p-3">Cabang</th><th class="p-3">Item</th><th class="p-3">Aksi</th></tr></thead><tbody class="divide-y">${pending.map(r=>`<tr class="hover:bg-orange-50/50"><td class="p-3 text-xs">${new Date(r.createdAt).toLocaleDateString()}</td><td class="p-3 font-bold">${r.branch}</td><td class="p-3 text-xs truncate max-w-[150px]">${JSON.parse(r.items).map(i=>`${i.name}(${i.qty})`).join(', ')}</td><td class="p-3"><button onclick="Actions.approveReq('${r.id}')" class="bg-green-600 text-white px-2 py-1 rounded text-xs font-bold mr-1 hover:bg-green-700">✓</button><button onclick="Actions.rejectReq('${r.id}')" class="bg-red-600 text-white px-2 py-1 rounded text-xs font-bold hover:bg-red-700">✗</button></td></tr>`).join('')}</tbody></table>`}</div></div><div class="bg-white rounded-xl shadow overflow-hidden flex flex-col opacity-75 hover:opacity-100 transition"><div class="p-4 border-b bg-gray-50 shrink-0"><h3 class="font-bold text-gray-600">Riwayat Permintaan</h3></div><div class="overflow-auto flex-1"><table class="w-full text-left text-sm"><thead class="bg-gray-100 sticky top-0 z-10"><tr><th class="p-3">Tgl</th><th class="p-3">Cabang</th><th class="p-3">Status</th></tr></thead><tbody class="divide-y">${history.map(r=>`<tr><td class="p-3 text-xs">${new Date(r.createdAt).toLocaleDateString()}</td><td class="p-3 font-bold text-gray-600">${r.branch}</td><td class="p-3">${getStatusBadge(r.status)}</td></tr>`).join('')}</tbody></table></div></div></div>`; },
+            
             Inventory: () => `<div class="grid grid-cols-1 lg:grid-cols-3 gap-6"><div class="bg-white rounded-xl shadow p-6 lg:col-span-1 h-fit"><h3 class="font-bold text-gray-800 mb-4">📦 Input / Update Stok</h3><form id="stockForm" class="space-y-3"><div><label class="text-xs font-bold text-gray-500">Barcode</label><input type="text" id="barcode" class="w-full p-2 border rounded bg-gray-50" placeholder="Scan/Ketik..." required oninput="autoFill()"></div><div><label class="text-xs font-bold text-gray-500">Nama Produk</label><input type="text" id="productName" class="w-full p-2 border rounded" required></div><div class="grid grid-cols-2 gap-2"><div><label class="text-xs font-bold text-gray-500">HPP (Beli)</label><input type="number" id="hpp" class="w-full p-2 border rounded" placeholder="0"></div><div><label class="text-xs font-bold text-gray-500">Harga Jual</label><input type="number" id="price" class="w-full p-2 border rounded" placeholder="0" required></div></div><div><label class="text-xs font-bold text-gray-500">Target Cabang</label><select id="targetArea" class="w-full p-2 border rounded bg-white"><option value="adamart 73">Adamart 73</option><option value="adamart induksi">Induksi</option><option value="adamart kelanis">Kelanis</option></select></div><div class="grid grid-cols-2 gap-2"><div><label class="text-xs font-bold text-gray-500">Tambah Qty</label><input type="number" id="stockAmount" class="w-full p-2 border rounded" placeholder="0" required></div><div><label class="text-xs font-bold text-gray-500">Exp Date</label><input type="date" id="expiryDate" class="w-full p-2 border rounded"></div></div><button type="submit" class="w-full bg-blue-600 text-white py-2 rounded font-bold hover:bg-blue-700 mt-4">Simpan Stok</button></form></div><div class="bg-white rounded-xl shadow overflow-hidden lg:col-span-2 flex flex-col h-[calc(100vh-200px)]"><div class="p-4 border-b bg-gray-50 shrink-0"><input type="text" placeholder="🔍 Cari produk di inventory..." class="w-full p-2 border rounded" oninput="filterInventory(this.value)"></div><div class="overflow-auto flex-1"><table class="w-full text-left text-sm"><thead class="bg-gray-100 text-gray-600 uppercase font-bold sticky top-0 z-10 shadow-sm"><tr><th class="p-4">Produk</th><th class="p-4">HPP/Jual</th><th class="p-4 text-center">73</th><th class="p-4 text-center">Induksi</th><th class="p-4 text-center">Kelanis</th></tr></thead><tbody class="divide-y product-row-container">${State.data.products.map(p => { const hpp = p.HPP || 0; const hppClass = hpp === 0 ? 'text-red-500 font-bold' : 'text-gray-500'; return `<tr class="hover:bg-gray-50 product-row"><td class="p-4"><div class="font-bold">${p['Nama Produk']}</div><div class="text-xs text-gray-500 font-mono">${p.Barcode}</div></td><td class="p-4"><div class="text-xs ${hppClass}">B: ${formatRp(hpp)}</div><div class="font-bold text-green-600">J: ${formatRp(p.Harga)}</div></td><td class="p-4 text-center font-bold ${checkStock(p['Stok Area Kasir adamart 73'])}">${p['Stok Area Kasir adamart 73']||0}</td><td class="p-4 text-center font-bold ${checkStock(p['Stok Area Kasir adamart induksi'])}">${p['Stok Area Kasir adamart induksi']||0}</td><td class="p-4 text-center font-bold ${checkStock(p['Stok Area Kasir adamart kelanis'])}">${p['Stok Area Kasir adamart kelanis']||0}</td></tr>`; }).join('')}</tbody></table></div></div></div>`,
             
-            // --- REPORTS PAGE (RE-ENABLED) ---
             Reports: () => `
                 <div class="space-y-6">
                     <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
@@ -136,32 +350,25 @@
                 </div>
             `,
 
-            initReportCharts: () => { 
-                setTimeout(() => Pages.updateCharts(), 200); 
-            },
-
+            initReportCharts: () => { setTimeout(() => Pages.updateCharts(), 200); },
             updateCharts: () => {
                 const periodElement = document.getElementById('reportPeriod');
-                if (!periodElement) return; // Safety check
-
+                if (!periodElement) return;
                 const period = periodElement.value;
                 const grouped = {}, payments = {}, productPerformance = {};
                 const branchData = { "adamart 73": {}, "adamart induksi": {}, "adamart kelanis": {} };
                 const allDates = new Set();
-
                 let totalOmzet = 0, totalProfit = 0;
 
                 State.data.sales.forEach(s => {
                     const d = new Date(s.timestamp);
                     const key = period === 'monthly' ? d.toLocaleDateString('id-ID', {month:'short', year:'2-digit'}) : `W${Math.ceil(d.getDate()/7)} ${d.toLocaleDateString('id-ID', {month:'short'})}`;
-                    
                     allDates.add(key);
                     const branch = (s.area || "").toLowerCase();
                     if (branchData[branch]) {
                         if (!branchData[branch][key]) branchData[branch][key] = 0;
                         branchData[branch][key] += s.total;
                     }
-
                     let saleCost = 0;
                     let itemsList = s.cart || [];
                     if(itemsList.length === 0 && s.items) { 
@@ -170,37 +377,27 @@
                             if(parts.length === 2) itemsList.push({name: parts[0].trim(), quantity: parseInt(parts[1])});
                          });
                     }
-
                     itemsList.forEach(item => {
                         const product = State.data.products.find(p => p['Nama Produk'].trim().toLowerCase() === item.name.toLowerCase());
                         const hpp = product ? (parseInt(product.HPP) || 0) : 0;
                         const price = item.price || (product ? product.Harga : 0);
-                        const revenue = price * item.quantity;
-                        
                         saleCost += (hpp * item.quantity);
-
                         if(!productPerformance[item.name]) productPerformance[item.name] = {qty:0, rev:0};
                         productPerformance[item.name].qty += item.quantity;
-                        productPerformance[item.name].rev += revenue;
+                        productPerformance[item.name].rev += (price * item.quantity);
                     });
-
                     totalOmzet += s.total;
                     totalProfit += (s.total - saleCost);
-                    
                     const method = s.method || 'Unknown';
                     payments[method] = (payments[method] || 0) + s.total;
                 });
 
-                // UI Updates
                 document.getElementById('rep-omzet').innerText = formatRp(totalOmzet);
                 document.getElementById('rep-profit').innerText = formatRp(totalProfit);
                 document.getElementById('rep-trx').innerText = State.data.sales.length;
                 document.getElementById('rep-avg').innerText = formatRp(State.data.sales.length ? totalOmzet / State.data.sales.length : 0);
 
-                // Chart Data Preparation
-                const labels = Array.from(allDates).sort((a,b) => a.localeCompare(b)); // Simple sort
-                
-                // Line Chart (Multi-Branch)
+                const labels = Array.from(allDates).sort((a,b) => a.localeCompare(b));
                 const ctxLine = document.getElementById('salesChart');
                 if (ctxLine) {
                     if(State.charts.line) State.charts.line.destroy();
@@ -217,8 +414,6 @@
                         options: { responsive: true, maintainAspectRatio: false }
                     });
                 }
-
-                // Doughnut Chart
                 const ctxPie = document.getElementById('paymentChart');
                 if (ctxPie) {
                     if(State.charts.doughnut) State.charts.doughnut.destroy();
@@ -226,23 +421,14 @@
                         type: 'doughnut',
                         data: {
                             labels: Object.keys(payments),
-                            datasets: [{
-                                data: Object.values(payments),
-                                backgroundColor: ['#3b82f6', '#10b981', '#f59e0b', '#ef4444']
-                            }]
+                            datasets: [{ data: Object.values(payments), backgroundColor: ['#3b82f6', '#10b981', '#f59e0b', '#ef4444'] }]
                         },
                         options: { responsive: true, maintainAspectRatio: false }
                     });
                 }
-
-                // Top Products Table
                 const topBody = document.getElementById('topProductBody');
                 if (topBody) {
-                    topBody.innerHTML = Object.entries(productPerformance)
-                        .sort((a,b) => b[1].rev - a[1].rev)
-                        .slice(0, 5)
-                        .map(([n, d]) => `<tr class="border-b"><td class="p-3 font-medium">${n}</td><td class="p-3 text-right">${d.qty}</td><td class="p-3 text-right font-bold text-blue-600">${formatRp(d.rev)}</td></tr>`)
-                        .join('');
+                    topBody.innerHTML = Object.entries(productPerformance).sort((a,b) => b[1].rev - a[1].rev).slice(0, 5).map(([n, d]) => `<tr class="border-b"><td class="p-3 font-medium">${n}</td><td class="p-3 text-right">${d.qty}</td><td class="p-3 text-right font-bold text-blue-600">${formatRp(d.rev)}</td></tr>`).join('');
                 }
             }
         };
@@ -267,10 +453,23 @@
             getMonthOptions: () => { let opts = ''; const startYear = 2025; for (let y = startYear; y <= 2026; y++) { for (let m = 0; m < 12; m++) { const val = `${m+1}-${y}`; const isCur = new Date().getMonth() === m && new Date().getFullYear() === y; opts += `<option value="${val}" ${isCur ? 'selected' : ''}>${new Date(y, m, 1).toLocaleDateString('id-ID', {month:'long', year:'numeric'})}</option>`; } } return opts; }
         };
 
+        // GLOBAL ACTIONS
         const Actions = {
             createBatchPO: async (e) => { e.preventDefault(); const form = e.target; const selectVal = document.getElementById('supplierSelect').value; let supplier = selectVal === 'custom' ? document.getElementById('customSupplier').value.trim() : selectVal; if(State.tempBatchItems.length === 0) return alert("Belum ada item!"); const batchId = 'BATCH-' + Date.now(); const promises = []; const orderDate = form.elements['orderDate'].value; BRANCHES.forEach(branch => { if(document.getElementById(`branch-${branch.replace(/\s+/g, '-')}`).checked) { const poData = { type: 'purchase', batchNumber: batchId, branch: branch, supplier: supplier, orderDate: orderDate, status: 'pending', items: JSON.stringify(State.tempBatchItems), createdAt: new Date().toISOString() }; promises.push(window.addDoc(window.collection(window.db, "purchases"), poData)); } }); await Promise.all(promises); closeModal(); alert("Sukses! PO Batch berhasil dibuat."); loadAllData(); },
-            approveReq: async (id) => { if(confirm("Setujui?")) { await window.updateDoc(window.doc(window.db, "requisitions", id), {status:'approved'}); loadAllData(); } },
-            rejectReq: async (id) => { if(confirm("Tolak?")) { await window.updateDoc(window.doc(window.db, "requisitions", id), {status:'rejected'}); loadAllData(); } },
+            
+            // ACTION UPDATE: Approve Requisition -> DONE
+            approveReq: async (id) => { 
+                if(confirm("Kirim barang dan selesaikan permintaan?")) { 
+                    try {
+                        await window.updateDoc(window.doc(window.db, "requisitions", id), {status:'DONE'}); 
+                        alert("Berhasil disetujui! Status berubah menjadi DONE.");
+                        loadAllData(); 
+                    } catch(e) {
+                        alert("Gagal update: " + e.message);
+                    }
+                } 
+            },
+            
             updateStock: async (e) => { e.preventDefault(); const barcode = document.getElementById('barcode').value; const area = document.getElementById('targetArea').value; const qty = parseInt(document.getElementById('stockAmount').value); const hpp = parseInt(document.getElementById('hpp').value) || 0; const price = parseInt(document.getElementById('price').value) || 0; const name = document.getElementById('productName').value; const expiry = document.getElementById('expiryDate').value; const stockKey = `Stok Area Kasir ${area.toLowerCase()}`; try { const q = window.query(window.collection(window.db, "products"), window.where("Barcode", "==", barcode)); const snapshot = await window.getDocs(q); if (!snapshot.empty) { const docRef = snapshot.docs[0].ref; const updateData = { "Nama Produk": name, "Harga": price, "HPP": hpp }; if (qty !== 0) updateData[stockKey] = window.increment(qty); if (expiry) updateData["Tanggal Kadaluarsa"] = new Date(expiry).toISOString(); await window.updateDoc(docRef, updateData); } else { const newData = { Barcode: barcode, "Nama Produk": name, "Harga": price, "HPP": hpp, [stockKey]: qty }; if (expiry) newData["Tanggal Kadaluarsa"] = new Date(expiry).toISOString(); await window.addDoc(window.collection(window.db, "products"), newData); } fetch(APPS_SCRIPT_URL, { method: 'POST', body: JSON.stringify({ action: 'update_stock', data: { barcode, name, price, hpp, area: area.toLowerCase(), quantity: qty, expiryDate: expiry } }) }); alert("Stok Updated!"); document.getElementById('stockForm').reset(); loadAllData(); } catch (err) { console.error(err); alert("Gagal update stok: " + err.message); } }
         };
 
@@ -287,6 +486,7 @@
         window.removeItemFromTemp = (i) => { State.tempBatchItems.splice(i,1); document.getElementById('temp-items-list').innerHTML=State.tempBatchItems.map((i,x)=>`<div class="flex justify-between items-center bg-white p-2 rounded border"><div><span class="font-bold">${i.name}</span> x${i.qty}</div><button onclick="removeItemFromTemp(${x})" class="text-red-500 px-2">✕</button></div>`).join(''); };
         window.toggleSupplierInput = (el) => { const i=document.getElementById('customSupplier'); if(el.value==='custom'){i.classList.remove('hidden');i.disabled=false;i.focus();}else{i.classList.add('hidden');i.disabled=true;} };
         window.filterInventory = (v) => { document.querySelectorAll('.product-row').forEach(r => r.style.display = r.innerText.toLowerCase().includes(v.toLowerCase()) ? '' : 'none'); };
+        
         window.exportFinancialReportToCSV = () => { const grouped={}; const period=document.getElementById('reportPeriod').value; State.data.sales.forEach(s=>{ const d=new Date(s.timestamp); const key=period==='monthly'?d.toLocaleDateString('id-ID',{month:'long',year:'numeric'}):`Minggu ${Math.ceil(d.getDate()/7)} ${d.toLocaleDateString('id-ID',{month:'short'})}`; if(!grouped[key])grouped[key]={rev:0,cost:0,count:0}; let saleCost=0; let itemsList=s.cart||[]; if(itemsList.length===0&&s.items){s.items.split(', ').forEach(str=>{const parts=str.split(' x');if(parts.length===2)itemsList.push({name:parts[0].trim(),quantity:parseInt(parts[1])});});} itemsList.forEach(i=>{const p=State.data.products.find(prod=>prod['Nama Produk'].trim().toLowerCase()===i.name.toLowerCase()); saleCost+=(p?(parseInt(p.HPP)||0):0)*i.quantity;}); grouped[key].rev+=s.total; grouped[key].cost+=saleCost; grouped[key].count++; }); const rows=[['Periode','Total Transaksi','Total Omzet','Total HPP','Laba Kotor']]; Object.keys(grouped).reverse().forEach(k=>{rows.push([k,grouped[k].count,grouped[k].rev,grouped[k].cost,grouped[k].rev-grouped[k].cost]);}); const csv="data:text/csv;charset=utf-8,"+rows.map(e=>e.join(",")).join("\n"); const link=document.createElement("a"); link.href=encodeURI(csv); link.download="Laporan_Keuangan.csv"; link.click(); };
         window.exportProductPerformanceCSV = () => { const ps={}; State.data.sales.forEach(s=>{ let itemsList=s.cart||[]; if(itemsList.length===0&&s.items){s.items.split(', ').forEach(str=>{const parts=str.split(' x');if(parts.length===2)itemsList.push({name:parts[0].trim(),quantity:parseInt(parts[1])});});} itemsList.forEach(i=>{ const n=i.name; if(!ps[n])ps[n]={qty:0,rev:0}; ps[n].qty+=i.quantity; const p=State.data.products.find(prod=>prod['Nama Produk'].trim().toLowerCase()===n.toLowerCase()); const pr=i.price||(p?p.Harga:0); ps[n].rev+=(pr*i.quantity); }); }); const rows=[['Nama Barang','Terjual','Stok','HPP','Omzet','Laba']]; Object.keys(ps).forEach(n=>{ const s=ps[n]; const p=State.data.products.find(prod=>prod['Nama Produk'].trim().toLowerCase()===n.toLowerCase()); const st=p?(parseInt(p['Stok Area Kasir adamart 73']||0)+parseInt(p['Stok Area Kasir adamart induksi']||0)+parseInt(p['Stok Area Kasir adamart kelanis']||0)):0; const h=p?(parseInt(p.HPP)||0):0; rows.push([n,s.qty,st,h,s.rev,s.rev-(h*s.qty)]); }); const csv="data:text/csv;charset=utf-8,"+rows.map(e=>e.join(",")).join("\n"); const link=document.createElement("a"); link.href=encodeURI(csv); link.download="Laporan_Produk.csv"; link.click(); };
 
