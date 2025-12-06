@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Adamart - Manager Dashboard (Integrated)</title>
+    <title>Adamart - Manager Dashboard (Smart AI)</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     
@@ -11,7 +11,6 @@
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
         import { getFirestore, collection, getDocs, addDoc, updateDoc, deleteDoc, doc, query, where, orderBy, limit, increment } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
-        // IMPORT AUTHENTICATION
         import { getAuth, signInAnonymously } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
 
         const firebaseConfig = {
@@ -25,47 +24,21 @@
 
         const app = initializeApp(firebaseConfig);
         const db = getFirestore(app);
-        const auth = getAuth(app); // Initialize Auth
+        const auth = getAuth(app);
 
-        // Expose Firebase functions globally
         window.db = db; window.collection = collection; window.getDocs = getDocs; 
         window.addDoc = addDoc; window.updateDoc = updateDoc; window.deleteDoc = deleteDoc; 
         window.doc = doc; window.query = query; window.where = where; 
         window.orderBy = orderBy; window.limit = limit; window.increment = increment;
         
-        // Auto Sign-in Anonymously with Error Handling
         signInAnonymously(auth)
             .then(() => {
                 console.log("Manager signed in anonymously");
                 document.dispatchEvent(new Event('firebase-ready'));
             })
             .catch((error) => {
-                console.error("Authentication failed:", error);
-                
-                // Show friendly error message
-                const errorDiv = document.createElement('div');
-                errorDiv.className = 'fixed inset-0 bg-black/80 z-[100] flex items-center justify-center p-4';
-                errorDiv.innerHTML = `
-                    <div class="bg-white p-8 rounded-xl max-w-lg w-full text-center shadow-2xl">
-                        <div class="text-5xl mb-4">⚠️</div>
-                        <h2 class="text-2xl font-bold text-red-600 mb-2">Otentikasi Gagal</h2>
-                        <p class="text-gray-700 mb-4 font-mono text-sm bg-gray-100 p-2 rounded">${error.code}</p>
-                        <p class="text-gray-600 mb-6 text-sm text-left">
-                            Fitur <b>Anonymous Sign-in</b> belum aktif di Firebase Console Anda.
-                            <br><br>
-                            <b>Cara Mengatasi:</b>
-                            <ol class="list-decimal ml-5 mt-2 space-y-1">
-                                <li>Buka <a href="https://console.firebase.google.com/" target="_blank" class="text-blue-600 underline">Firebase Console</a></li>
-                                <li>Pilih Project <b>adamart-pos</b></li>
-                                <li>Masuk menu <b>Build > Authentication</b></li>
-                                <li>Klik tab <b>Sign-in method</b></li>
-                                <li>Aktifkan provider <b>Anonymous</b> (Tamu)</li>
-                            </ol>
-                        </p>
-                        <button onclick="location.reload()" class="bg-blue-600 text-white px-6 py-2 rounded-lg font-bold hover:bg-blue-700">Sudah Aktif? Refresh Halaman</button>
-                    </div>
-                `;
-                document.body.appendChild(errorDiv);
+                console.error("Auth error:", error);
+                alert("Gagal Login: " + error.message);
             });
     </script>
 
@@ -78,6 +51,10 @@
         .modal-content { background: white; border-radius: 1rem; max-width: 800px; width: 90%; max-height: 90vh; overflow-y: auto; } 
         .animate-spin { animation: spin 1s linear infinite; } 
         @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+        ::-webkit-scrollbar { width: 6px; height: 6px; }
+        ::-webkit-scrollbar-track { background: #f1f1f1; }
+        ::-webkit-scrollbar-thumb { background: #ccc; border-radius: 3px; }
+        ::-webkit-scrollbar-thumb:hover { background: #aaa; }
     </style>
 </head>
 <body class="flex h-full">
@@ -89,15 +66,15 @@
         </div>
         <nav class="flex-1 py-4 space-y-1">
             <a onclick="navigate('dashboard')" class="sidebar-item px-6 py-3 cursor-pointer flex items-center gap-3 hover:bg-white/10"><span>📊</span> Dashboard</a>
-            <a onclick="navigate('logistics')" class="sidebar-item px-6 py-3 cursor-pointer flex items-center gap-3 hover:bg-white/10 bg-white/5 border-l-4 border-blue-400"><span>🚛</span> Logistik Toko</a>
-            <a onclick="navigate('requisition')" class="sidebar-item px-6 py-3 cursor-pointer flex items-center gap-3 hover:bg-white/10"><span>📥</span> Inbox Request</a>
-            <a onclick="navigate('inventory')" class="sidebar-item px-6 py-3 cursor-pointer flex items-center gap-3 hover:bg-white/10"><span>📦</span> Inventory Master</a>
+            <a onclick="navigate('smart_restock')" class="sidebar-item px-6 py-3 cursor-pointer flex items-center gap-3 hover:bg-white/10 bg-white/10 border-l-4 border-purple-400"><span>🤖</span> Smart Restock</a>
             <a onclick="navigate('purchase')" class="sidebar-item px-6 py-3 cursor-pointer flex items-center gap-3 hover:bg-white/10"><span>🛒</span> Purchase Order</a>
+            <a onclick="navigate('logistics')" class="sidebar-item px-6 py-3 cursor-pointer flex items-center gap-3 hover:bg-white/10"><span>🚛</span> Logistik Toko</a>
+            <a onclick="navigate('inventory')" class="sidebar-item px-6 py-3 cursor-pointer flex items-center gap-3 hover:bg-white/10"><span>📦</span> Inventory Master</a>
+            <a onclick="navigate('reports')" class="sidebar-item px-6 py-3 cursor-pointer flex items-center gap-3 hover:bg-white/10"><span>📈</span> Laporan Profit</a>
             <a onclick="navigate('shifts')" class="sidebar-item px-6 py-3 cursor-pointer flex items-center gap-3 hover:bg-white/10"><span>🕒</span> Laporan Shift</a>
             <a onclick="navigate('evoucher')" class="sidebar-item px-6 py-3 cursor-pointer flex items-center gap-3 hover:bg-white/10 text-yellow-100"><span>🎫</span> E-Voucher</a>
-            <a onclick="navigate('reports')" class="sidebar-item px-6 py-3 cursor-pointer flex items-center gap-3 hover:bg-white/10"><span>📈</span> Analisa Bisnis</a>
         </nav>
-        <div class="p-4 text-xs opacity-50 text-center">v5.2 Connected</div>
+        <div class="p-4 text-xs opacity-50 text-center">v6.0 AI Restock</div>
     </aside>
 
     <!-- MAIN CONTENT -->
@@ -128,40 +105,33 @@
         const BRANCHES = ["Adamart 73", "Adamart Kelanis", "Adamart Induksi"];
         const SUPPLIERS = ["PT Sumber Makmur", "CV Mitra Jaya", "Toko Grosir Berkah", "PT Indo Supplier"];
         
-        // GLOBAL STATE
         const State = { 
             currentPage: 'dashboard', 
-            data: { products: [], sales: [], purchases: [], requisitions: [], shifts: [], logs: [] }, 
+            data: { products: [], sales: [], purchases: [], shifts: [], logs: [] }, 
             tempBatchItems: [], 
             charts: { line: null, doughnut: null } 
         };
 
         const EvoucherState = { view: 'login', users: [], selectedPeriod: '', loading: false, foundUser: null };
 
-        // INITIAL LOAD
         document.addEventListener('firebase-ready', () => { loadAllData(); });
 
-        // DATA FETCHING (Sekarang termasuk logs)
         async function loadAllData() {
             try {
                 document.getElementById('loadingState').classList.remove('hidden'); 
                 document.getElementById('content-area').classList.add('hidden');
                 
-                // Fetching all necessary collections concurrently
-                const [pSnap, sSnap, poSnap, rSnap, shiftSnap, logSnap] = await Promise.all([
+                const [pSnap, sSnap, poSnap, shiftSnap, logSnap] = await Promise.all([
                     window.getDocs(window.collection(window.db, "products")),
-                    window.getDocs(window.query(window.collection(window.db, "sales"), window.orderBy("timestamp", "desc"), window.limit(100))),
+                    window.getDocs(window.query(window.collection(window.db, "sales"), window.orderBy("timestamp", "desc"), window.limit(500))), // Load lebih banyak sales untuk prediksi akurat
                     window.getDocs(window.collection(window.db, "purchases")),
-                    window.getDocs(window.query(window.collection(window.db, "requisitions"), window.orderBy("timestamp", "desc"))),
                     window.getDocs(window.query(window.collection(window.db, "shifts"), window.orderBy("openTime", "desc"), window.limit(50))),
                     window.getDocs(window.query(window.collection(window.db, "inventory_logs"), window.orderBy("timestamp", "desc"), window.limit(50)))
                 ]);
                 
-                // Parsing Data
                 State.data.products = []; pSnap.forEach(d => State.data.products.push({ id: d.id, ...d.data() }));
                 State.data.sales = []; sSnap.forEach(d => State.data.sales.push({ id: d.id, ...d.data() }));
                 State.data.purchases = []; poSnap.forEach(d => State.data.purchases.push({ id: d.id, ...d.data() }));
-                State.data.requisitions = []; rSnap.forEach(d => State.data.requisitions.push({ id: d.id, ...d.data() }));
                 State.data.shifts = []; shiftSnap.forEach(d => State.data.shifts.push({ id: d.id, ...d.data() }));
                 State.data.logs = []; logSnap.forEach(d => State.data.logs.push({ id: d.id, ...d.data() }));
                 
@@ -176,46 +146,182 @@
 
         window.navigate = (page) => { State.currentPage = page; renderPage(); };
 
-        // ROUTER / PAGE RENDERER
         function renderPage() {
             const container = document.getElementById('content-area'); 
             const title = document.getElementById('page-title'); 
             container.innerHTML = '';
             
-            // Cleanup Charts
             if(State.charts.line) { State.charts.line.destroy(); State.charts.line = null; }
             if(State.charts.doughnut) { State.charts.doughnut.destroy(); State.charts.doughnut = null; }
 
             switch (State.currentPage) {
                 case 'dashboard': title.innerText = 'Dashboard Overview'; container.innerHTML = Pages.Dashboard(); break;
+                case 'smart_restock': title.innerText = 'Smart Restock (AI Prediction)'; container.innerHTML = Pages.SmartRestock(); break;
                 case 'logistics': title.innerText = 'Logistik Toko (Barang Masuk)'; container.innerHTML = Pages.Logistics(); break;
-                case 'requisition': title.innerText = 'Inbox Permintaan Barang'; container.innerHTML = Pages.Requisition(); break;
                 case 'inventory': title.innerText = 'Inventory Master'; container.innerHTML = Pages.Inventory(); setupInventoryListeners(); break;
                 case 'purchase': title.innerText = 'Purchase Orders (Supplier)'; container.innerHTML = Pages.Purchase(); break;
                 case 'shifts': title.innerText = 'Laporan Shift & Keuangan'; container.innerHTML = Pages.Shifts(); break;
                 case 'evoucher': title.innerText = 'E-Voucher System (Kopkar)'; const today = new Date(); EvoucherState.selectedPeriod = `${today.getMonth() + 1}-${today.getFullYear()}`; EvoucherActions.render(); break;
-                case 'reports': title.innerText = 'Analisa Bisnis Lengkap'; container.innerHTML = Pages.Reports(); setTimeout(Pages.initReportCharts, 100); break;
+                case 'reports': title.innerText = 'Analisa Profit & Bisnis'; container.innerHTML = Pages.Reports(); setTimeout(Pages.initReportCharts, 100); break;
             }
         }
 
-        // PAGES COMPONENTS
         const Pages = {
-            Dashboard: () => { 
-                const pendingReq = State.data.requisitions.filter(r => r.status === 'PENDING').length;
+            // --- SMART RESTOCK (NEW AI FEATURE) ---
+            SmartRestock: () => {
+                // 1. Hitung Penjualan per Produk (30 Hari Terakhir)
+                const productStats = {};
+                const thirtyDaysAgo = new Date();
+                thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+
+                State.data.sales.forEach(s => {
+                    if (new Date(s.timestamp) < thirtyDaysAgo) return; // Skip data lama
+                    
+                    let itemsList = s.cart || [];
+                    // Fallback legacy
+                    if(itemsList.length === 0 && s.items) {
+                        s.items.split(', ').forEach(str => {
+                            const parts = str.split(' x');
+                            if(parts.length === 2) itemsList.push({name: parts[0].trim(), quantity: parseInt(parts[1])});
+                        });
+                    }
+                    
+                    itemsList.forEach(i => {
+                        const name = i.name.trim();
+                        if (!productStats[name]) productStats[name] = 0;
+                        productStats[name] += i.quantity;
+                    });
+                });
+
+                // 2. Analisa Stok vs Penjualan
+                let restockList = State.data.products.map(p => {
+                    const soldLast30Days = productStats[p['Nama Produk']] || 0;
+                    const avgDailySales = soldLast30Days / 30;
+                    const currentStock = (p['Stok Area Kasir adamart 73']||0) + (p['Stok Area Kasir adamart induksi']||0) + (p['Stok Area Kasir adamart kelanis']||0);
+                    
+                    // Prediksi Habis dalam X hari
+                    const daysLeft = avgDailySales > 0 ? currentStock / avgDailySales : 999;
+                    
+                    // Rekomendasi Order: Target stok aman 14 hari
+                    const targetStock = Math.ceil(avgDailySales * 14); 
+                    const suggestOrder = Math.max(0, targetStock - currentStock);
+
+                    return { ...p, avgDailySales, currentStock, daysLeft, suggestOrder, soldLast30Days };
+                });
+
+                // Filter: Barang yang akan habis < 7 hari ATAU Stok Kritis < 5
+                restockList = restockList.filter(p => (p.daysLeft < 7 && p.avgDailySales > 0.1) || p.currentStock < 5).sort((a,b) => a.daysLeft - b.daysLeft);
+
+                // Generate HTML
+                const renderRows = restockList.map((p, idx) => {
+                    const urgencyColor = p.daysLeft < 3 ? 'bg-red-100 text-red-800' : 'bg-yellow-100 text-yellow-800';
+                    return `
+                    <tr class="hover:bg-gray-50 border-b">
+                        <td class="p-4">
+                            <div class="font-bold text-gray-800">${p['Nama Produk']}</div>
+                            <div class="text-xs text-gray-500 font-mono">${p.Barcode}</div>
+                        </td>
+                        <td class="p-4 text-center">
+                            <div class="font-bold">${p.currentStock}</div>
+                            <div class="text-xs text-gray-500">Terjual 30hr: ${p.soldLast30Days}</div>
+                        </td>
+                        <td class="p-4 text-center">
+                            <div class="text-sm font-medium">${p.avgDailySales.toFixed(1)} / hari</div>
+                        </td>
+                        <td class="p-4 text-center">
+                            <span class="px-2 py-1 rounded text-xs font-bold ${urgencyColor}">${p.daysLeft < 1 ? 'HABIS' : Math.floor(p.daysLeft) + ' Hari Lagi'}</span>
+                        </td>
+                        <td class="p-4 text-center">
+                            <div class="flex items-center justify-center gap-2">
+                                <span class="font-bold text-blue-600 text-lg">${p.suggestOrder}</span>
+                                <span class="text-xs text-gray-400">unit</span>
+                            </div>
+                        </td>
+                        <td class="p-4 text-center">
+                            <input type="checkbox" class="restock-check w-5 h-5" data-json='${JSON.stringify({barcode: p.Barcode, name: p['Nama Produk'], qty: p.suggestOrder, hpp: p.HPP, price: p.Harga})}' checked>
+                        </td>
+                    </tr>`;
+                }).join('');
+
                 return `
-                <div class="grid grid-cols-1 md:grid-cols-4 gap-6">
-                    <div class="bg-white p-6 rounded-xl shadow border-l-4 border-green-500">
-                        <div class="text-gray-500 text-sm">Total Pendapatan</div>
+                <div class="space-y-6">
+                    <div class="bg-gradient-to-r from-purple-600 to-blue-600 rounded-xl p-6 text-white shadow-lg flex justify-between items-center">
+                        <div>
+                            <h2 class="text-2xl font-bold flex items-center gap-2"><span>🤖</span> Smart Restock AI</h2>
+                            <p class="opacity-90 text-sm mt-1">Rekomendasi belanja berdasarkan kecepatan penjualan 30 hari terakhir.</p>
+                        </div>
+                        <div class="text-right">
+                            <div class="text-3xl font-bold">${restockList.length}</div>
+                            <div class="text-xs opacity-75">Item Perlu Restock</div>
+                        </div>
+                    </div>
+
+                    <div class="bg-white rounded-xl shadow overflow-hidden border border-gray-200">
+                        <div class="p-4 border-b bg-gray-50 flex justify-between items-center">
+                            <h3 class="font-bold text-gray-700">Prioritas Belanja (Urut: Paling Cepat Habis)</h3>
+                            <button onclick="Actions.generateAutoPO()" class="bg-blue-600 text-white px-4 py-2 rounded-lg font-bold hover:bg-blue-700 shadow transition flex items-center gap-2">
+                                <span>🛒</span> Buat PO Otomatis
+                            </button>
+                        </div>
+                        <div class="overflow-auto max-h-[600px]">
+                            <table class="w-full text-left text-sm">
+                                <thead class="bg-gray-100 sticky top-0 z-10 text-gray-600 uppercase text-xs">
+                                    <tr>
+                                        <th class="p-4">Produk</th>
+                                        <th class="p-4 text-center">Sisa Stok</th>
+                                        <th class="p-4 text-center">Velocity (Speed)</th>
+                                        <th class="p-4 text-center">Est. Habis</th>
+                                        <th class="p-4 text-center">Saran Order (14 Hari)</th>
+                                        <th class="p-4 text-center">Pilih</th>
+                                    </tr>
+                                </thead>
+                                <tbody class="divide-y">
+                                    ${restockList.length > 0 ? renderRows : '<tr><td colspan="6" class="p-8 text-center text-gray-500">Semua stok aman! Tidak ada rekomendasi belanja.</td></tr>'}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>`;
+            },
+
+            Dashboard: () => { 
+                const today = new Date();
+                const twoMonthsLater = new Date();
+                twoMonthsLater.setDate(today.getDate() + 60);
+
+                const lowStockItems = State.data.products.filter(p => {
+                    const totalStok = (p['Stok Area Kasir adamart 73']||0) + (p['Stok Area Kasir adamart induksi']||0) + (p['Stok Area Kasir adamart kelanis']||0);
+                    return totalStok < 10;
+                }).sort((a,b) => a.totalStok - b.totalStok).slice(0, 10);
+
+                const expiringItems = State.data.products.filter(p => {
+                    if(!p.ExpiryDate) return false;
+                    const expDate = new Date(p.ExpiryDate);
+                    return expDate >= today && expDate <= twoMonthsLater;
+                }).sort((a,b) => new Date(a.ExpiryDate) - new Date(b.ExpiryDate)).slice(0, 10);
+
+                const renderLowStock = (items) => items.length === 0 ? '<div class="text-gray-400 italic text-sm p-4">Stok aman semua</div>' : items.map(p => {
+                         const total = (p['Stok Area Kasir adamart 73']||0) + (p['Stok Area Kasir adamart induksi']||0) + (p['Stok Area Kasir adamart kelanis']||0);
+                         return `<div class="flex justify-between items-center border-b py-2 last:border-0"><div><div class="font-bold text-sm text-gray-700">${p['Nama Produk']}</div><div class="text-xs text-gray-500">${p.Barcode}</div></div><span class="bg-red-100 text-red-800 text-xs font-bold px-2 py-1 rounded-full">${total} Unit</span></div>`;
+                    }).join('');
+
+                const renderExpiry = (items) => items.length === 0 ? '<div class="text-gray-400 italic text-sm p-4">Tidak ada barang mendekati expired</div>' : items.map(p => {
+                        const expDate = new Date(p.ExpiryDate);
+                        const diffTime = Math.abs(expDate - today);
+                        const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24)); 
+                        return `<div class="flex justify-between items-center border-b py-2 last:border-0"><div><div class="font-bold text-sm text-gray-700">${p['Nama Produk']}</div><div class="text-xs text-gray-500">Exp: ${expDate.toLocaleDateString('id-ID')}</div></div><span class="bg-yellow-100 text-yellow-800 text-xs font-bold px-2 py-1 rounded-full">${diffDays} Hari Lagi</span></div>`;
+                    }).join('');
+
+                return `
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
+                    <div class="bg-white p-6 rounded-xl shadow border-l-4 border-green-500 cursor-pointer hover:bg-green-50" onclick="navigate('reports')">
+                        <div class="text-gray-500 text-sm font-bold">Total Pendapatan</div>
                         <div class="text-2xl font-bold text-gray-800">${formatRp(State.data.sales.reduce((s, i) => s + (i.total || 0), 0))}</div>
+                        <div class="text-xs text-green-600">Klik untuk lihat profit</div>
                     </div>
                     <div class="bg-white p-6 rounded-xl shadow border-l-4 border-blue-500">
-                        <div class="text-gray-500 text-sm">Total Transaksi</div>
+                        <div class="text-gray-500 text-sm font-bold">Total Transaksi</div>
                         <div class="text-2xl font-bold text-gray-800">${State.data.sales.length}</div>
-                    </div>
-                    <div class="bg-white p-6 rounded-xl shadow border-l-4 border-orange-500 cursor-pointer hover:bg-orange-50" onclick="navigate('requisition')">
-                        <div class="text-orange-600 text-sm font-bold">Pending Request</div>
-                        <div class="text-2xl font-bold text-orange-700">${pendingReq}</div>
-                        <div class="text-xs text-gray-400">Klik untuk proses</div>
                     </div>
                     <div class="bg-white p-6 rounded-xl shadow border-l-4 border-purple-500 cursor-pointer hover:bg-purple-50" onclick="navigate('logistics')">
                         <div class="text-purple-600 text-sm font-bold">Barang Masuk</div>
@@ -223,33 +329,27 @@
                         <div class="text-xs text-gray-400">Aktivitas restock</div>
                     </div>
                 </div>
-                <!-- Recent Activities -->
-                <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mt-6">
-                     <div class="bg-white rounded-xl shadow p-4">
-                        <h3 class="font-bold text-gray-700 mb-4">Aktivitas Penjualan Terakhir</h3>
-                        <div class="overflow-auto max-h-60">
-                            <table class="w-full text-sm text-left">
-                                <tbody class="divide-y">
-                                    ${State.data.sales.slice(0,5).map(s => `<tr><td class="py-2 text-xs text-gray-500">${new Date(s.timestamp).toLocaleTimeString()}</td><td class="py-2 font-bold text-xs">${s.area}</td><td class="py-2 text-right font-bold">${formatRp(s.total)}</td></tr>`).join('')}
-                                </tbody>
-                            </table>
+
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+                    <div class="bg-white rounded-xl shadow border border-red-100 overflow-hidden">
+                        <div class="p-4 bg-red-50 border-b border-red-100 flex justify-between items-center">
+                            <h3 class="font-bold text-red-700 flex items-center gap-2"><span>⚠️</span> Stok Kritis (< 10)</h3>
+                            <button onclick="navigate('smart_restock')" class="text-xs bg-red-100 px-2 py-1 rounded text-red-700 font-bold hover:bg-red-200">Analisa AI</button>
                         </div>
-                     </div>
-                     <div class="bg-white rounded-xl shadow p-4">
-                        <h3 class="font-bold text-gray-700 mb-4">Aktivitas Logistik Terakhir</h3>
-                        <div class="overflow-auto max-h-60">
-                            <table class="w-full text-sm text-left">
-                                <tbody class="divide-y">
-                                    ${State.data.logs.slice(0,5).map(l => `<tr><td class="py-2 text-xs text-gray-500">${new Date(l.timestamp).toLocaleDateString()}</td><td class="py-2 font-bold text-xs text-blue-600">${l.area}</td><td class="py-2 text-xs text-gray-600 truncate max-w-[150px]">${l.items.length} item diterima</td></tr>`).join('')}
-                                </tbody>
-                            </table>
+                        <div class="p-4 max-h-60 overflow-y-auto">${renderLowStock(lowStockItems)}</div>
+                    </div>
+
+                    <div class="bg-white rounded-xl shadow border border-yellow-100 overflow-hidden">
+                        <div class="p-4 bg-yellow-50 border-b border-yellow-100 flex justify-between items-center">
+                            <h3 class="font-bold text-yellow-700 flex items-center gap-2"><span>⏳</span> Akan Expired (2 Bulan)</h3>
+                            <button onclick="navigate('inventory')" class="text-xs text-yellow-600 hover:underline">Lihat Semua</button>
                         </div>
-                     </div>
+                        <div class="p-4 max-h-60 overflow-y-auto">${renderExpiry(expiringItems)}</div>
+                    </div>
                 </div>
                 `; 
             },
 
-            // --- PAGE BARU: LOGISTICS (Monitoring Barang Masuk) ---
             Logistics: () => {
                 const logs = State.data.logs;
                 return `
@@ -264,28 +364,14 @@
                     <div class="overflow-auto flex-1">
                         <table class="w-full text-left text-sm">
                             <thead class="bg-gray-100 sticky top-0 z-10">
-                                <tr>
-                                    <th class="p-4">Waktu</th>
-                                    <th class="p-4">Area / Toko</th>
-                                    <th class="p-4">User</th>
-                                    <th class="p-4">Detail Barang Masuk</th>
-                                </tr>
+                                <tr><th class="p-4">Waktu</th><th class="p-4">Area / Toko</th><th class="p-4">User</th><th class="p-4">Detail Barang Masuk</th></tr>
                             </thead>
                             <tbody class="divide-y">
                                 ${logs.length === 0 ? '<tr><td colspan="4" class="p-8 text-center text-gray-400">Belum ada data barang masuk.</td></tr>' : 
                                   logs.map(l => {
-                                    // Parse items safely
                                     let itemsDisplay = '-';
-                                    if(Array.isArray(l.items)) {
-                                        itemsDisplay = l.items.map(i => `<span class="inline-block bg-green-100 text-green-800 px-2 py-1 rounded text-xs mr-1 mb-1 border border-green-200"><b>${i.name}</b>: ${i.qtyReceived || i.qty}</span>`).join('');
-                                    }
-                                    return `
-                                    <tr class="hover:bg-blue-50/30 transition">
-                                        <td class="p-4 text-gray-600 whitespace-nowrap">${new Date(l.timestamp).toLocaleString('id-ID')}</td>
-                                        <td class="p-4 font-bold text-blue-800">${l.area}</td>
-                                        <td class="p-4 text-gray-600">${l.user || 'Admin'}</td>
-                                        <td class="p-4">${itemsDisplay}</td>
-                                    </tr>`;
+                                    if(Array.isArray(l.items)) itemsDisplay = l.items.map(i => `<span class="inline-block bg-green-100 text-green-800 px-2 py-1 rounded text-xs mr-1 mb-1 border border-green-200"><b>${i.name}</b>: ${i.qtyReceived || i.qty}</span>`).join('');
+                                    return `<tr class="hover:bg-blue-50/30 transition"><td class="p-4 text-gray-600 whitespace-nowrap">${new Date(l.timestamp).toLocaleString('id-ID')}</td><td class="p-4 font-bold text-blue-800">${l.area}</td><td class="p-4 text-gray-600">${l.user || 'Admin'}</td><td class="p-4">${itemsDisplay}</td></tr>`;
                                 }).join('')}
                             </tbody>
                         </table>
@@ -293,96 +379,45 @@
                 </div>`;
             },
 
-            // --- PAGE UPDATE: REQUISITION (Sinkron Status) ---
-            Requisition: () => { 
-                const pending = State.data.requisitions.filter(r => r.status === 'PENDING'); 
-                const history = State.data.requisitions.filter(r => r.status !== 'PENDING'); 
-                
-                // Helper to render items
-                const renderItems = (itemsData) => {
-                    if(Array.isArray(itemsData)) return itemsData.map(i => `${i.name} (${i.qty})`).join(', ');
-                    return '-';
-                };
-
-                return `
-                <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 h-[calc(100vh-140px)]">
-                    <!-- Pending Section -->
-                    <div class="bg-white rounded-xl shadow overflow-hidden flex flex-col border border-orange-200">
-                        <div class="p-4 border-b bg-orange-50 shrink-0">
-                            <h3 class="font-bold text-orange-700 text-lg">📥 Inbox Request (${pending.length})</h3>
-                            <p class="text-xs text-orange-600">Permintaan dari kasir yang belum diproses</p>
-                        </div>
-                        <div class="overflow-auto flex-1">
-                            ${pending.length === 0 ? '<p class="p-10 text-center text-gray-400">Tidak ada permintaan baru</p>' : 
-                            `<table class="w-full text-left text-sm">
-                                <thead class="bg-orange-50 text-orange-800 sticky top-0 z-10">
-                                    <tr><th class="p-3">Info</th><th class="p-3">Barang</th><th class="p-3 text-right">Aksi</th></tr>
-                                </thead>
-                                <tbody class="divide-y">
-                                    ${pending.map(r => `
-                                    <tr class="hover:bg-orange-50/50">
-                                        <td class="p-3">
-                                            <div class="font-bold text-gray-700">${r.area}</div>
-                                            <div class="text-xs text-gray-500">${new Date(r.timestamp).toLocaleDateString()}</div>
-                                            <div class="text-xs text-gray-500">${r.user||'-'}</div>
-                                        </td>
-                                        <td class="p-3 text-xs text-gray-700 leading-relaxed">
-                                            ${renderItems(r.items)}
-                                        </td>
-                                        <td class="p-3 text-right">
-                                            <button onclick="Actions.approveReq('${r.id}')" class="bg-green-600 text-white px-3 py-1.5 rounded shadow text-xs font-bold hover:bg-green-700 transition">✅ Kirim & Selesai</button>
-                                        </td>
-                                    </tr>`).join('')}
-                                </tbody>
-                            </table>`}
-                        </div>
-                    </div>
-                    
-                    <!-- History Section -->
-                    <div class="bg-white rounded-xl shadow overflow-hidden flex flex-col opacity-90 hover:opacity-100 transition">
-                        <div class="p-4 border-b bg-gray-50 shrink-0">
-                            <h3 class="font-bold text-gray-600">Riwayat Permintaan</h3>
-                        </div>
-                        <div class="overflow-auto flex-1">
-                            <table class="w-full text-left text-sm">
-                                <thead class="bg-gray-100 sticky top-0 z-10">
-                                    <tr><th class="p-3">Tgl</th><th class="p-3">Area</th><th class="p-3">Status</th></tr>
-                                </thead>
-                                <tbody class="divide-y">
-                                    ${history.map(r => `
-                                    <tr>
-                                        <td class="p-3 text-xs">${new Date(r.timestamp).toLocaleDateString()}</td>
-                                        <td class="p-3 font-bold text-gray-600">${r.area}</td>
-                                        <td class="p-3">${getStatusBadge(r.status)}</td>
-                                    </tr>`).join('')}
-                                </tbody>
-                            </table>
-                        </div>
-                    </div>
-                </div>`; 
-            },
-
             Shifts: () => `<div class="bg-white rounded-xl shadow overflow-hidden flex flex-col h-[calc(100vh-140px)]"><div class="p-6 border-b bg-blue-50 shrink-0"><h3 class="font-bold text-gray-700 text-lg">Laporan Keuangan Harian</h3></div><div class="overflow-auto flex-1"><table class="w-full text-left text-sm whitespace-nowrap"><thead class="bg-gray-100 sticky top-0 z-10"><tr><th class="p-4">Waktu / Kasir</th><th class="p-4 text-right">Tunai (Fisik)</th><th class="p-4 text-right">QRIS</th><th class="p-4 text-right">Kasbon</th><th class="p-4 text-right font-bold">Total Real</th><th class="p-4 text-right">Selisih</th></tr></thead><tbody class="divide-y">${State.data.shifts.map(s => { const cashNet = s.actualCash - s.startCash; const totalReal = cashNet + (s.totalQris||0) + (s.totalKasbon||0); return `<tr class="hover:bg-gray-50"><td class="p-4"><div class="font-bold">${s.cashierName}</div><div class="text-xs text-gray-500">${new Date(s.openTime).toLocaleDateString()}</div><span class="bg-gray-200 px-2 rounded text-xs">${s.area}</span></td><td class="p-4 text-right font-bold text-gray-800">${formatRp(s.actualCash)}</td><td class="p-4 text-right text-blue-700">${formatRp(s.totalQris||0)}</td><td class="p-4 text-right text-orange-700">${formatRp(s.totalKasbon||0)}</td><td class="p-4 text-right font-extrabold text-gray-900">${formatRp(totalReal)}</td><td class="p-4 text-right font-bold ${s.difference < 0 ? 'text-red-600' : 'text-green-600'}">${s.difference === 0 ? '✅ Pas' : formatRp(s.difference)}</td></tr>`; }).join('')}</tbody></table></div></div>`,
             
-            Purchase: () => `<div class="flex justify-end mb-4"><button onclick="Modals.openBatchPO()" class="bg-blue-600 text-white px-4 py-2 rounded font-bold">+ Buat Batch PO</button></div><div class="bg-white rounded shadow overflow-hidden h-[calc(100vh-200px)] flex flex-col"><div class="overflow-auto flex-1"><table class="w-full text-sm text-left"><thead class="bg-gray-100 sticky top-0 z-10"><tr><th class="p-4">Batch</th><th class="p-4">Supplier</th><th class="p-4">Cabang</th><th class="p-4">Status</th><th class="p-4">Items</th></tr></thead><tbody class="divide-y">${State.data.purchases.map(p=>`<tr><td class="p-4 text-blue-600 font-mono font-bold">${p.batchNumber}</td><td class="p-4">${p.supplier}</td><td class="p-4"><span class="px-2 py-1 bg-purple-100 text-purple-800 rounded text-xs font-bold border border-purple-200">${p.branch}</span></td><td class="p-4">${getStatusBadge(p.status)}</td><td class="p-4 font-medium text-gray-500">${JSON.parse(p.items).length} items</td></tr>`).join('')}</tbody></table></div></div>`,
+            Purchase: () => `<div class="flex justify-end mb-4"><button onclick="Modals.openBatchPO()" class="bg-blue-600 text-white px-4 py-2 rounded font-bold">+ Buat PO Manual</button></div><div class="bg-white rounded shadow overflow-hidden h-[calc(100vh-200px)] flex flex-col"><div class="overflow-auto flex-1"><table class="w-full text-sm text-left"><thead class="bg-gray-100 sticky top-0 z-10"><tr><th class="p-4">Batch</th><th class="p-4">Supplier</th><th class="p-4">Cabang</th><th class="p-4">Status</th><th class="p-4">Items</th></tr></thead><tbody class="divide-y">${State.data.purchases.map(p=>`<tr><td class="p-4 text-blue-600 font-mono font-bold">${p.batchNumber}</td><td class="p-4">${p.supplier}</td><td class="p-4"><span class="px-2 py-1 bg-purple-100 text-purple-800 rounded text-xs font-bold border border-purple-200">${p.branch}</span></td><td class="p-4">${getStatusBadge(p.status)}</td><td class="p-4 font-medium text-gray-500">${JSON.parse(p.items).length} items</td></tr>`).join('')}</tbody></table></div></div>`,
             
             Inventory: () => `<div class="grid grid-cols-1 lg:grid-cols-3 gap-6"><div class="bg-white rounded-xl shadow p-6 lg:col-span-1 h-fit"><h3 class="font-bold text-gray-800 mb-4">📦 Input / Update Stok</h3><form id="stockForm" class="space-y-3"><div><label class="text-xs font-bold text-gray-500">Barcode</label><input type="text" id="barcode" class="w-full p-2 border rounded bg-gray-50" placeholder="Scan/Ketik..." required oninput="autoFill()"></div><div><label class="text-xs font-bold text-gray-500">Nama Produk</label><input type="text" id="productName" class="w-full p-2 border rounded" required></div><div class="grid grid-cols-2 gap-2"><div><label class="text-xs font-bold text-gray-500">HPP (Beli)</label><input type="number" id="hpp" class="w-full p-2 border rounded" placeholder="0"></div><div><label class="text-xs font-bold text-gray-500">Harga Jual</label><input type="number" id="price" class="w-full p-2 border rounded" placeholder="0" required></div></div><div><label class="text-xs font-bold text-gray-500">Target Cabang</label><select id="targetArea" class="w-full p-2 border rounded bg-white"><option value="adamart 73">Adamart 73</option><option value="adamart induksi">Induksi</option><option value="adamart kelanis">Kelanis</option></select></div><div class="grid grid-cols-2 gap-2"><div><label class="text-xs font-bold text-gray-500">Tambah Qty</label><input type="number" id="stockAmount" class="w-full p-2 border rounded" placeholder="0" required></div><div><label class="text-xs font-bold text-gray-500">Exp Date</label><input type="date" id="expiryDate" class="w-full p-2 border rounded"></div></div><button type="submit" class="w-full bg-blue-600 text-white py-2 rounded font-bold hover:bg-blue-700 mt-4">Simpan Stok</button></form></div><div class="bg-white rounded-xl shadow overflow-hidden lg:col-span-2 flex flex-col h-[calc(100vh-200px)]"><div class="p-4 border-b bg-gray-50 shrink-0"><input type="text" placeholder="🔍 Cari produk di inventory..." class="w-full p-2 border rounded" oninput="filterInventory(this.value)"></div><div class="overflow-auto flex-1"><table class="w-full text-left text-sm"><thead class="bg-gray-100 text-gray-600 uppercase font-bold sticky top-0 z-10 shadow-sm"><tr><th class="p-4">Produk</th><th class="p-4">HPP/Jual</th><th class="p-4 text-center">73</th><th class="p-4 text-center">Induksi</th><th class="p-4 text-center">Kelanis</th></tr></thead><tbody class="divide-y product-row-container">${State.data.products.map(p => { const hpp = p.HPP || 0; const hppClass = hpp === 0 ? 'text-red-500 font-bold' : 'text-gray-500'; return `<tr class="hover:bg-gray-50 product-row"><td class="p-4"><div class="font-bold">${p['Nama Produk']}</div><div class="text-xs text-gray-500 font-mono">${p.Barcode}</div></td><td class="p-4"><div class="text-xs ${hppClass}">B: ${formatRp(hpp)}</div><div class="font-bold text-green-600">J: ${formatRp(p.Harga)}</div></td><td class="p-4 text-center font-bold ${checkStock(p['Stok Area Kasir adamart 73'])}">${p['Stok Area Kasir adamart 73']||0}</td><td class="p-4 text-center font-bold ${checkStock(p['Stok Area Kasir adamart induksi'])}">${p['Stok Area Kasir adamart induksi']||0}</td><td class="p-4 text-center font-bold ${checkStock(p['Stok Area Kasir adamart kelanis'])}">${p['Stok Area Kasir adamart kelanis']||0}</td></tr>`; }).join('')}</tbody></table></div></div></div>`,
             
             Reports: () => `
                 <div class="space-y-6">
                     <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
-                        <div class="bg-white p-4 rounded-lg shadow"><div class="text-xs text-gray-500">Total Omzet</div><div class="text-2xl font-bold text-blue-600" id="rep-omzet">Loading...</div></div>
-                        <div class="bg-white p-4 rounded-lg shadow"><div class="text-xs text-gray-500">Estimasi Profit</div><div class="text-2xl font-bold text-green-600" id="rep-profit">Loading...</div></div>
-                        <div class="bg-white p-4 rounded-lg shadow"><div class="text-xs text-gray-500">Total Transaksi</div><div class="text-2xl font-bold text-gray-700" id="rep-trx">-</div></div>
-                        <div class="bg-white p-4 rounded-lg shadow"><div class="text-xs text-gray-500">Rata-rata Basket</div><div class="text-2xl font-bold text-purple-600" id="rep-avg">-</div></div>
+                        <div class="bg-white p-4 rounded-lg shadow border border-blue-100"><div class="text-xs text-gray-500">Total Omzet</div><div class="text-2xl font-bold text-blue-600" id="rep-omzet">Loading...</div></div>
+                        <div class="bg-white p-4 rounded-lg shadow border border-red-100"><div class="text-xs text-gray-500">Total Modal (HPP)</div><div class="text-2xl font-bold text-red-500" id="rep-hpp">Loading...</div></div>
+                        <div class="bg-white p-4 rounded-lg shadow border border-green-100"><div class="text-xs text-gray-500">Gross Profit (Cuan)</div><div class="text-2xl font-bold text-green-600" id="rep-profit">Loading...</div></div>
+                        <div class="bg-white p-4 rounded-lg shadow border border-purple-100"><div class="text-xs text-gray-500">Net Margin</div><div class="text-2xl font-bold text-purple-600" id="rep-margin">0%</div></div>
                     </div>
-                    <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
-                        <div class="bg-white p-4 rounded-xl shadow md:col-span-2"><h4 class="font-bold mb-4 text-gray-700">Tren Penjualan (Per Cabang)</h4><canvas id="salesChart" style="max-height: 300px;"></canvas></div>
-                        <div class="bg-white p-4 rounded-xl shadow"><h4 class="font-bold mb-4 text-gray-700">Metode Pembayaran</h4><canvas id="paymentChart" style="max-height: 300px;"></canvas></div>
+                    <div class="bg-white p-6 rounded-xl shadow">
+                        <h4 class="font-bold mb-4 text-gray-700 flex items-center gap-2"><span>📈</span> Tren Keuangan (Omzet vs Profit)</h4>
+                        <div class="h-72"><canvas id="financialChart"></canvas></div>
                     </div>
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                        <div class="bg-white rounded-xl shadow overflow-hidden h-80 flex flex-col"><div class="p-4 border-b bg-gray-50 font-bold text-gray-700 shrink-0">🔥 Top 5 Produk Terlaris</div><div class="overflow-auto"><table class="w-full text-sm text-left"><thead class="bg-gray-100 sticky top-0"><tr><th class="p-3">Produk</th><th class="p-3 text-right">Qty</th><th class="p-3 text-right">Omzet</th></tr></thead><tbody id="topProductBody"></tbody></table></div></div>
-                        <div class="bg-white rounded-xl shadow p-4"><h4 class="font-bold mb-4 text-gray-700">Download Laporan</h4><div class="space-y-3"><select id="reportPeriod" onchange="Pages.updateCharts()" class="w-full p-2 border rounded bg-white"><option value="monthly">Bulanan</option><option value="weekly">Mingguan</option></select><div class="flex gap-2"><button onclick="exportFinancialReportToCSV()" class="flex-1 bg-blue-600 text-white px-3 py-2 rounded hover:bg-blue-700 font-bold text-sm">📥 Keuangan</button><button onclick="exportProductPerformanceCSV()" class="flex-1 bg-green-600 text-white px-3 py-2 rounded hover:bg-green-700 font-bold text-sm">📦 Produk</button></div></div></div>
+                        <div class="bg-white rounded-xl shadow overflow-hidden h-96 flex flex-col border border-gray-100">
+                            <div class="p-4 border-b bg-gray-50 font-bold text-gray-700 shrink-0 flex justify-between"><span>🏆 Top Produk (By Profit)</span><span class="text-xs font-normal text-gray-500">Kontribusi Cuan</span></div>
+                            <div class="overflow-auto"><table class="w-full text-sm text-left"><thead class="bg-gray-100 sticky top-0 text-xs uppercase text-gray-500"><tr><th class="p-3">Produk</th><th class="p-3 text-right">Qty</th><th class="p-3 text-right">Total Profit</th></tr></thead><tbody id="topProductBody" class="divide-y"></tbody></table></div>
+                        </div>
+                        <div class="bg-white rounded-xl shadow p-6 border border-gray-100">
+                            <h4 class="font-bold mb-4 text-gray-700">Filter & Download</h4>
+                            <div class="space-y-4">
+                                <div>
+                                    <label class="text-xs font-bold text-gray-500">Periode Laporan</label>
+                                    <select id="reportPeriod" onchange="Pages.updateCharts()" class="w-full p-3 border rounded-lg bg-white mt-1">
+                                        <option value="monthly">Bulanan (Tahun Ini)</option>
+                                        <option value="weekly">Mingguan (Bulan Ini)</option>
+                                    </select>
+                                </div>
+                                <div class="grid grid-cols-2 gap-3 pt-4">
+                                    <button onclick="exportFinancialReportToCSV()" class="bg-blue-600 text-white px-4 py-3 rounded-lg hover:bg-blue-700 font-bold text-sm shadow-sm">📥 Laporan Keuangan</button>
+                                    <button onclick="exportProductPerformanceCSV()" class="bg-green-600 text-white px-4 py-3 rounded-lg hover:bg-green-700 font-bold text-sm shadow-sm">📦 Performa Produk</button>
+                                </div>
+                            </div>
+                        </div>
                     </div>
                 </div>
             `,
@@ -392,80 +427,105 @@
                 const periodElement = document.getElementById('reportPeriod');
                 if (!periodElement) return;
                 const period = periodElement.value;
-                const grouped = {}, payments = {}, productPerformance = {};
-                const branchData = { "adamart 73": {}, "adamart induksi": {}, "adamart kelanis": {} };
-                const allDates = new Set();
-                let totalOmzet = 0, totalProfit = 0;
+                
+                const financialData = {}; // Key: Period, Value: {omzet, profit}
+                const productPerformance = {};
+                
+                let totalOmzet = 0, totalHPP = 0, totalProfit = 0;
 
                 State.data.sales.forEach(s => {
                     const d = new Date(s.timestamp);
-                    const key = period === 'monthly' ? d.toLocaleDateString('id-ID', {month:'short', year:'2-digit'}) : `W${Math.ceil(d.getDate()/7)} ${d.toLocaleDateString('id-ID', {month:'short'})}`;
-                    allDates.add(key);
-                    const branch = (s.area || "").toLowerCase();
-                    if (branchData[branch]) {
-                        if (!branchData[branch][key]) branchData[branch][key] = 0;
-                        branchData[branch][key] += s.total;
-                    }
+                    let key;
+                    if (period === 'monthly') key = d.toLocaleDateString('id-ID', {month:'short', year:'2-digit'});
+                    else key = `W${Math.ceil(d.getDate()/7)} ${d.toLocaleDateString('id-ID', {month:'short'})}`;
+
+                    if (!financialData[key]) financialData[key] = { omzet: 0, profit: 0 };
+
                     let saleCost = 0;
                     let itemsList = s.cart || [];
+                    
+                    // Fallback for legacy string format
                     if(itemsList.length === 0 && s.items) { 
                          s.items.split(', ').forEach(str => {
                             const parts = str.split(' x');
                             if(parts.length === 2) itemsList.push({name: parts[0].trim(), quantity: parseInt(parts[1])});
                          });
                     }
+
                     itemsList.forEach(item => {
+                        // Match product to get HPP
                         const product = State.data.products.find(p => p['Nama Produk'].trim().toLowerCase() === item.name.toLowerCase());
                         const hpp = product ? (parseInt(product.HPP) || 0) : 0;
                         const price = item.price || (product ? product.Harga : 0);
-                        saleCost += (hpp * item.quantity);
-                        if(!productPerformance[item.name]) productPerformance[item.name] = {qty:0, rev:0};
+                        
+                        const itemOmzet = price * item.quantity;
+                        const itemHPP = hpp * item.quantity;
+                        const itemProfit = itemOmzet - itemHPP;
+
+                        saleCost += itemHPP;
+
+                        // Add to Product Leaderboard
+                        if(!productPerformance[item.name]) productPerformance[item.name] = {qty:0, profit:0};
                         productPerformance[item.name].qty += item.quantity;
-                        productPerformance[item.name].rev += (price * item.quantity);
+                        productPerformance[item.name].profit += itemProfit;
                     });
+
+                    const saleProfit = s.total - saleCost;
+                    
+                    // Aggregates
                     totalOmzet += s.total;
-                    totalProfit += (s.total - saleCost);
-                    const method = s.method || 'Unknown';
-                    payments[method] = (payments[method] || 0) + s.total;
+                    totalHPP += saleCost;
+                    totalProfit += saleProfit;
+                    
+                    financialData[key].omzet += s.total;
+                    financialData[key].profit += saleProfit;
                 });
 
+                // Update KPI Cards
+                const margin = totalOmzet > 0 ? (totalProfit / totalOmzet) * 100 : 0;
                 document.getElementById('rep-omzet').innerText = formatRp(totalOmzet);
+                document.getElementById('rep-hpp').innerText = formatRp(totalHPP);
                 document.getElementById('rep-profit').innerText = formatRp(totalProfit);
-                document.getElementById('rep-trx').innerText = State.data.sales.length;
-                document.getElementById('rep-avg').innerText = formatRp(State.data.sales.length ? totalOmzet / State.data.sales.length : 0);
+                document.getElementById('rep-margin').innerText = margin.toFixed(1) + '%';
 
-                const labels = Array.from(allDates).sort((a,b) => a.localeCompare(b));
-                const ctxLine = document.getElementById('salesChart');
-                if (ctxLine) {
+                // Update Chart
+                const labels = Object.keys(financialData).sort((a,b) => a.localeCompare(b)); // Simple sort
+                const ctx = document.getElementById('financialChart');
+                if (ctx) {
                     if(State.charts.line) State.charts.line.destroy();
-                    State.charts.line = new Chart(ctxLine, {
-                        type: 'line',
+                    State.charts.line = new Chart(ctx, {
+                        type: 'bar',
                         data: {
                             labels: labels,
                             datasets: [
-                                { label: 'Adamart 73', data: labels.map(l => branchData["adamart 73"][l] || 0), borderColor: '#3b82f6', tension: 0.1 },
-                                { label: 'Induksi', data: labels.map(l => branchData["adamart induksi"][l] || 0), borderColor: '#10b981', tension: 0.1 },
-                                { label: 'Kelanis', data: labels.map(l => branchData["adamart kelanis"][l] || 0), borderColor: '#f59e0b', tension: 0.1 }
+                                { label: 'Profit (Cuan)', data: labels.map(l => financialData[l].profit), backgroundColor: '#10b981', borderRadius: 4 },
+                                { label: 'Omzet', data: labels.map(l => financialData[l].omzet), backgroundColor: '#3b82f6', borderRadius: 4, hidden: true } // Hidden by default to focus on profit
                             ]
                         },
-                        options: { responsive: true, maintainAspectRatio: false }
+                        options: { 
+                            responsive: true, 
+                            maintainAspectRatio: false,
+                            interaction: { mode: 'index', intersect: false },
+                            plugins: {
+                                tooltip: { callbacks: { label: (c) => ` ${c.dataset.label}: ${formatRp(c.raw)}` } }
+                            }
+                        }
                     });
                 }
-                const ctxPie = document.getElementById('paymentChart');
-                if (ctxPie) {
-                    if(State.charts.doughnut) State.charts.doughnut.destroy();
-                    State.charts.doughnut = new Chart(ctxPie, {
-                        type: 'doughnut',
-                        data: {
-                            labels: Object.keys(payments),
-                            datasets: [{ data: Object.values(payments), backgroundColor: ['#3b82f6', '#10b981', '#f59e0b', '#ef4444'] }]
-                        },
-                        options: { responsive: true, maintainAspectRatio: false }
-                    });
-                }
+
+                // Update Leaderboard Table (Sorted by Profit)
                 const topBody = document.getElementById('topProductBody');
                 if (topBody) {
-                    topBody.innerHTML = Object.entries(productPerformance).sort((a,b) => b[1].rev - a[1].rev).slice(0, 5).map(([n, d]) => `<tr class="border-b"><td class="p-3 font-medium">${n}</td><td class="p-3 text-right">${d.qty}</td><td class="p-3 text-right font-bold text-blue-600">${formatRp(d.rev)}</td></tr>`).join('');
+                    topBody.innerHTML = Object.entries(productPerformance)
+                        .sort((a,b) => b[1].profit - a[1].profit) // Sort by Profit Descending
+                        .slice(0, 10)
+                        .map(([n, d]) => `
+                            <tr class="border-b hover:bg-gray-50">
+                                <td class="p-3 font-medium text-gray-700">${n}</td>
+                                <td class="p-3 text-right text-gray-500">${d.qty}</td>
+                                <td class="p-3 text-right font-bold text-green-600">+${formatRp(d.profit)}</td>
+                            </tr>`)
+                        .join('');
                 }
             }
         };
@@ -494,24 +554,46 @@
         const Actions = {
             createBatchPO: async (e) => { e.preventDefault(); const form = e.target; const selectVal = document.getElementById('supplierSelect').value; let supplier = selectVal === 'custom' ? document.getElementById('customSupplier').value.trim() : selectVal; if(State.tempBatchItems.length === 0) return alert("Belum ada item!"); const batchId = 'BATCH-' + Date.now(); const promises = []; const orderDate = form.elements['orderDate'].value; BRANCHES.forEach(branch => { if(document.getElementById(`branch-${branch.replace(/\s+/g, '-')}`).checked) { const poData = { type: 'purchase', batchNumber: batchId, branch: branch, supplier: supplier, orderDate: orderDate, status: 'pending', items: JSON.stringify(State.tempBatchItems), createdAt: new Date().toISOString() }; promises.push(window.addDoc(window.collection(window.db, "purchases"), poData)); } }); await Promise.all(promises); closeModal(); alert("Sukses! PO Batch berhasil dibuat."); loadAllData(); },
             
-            // ACTION UPDATE: Approve Requisition -> DONE
-            approveReq: async (id) => { 
-                if(confirm("Kirim barang dan selesaikan permintaan?")) { 
-                    try {
-                        await window.updateDoc(window.doc(window.db, "requisitions", id), {status:'DONE'}); 
-                        alert("Berhasil disetujui! Status berubah menjadi DONE.");
-                        loadAllData(); 
-                    } catch(e) {
-                        alert("Gagal update: " + e.message);
-                    }
-                } 
+            // ACTION: AUTO-GENERATE PO FROM SMART RESTOCK
+            generateAutoPO: () => {
+                const checks = document.querySelectorAll('.restock-check:checked');
+                if(checks.length === 0) return alert("Pilih item dulu!");
+                
+                State.tempBatchItems = Array.from(checks).map(c => {
+                    const d = JSON.parse(c.dataset.json);
+                    return {
+                        barcode: d.barcode,
+                        name: d.name,
+                        qty: parseInt(d.qty),
+                        hpp: parseInt(d.hpp || 0),
+                        price: parseInt(d.price || 0)
+                    };
+                });
+                
+                Modals.openBatchPO();
+                // Auto-fill supplier if mostly from one? For now, let user choose.
             },
-            
+
             updateStock: async (e) => { e.preventDefault(); const barcode = document.getElementById('barcode').value; const area = document.getElementById('targetArea').value; const qty = parseInt(document.getElementById('stockAmount').value); const hpp = parseInt(document.getElementById('hpp').value) || 0; const price = parseInt(document.getElementById('price').value) || 0; const name = document.getElementById('productName').value; const expiry = document.getElementById('expiryDate').value; const stockKey = `Stok Area Kasir ${area.toLowerCase()}`; try { const q = window.query(window.collection(window.db, "products"), window.where("Barcode", "==", barcode)); const snapshot = await window.getDocs(q); if (!snapshot.empty) { const docRef = snapshot.docs[0].ref; const updateData = { "Nama Produk": name, "Harga": price, "HPP": hpp }; if (qty !== 0) updateData[stockKey] = window.increment(qty); if (expiry) updateData["Tanggal Kadaluarsa"] = new Date(expiry).toISOString(); await window.updateDoc(docRef, updateData); } else { const newData = { Barcode: barcode, "Nama Produk": name, "Harga": price, "HPP": hpp, [stockKey]: qty }; if (expiry) newData["Tanggal Kadaluarsa"] = new Date(expiry).toISOString(); await window.addDoc(window.collection(window.db, "products"), newData); } fetch(APPS_SCRIPT_URL, { method: 'POST', body: JSON.stringify({ action: 'update_stock', data: { barcode, name, price, hpp, area: area.toLowerCase(), quantity: qty, expiryDate: expiry } }) }); alert("Stok Updated!"); document.getElementById('stockForm').reset(); loadAllData(); } catch (err) { console.error(err); alert("Gagal update stok: " + err.message); } }
         };
 
         function setupInventoryListeners() { const form = document.getElementById('stockForm'); if(form) form.addEventListener('submit', Actions.updateStock); }
-        const Modals = { openBatchPO: () => { State.tempBatchItems = []; const content = `<h3 class="text-xl font-bold mb-4">Buat Batch PO</h3><form onsubmit="Actions.createBatchPO(event)"><div class="grid grid-cols-2 gap-4 mb-4"><div><select id="supplierSelect" class="p-2 border rounded w-full bg-white text-sm" required onchange="toggleSupplierInput(this)"><option value="">Pilih Supplier</option>${SUPPLIERS.map(s => `<option value="${s}">${s}</option>`).join('')}<option value="custom" class="font-bold text-blue-600">+ Input Manual</option></select><input id="customSupplier" type="text" placeholder="Nama Supplier..." class="p-2 border rounded w-full mt-2 hidden text-sm" disabled></div><input type="date" name="orderDate" class="p-2 border rounded w-full h-[38px] text-sm" required></div><div class="relative mb-4"><input id="smartSearchPO" placeholder="🔍 Cari Barang / Scan Barcode..." class="w-full p-3 border-2 border-blue-400 rounded-lg font-bold focus:outline-none focus:ring-2 focus:ring-blue-600" autocomplete="off" oninput="searchProductForPO(this.value)"><div id="po-search-results" class="absolute z-50 w-full bg-white shadow-xl rounded-b-lg border border-gray-200 max-h-60 overflow-y-auto hidden"></div></div><div class="bg-blue-50 p-4 rounded-lg mb-4 border border-blue-100"><div class="flex items-center gap-2 mb-2"><div class="w-32"><input id="item-barcode" placeholder="Barcode" class="w-full p-2 border rounded text-sm" readonly></div><div class="flex-1"><input id="item-name" placeholder="Nama Barang" class="w-full p-2 border rounded text-sm" readonly></div><div class="w-20"><input id="item-qty" type="number" placeholder="Qty" class="w-full p-2 border rounded text-sm font-bold bg-white border-blue-300"></div><div class="w-24"><input id="item-hpp" type="number" placeholder="HPP" class="w-full p-2 border rounded text-sm"></div><div class="w-24"><input id="item-price" type="number" placeholder="Jual" class="w-full p-2 border rounded text-sm"></div><button type="button" onclick="addItemToTemp()" class="bg-blue-600 text-white px-3 py-1.5 rounded hover:bg-blue-700 font-bold">+</button></div><div id="temp-items-list" class="text-sm text-gray-600 max-h-40 overflow-y-auto space-y-1"><p class="text-xs text-gray-400 italic p-2">Belum ada item.</p></div></div><div class="mb-6"><label class="font-bold block mb-2 text-sm">Kirim ke:</label><div class="flex gap-4 flex-wrap">${BRANCHES.map(b => `<label class="flex items-center gap-2 text-sm"><input type="checkbox" id="branch-${b.replace(/\s+/g, '-')}" checked> ${b}</label>`).join('')}</div></div><button type="submit" class="w-full btn-primary py-2.5 rounded-lg bg-blue-600 text-white font-bold">Buat & Kirim PO</button></form>`; showModal(content); } };
+        const Modals = { 
+            openBatchPO: () => { 
+                // Re-use existing or init empty
+                const items = State.tempBatchItems || []; 
+                
+                const content = `<h3 class="text-xl font-bold mb-4">Buat Batch PO ${items.length > 0 ? '(Auto-Filled)' : ''}</h3><form onsubmit="Actions.createBatchPO(event)"><div class="grid grid-cols-2 gap-4 mb-4"><div><select id="supplierSelect" class="p-2 border rounded w-full bg-white text-sm" required onchange="toggleSupplierInput(this)"><option value="">Pilih Supplier</option>${SUPPLIERS.map(s => `<option value="${s}">${s}</option>`).join('')}<option value="custom" class="font-bold text-blue-600">+ Input Manual</option></select><input id="customSupplier" type="text" placeholder="Nama Supplier..." class="p-2 border rounded w-full mt-2 hidden text-sm" disabled></div><input type="date" name="orderDate" class="p-2 border rounded w-full h-[38px] text-sm" required value="${new Date().toISOString().split('T')[0]}"></div><div class="relative mb-4"><input id="smartSearchPO" placeholder="🔍 Cari Barang / Scan Barcode..." class="w-full p-3 border-2 border-blue-400 rounded-lg font-bold focus:outline-none focus:ring-2 focus:ring-blue-600" autocomplete="off" oninput="searchProductForPO(this.value)"><div id="po-search-results" class="absolute z-50 w-full bg-white shadow-xl rounded-b-lg border border-gray-200 max-h-60 overflow-y-auto hidden"></div></div><div class="bg-blue-50 p-4 rounded-lg mb-4 border border-blue-100"><div class="flex items-center gap-2 mb-2"><div class="w-32"><input id="item-barcode" placeholder="Barcode" class="w-full p-2 border rounded text-sm" readonly></div><div class="flex-1"><input id="item-name" placeholder="Nama Barang" class="w-full p-2 border rounded text-sm" readonly></div><div class="w-20"><input id="item-qty" type="number" placeholder="Qty" class="w-full p-2 border rounded text-sm font-bold bg-white border-blue-300"></div><div class="w-24"><input id="item-hpp" type="number" placeholder="HPP" class="w-full p-2 border rounded text-sm"></div><div class="w-24"><input id="item-price" type="number" placeholder="Jual" class="w-full p-2 border rounded text-sm"></div><button type="button" onclick="addItemToTemp()" class="bg-blue-600 text-white px-3 py-1.5 rounded hover:bg-blue-700 font-bold">+</button></div><div id="temp-items-list" class="text-sm text-gray-600 max-h-40 overflow-y-auto space-y-1"></div></div><div class="mb-6"><label class="font-bold block mb-2 text-sm">Kirim ke:</label><div class="flex gap-4 flex-wrap">${BRANCHES.map(b => `<label class="flex items-center gap-2 text-sm"><input type="checkbox" id="branch-${b.replace(/\s+/g, '-')}" checked> ${b}</label>`).join('')}</div></div><button type="submit" class="w-full btn-primary py-2.5 rounded-lg bg-blue-600 text-white font-bold">Buat & Kirim PO</button></form>`; 
+                
+                showModal(content); 
+                // Render initial items if any
+                if(items.length > 0) {
+                    document.getElementById('temp-items-list').innerHTML = items.map((i,x)=>`<div class="flex justify-between items-center bg-white p-2 rounded border"><div><span class="font-bold text-xs bg-gray-100 p-1 rounded mr-2">${i.barcode||'-'}</span><span class="font-bold">${i.name}</span> x${i.qty} <span class="text-xs text-gray-500">B:${formatRp(i.hpp)}</span></div><button onclick="removeItemFromTemp(${x})" class="text-red-500 px-2">✕</button></div>`).join('');
+                } else {
+                     document.getElementById('temp-items-list').innerHTML = '<p class="text-xs text-gray-400 italic p-2">Belum ada item.</p>';
+                }
+            } 
+        };
 
         function showModal(c){ const d=document.createElement('div'); d.className='modal-overlay'; d.innerHTML=`<div class="modal-content p-6 relative shadow-2xl"><button onclick="closeModal()" class="absolute top-4 right-4">✕</button>${c}</div>`; document.body.appendChild(d); }
         function closeModal(){ document.querySelector('.modal-overlay')?.remove(); }
