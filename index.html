@@ -11,7 +11,7 @@
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
         import { getFirestore, collection, getDocs, addDoc, updateDoc, deleteDoc, doc, query, where, orderBy, limit, increment } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
-        import { getAuth, signInAnonymously } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
+        import { getAuth, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
 
         const firebaseConfig = {
             apiKey: "AIzaSyBApyoL7sczxl1kDq_WgPtnYF4lyujuWgc",
@@ -31,15 +31,21 @@
         window.doc = doc; window.query = query; window.where = where; 
         window.orderBy = orderBy; window.limit = limit; window.increment = increment;
         
-        signInAnonymously(auth)
-            .then(() => {
-                console.log("Manager signed in anonymously");
-                document.dispatchEvent(new Event('firebase-ready'));
-            })
-            .catch((error) => {
-                console.error("Auth error:", error);
-                alert("Gagal Login: " + error.message);
-            });
+        let isFirebaseReady = false;
+        onAuthStateChanged(auth, (user) => {
+            if (user) {
+                console.log("Manager authenticated");
+                if (!isFirebaseReady) {
+                    isFirebaseReady = true;
+                    document.dispatchEvent(new Event('firebase-ready'));
+                }
+            } else {
+                signInAnonymously(auth).catch((error) => {
+                    console.error("Auth error:", error);
+                    alert("Gagal Login Firebase: " + error.message);
+                });
+            }
+        });
     </script>
 
     <script>tailwind.config = { theme: { extend: { colors: { 'adamart': { 50: '#f0f9ff', 500: '#0ea5e9', 600: '#0284c7', 900: '#0c4a6e' } } } } }</script>
@@ -59,27 +65,35 @@
 </head>
 <body class="flex h-full">
     <!-- SIDEBAR -->
-    <aside class="sidebar w-64 flex flex-col hidden md:flex">
-        <div class="p-6">
+    <aside class="sidebar w-64 flex flex-col hidden md:flex overflow-y-auto">
+        <div class="p-6 shrink-0">
             <h2 class="text-xl font-bold tracking-wider">ADAMART</h2>
             <p class="text-xs opacity-70">Integrated System</p>
         </div>
-        <nav class="flex-1 py-4 space-y-1">
-            <a onclick="navigate('dashboard')" class="sidebar-item px-6 py-3 cursor-pointer flex items-center gap-3 hover:bg-white/10"><span>📊</span> Dashboard</a>
-            <a onclick="navigate('smart_restock')" class="sidebar-item px-6 py-3 cursor-pointer flex items-center gap-3 hover:bg-white/10 bg-white/10 border-l-4 border-purple-400"><span>🤖</span> Smart Restock</a>
-            <a onclick="navigate('purchase')" class="sidebar-item px-6 py-3 cursor-pointer flex items-center gap-3 hover:bg-white/10"><span>🛒</span> Purchase Order</a>
-            <a onclick="navigate('logistics')" class="sidebar-item px-6 py-3 cursor-pointer flex items-center gap-3 hover:bg-white/10"><span>🚛</span> Logistik Toko</a>
-            <a onclick="navigate('inventory')" class="sidebar-item px-6 py-3 cursor-pointer flex items-center gap-3 hover:bg-white/10"><span>📦</span> Inventory Master</a>
-            <a onclick="navigate('reports')" class="sidebar-item px-6 py-3 cursor-pointer flex items-center gap-3 hover:bg-white/10"><span>📈</span> Laporan Profit</a>
-            <a onclick="navigate('shifts')" class="sidebar-item px-6 py-3 cursor-pointer flex items-center gap-3 hover:bg-white/10"><span>🕒</span> Laporan Shift</a>
-            <a onclick="navigate('evoucher')" class="sidebar-item px-6 py-3 cursor-pointer flex items-center gap-3 hover:bg-white/10 text-yellow-100"><span>🎫</span> E-Voucher</a>
+        <nav class="flex-1 py-2 space-y-1 text-sm">
+            <div class="px-6 py-2 text-xs font-bold text-blue-200 uppercase tracking-wider mt-2">Utama</div>
+            <a onclick="navigate('dashboard')" class="sidebar-item px-6 py-2.5 cursor-pointer flex items-center gap-3 hover:bg-white/10"><span>📊</span> Dashboard</a>
+            <a onclick="navigate('smart_restock')" class="sidebar-item px-6 py-2.5 cursor-pointer flex items-center gap-3 hover:bg-white/10 bg-white/10 border-l-4 border-purple-400"><span>🤖</span> Smart Restock</a>
+            
+            <div class="px-6 py-2 text-xs font-bold text-blue-200 uppercase tracking-wider mt-2">Operasional</div>
+            <a onclick="navigate('purchase')" class="sidebar-item px-6 py-2.5 cursor-pointer flex items-center gap-3 hover:bg-white/10"><span>🛒</span> Purchase Order</a>
+            <a onclick="navigate('inventory')" class="sidebar-item px-6 py-2.5 cursor-pointer flex items-center gap-3 hover:bg-white/10"><span>📦</span> Master Produk</a>
+            <a onclick="navigate('logistics')" class="sidebar-item px-6 py-2.5 cursor-pointer flex items-center gap-3 hover:bg-white/10"><span>🚛</span> Barang Masuk</a>
+            <a onclick="navigate('retur')" class="sidebar-item px-6 py-2.5 cursor-pointer flex items-center gap-3 hover:bg-white/10"><span>🔄</span> Retur & Rusak</a>
+            <a onclick="navigate('audit')" class="sidebar-item px-6 py-2.5 cursor-pointer flex items-center gap-3 hover:bg-white/10"><span>📋</span> Audit Stok</a>
+            
+            <div class="px-6 py-2 text-xs font-bold text-blue-200 uppercase tracking-wider mt-2">Laporan & Karyawan</div>
+            <a onclick="navigate('reports')" class="sidebar-item px-6 py-2.5 cursor-pointer flex items-center gap-3 hover:bg-white/10"><span>📈</span> Analisa Profit</a>
+            <a onclick="navigate('shifts')" class="sidebar-item px-6 py-2.5 cursor-pointer flex items-center gap-3 hover:bg-white/10"><span>🕒</span> Laporan Shift</a>
+            <a onclick="navigate('kasir')" class="sidebar-item px-6 py-2.5 cursor-pointer flex items-center gap-3 hover:bg-white/10"><span>👨‍💼</span> Rapor Kasir</a>
+            <a onclick="navigate('evoucher')" class="sidebar-item px-6 py-2.5 cursor-pointer flex items-center gap-3 hover:bg-white/10 text-yellow-100"><span>🎫</span> E-Voucher</a>
         </nav>
-        <div class="p-4 text-xs opacity-50 text-center">v6.0 AI Restock</div>
+        <div class="p-4 text-xs opacity-50 text-center shrink-0">v6.1 AI & Audit</div>
     </aside>
 
     <!-- MAIN CONTENT -->
     <div class="flex-1 flex flex-col min-w-0 overflow-hidden">
-        <header class="bg-white p-4 border-b shadow-sm flex justify-between items-center z-10">
+        <header class="bg-white p-4 border-b shadow-sm flex justify-between items-center z-10 shrink-0">
             <h1 id="page-title" class="text-xl font-bold text-gray-800">Dashboard</h1>
             <div class="flex items-center gap-4">
                 <button onclick="loadAllData()" class="p-2 bg-gray-100 rounded-full hover:bg-gray-200" title="Refresh Data">🔄</button>
@@ -107,7 +121,7 @@
         
         const State = { 
             currentPage: 'dashboard', 
-            data: { products: [], sales: [], purchases: [], shifts: [], logs: [] }, 
+            data: { products: [], sales: [], purchases: [], shifts: [], logs: [], returns: [], audits: [] }, 
             tempBatchItems: [], 
             charts: { line: null, doughnut: null } 
         };
@@ -116,31 +130,51 @@
 
         document.addEventListener('firebase-ready', () => { loadAllData(); });
 
+        // Fungsi pembungkus (wrapper) untuk mencegah error pada satu koleksi mematikan seluruh aplikasi
+        async function fetchCollectionSafe(colName, customQuery = null) {
+            try {
+                const ref = customQuery ? customQuery : window.collection(window.db, colName);
+                const snap = await window.getDocs(ref);
+                const data = [];
+                snap.forEach(d => data.push({ id: d.id, ...d.data() }));
+                return data;
+            } catch (e) {
+                console.warn(`[Peringatan Firebase] Akses ke koleksi '${colName}' gagal/ditolak. Pastikan Security Rules mengizinkan:`, e.message);
+                return []; // Mengembalikan array kosong agar halaman tetap bisa di-render
+            }
+        }
+
         async function loadAllData() {
             try {
                 document.getElementById('loadingState').classList.remove('hidden'); 
                 document.getElementById('content-area').classList.add('hidden');
                 
-                const [pSnap, sSnap, poSnap, shiftSnap, logSnap] = await Promise.all([
-                    window.getDocs(window.collection(window.db, "products")),
-                    window.getDocs(window.query(window.collection(window.db, "sales"), window.orderBy("timestamp", "desc"), window.limit(500))), // Load lebih banyak sales untuk prediksi akurat
-                    window.getDocs(window.collection(window.db, "purchases")),
-                    window.getDocs(window.query(window.collection(window.db, "shifts"), window.orderBy("openTime", "desc"), window.limit(50))),
-                    window.getDocs(window.query(window.collection(window.db, "inventory_logs"), window.orderBy("timestamp", "desc"), window.limit(50)))
+                const [pData, sData, poData, shiftData, logData, retData, audData] = await Promise.all([
+                    fetchCollectionSafe("products"),
+                    fetchCollectionSafe("sales", window.query(window.collection(window.db, "sales"), window.orderBy("timestamp", "desc"), window.limit(500))),
+                    fetchCollectionSafe("purchases"),
+                    fetchCollectionSafe("shifts", window.query(window.collection(window.db, "shifts"), window.orderBy("openTime", "desc"), window.limit(100))),
+                    fetchCollectionSafe("inventory_logs", window.query(window.collection(window.db, "inventory_logs"), window.orderBy("timestamp", "desc"), window.limit(50))),
+                    fetchCollectionSafe("returns", window.query(window.collection(window.db, "returns"), window.limit(100))),
+                    fetchCollectionSafe("audits", window.query(window.collection(window.db, "audits"), window.limit(100)))
                 ]);
                 
-                State.data.products = []; pSnap.forEach(d => State.data.products.push({ id: d.id, ...d.data() }));
-                State.data.sales = []; sSnap.forEach(d => State.data.sales.push({ id: d.id, ...d.data() }));
-                State.data.purchases = []; poSnap.forEach(d => State.data.purchases.push({ id: d.id, ...d.data() }));
-                State.data.shifts = []; shiftSnap.forEach(d => State.data.shifts.push({ id: d.id, ...d.data() }));
-                State.data.logs = []; logSnap.forEach(d => State.data.logs.push({ id: d.id, ...d.data() }));
+                State.data.products = pData;
+                State.data.sales = sData;
+                State.data.purchases = poData;
+                State.data.shifts = shiftData;
+                State.data.logs = logData;
+                
+                // Sorting memori manual khusus koleksi baru untuk menghindari Indexing Error
+                State.data.returns = retData.sort((a,b) => new Date(b.timestamp) - new Date(a.timestamp));
+                State.data.audits = audData.sort((a,b) => new Date(b.timestamp) - new Date(a.timestamp));
                 
                 renderPage(); 
                 document.getElementById('loadingState').classList.add('hidden'); 
                 document.getElementById('content-area').classList.remove('hidden');
             } catch (e) { 
                 console.error(e); 
-                alert("Gagal sinkronisasi data: " + e.message); 
+                alert("Gagal sinkronisasi data utama: " + e.message); 
             }
         }
 
@@ -160,130 +194,16 @@
                 case 'logistics': title.innerText = 'Logistik Toko (Barang Masuk)'; container.innerHTML = Pages.Logistics(); break;
                 case 'inventory': title.innerText = 'Inventory Master'; container.innerHTML = Pages.Inventory(); setupInventoryListeners(); break;
                 case 'purchase': title.innerText = 'Purchase Orders (Supplier)'; container.innerHTML = Pages.Purchase(); break;
-                case 'shifts': title.innerText = 'Laporan Shift & Keuangan'; container.innerHTML = Pages.Shifts(); break;
+                case 'shifts': title.innerText = 'Laporan Shift Harian'; container.innerHTML = Pages.Shifts(); break;
+                case 'kasir': title.innerText = 'Rapor Kinerja Kasir'; container.innerHTML = Pages.Kasir(); break;
+                case 'retur': title.innerText = 'Manajemen Retur & Barang Rusak'; container.innerHTML = Pages.Retur(); break;
+                case 'audit': title.innerText = 'Stock Opname & Audit'; container.innerHTML = Pages.Audit(); break;
                 case 'evoucher': title.innerText = 'E-Voucher System (Kopkar)'; const today = new Date(); EvoucherState.selectedPeriod = `${today.getMonth() + 1}-${today.getFullYear()}`; EvoucherActions.render(); break;
                 case 'reports': title.innerText = 'Analisa Profit & Bisnis'; container.innerHTML = Pages.Reports(); setTimeout(Pages.initReportCharts, 100); break;
             }
         }
 
         const Pages = {
-            // --- SMART RESTOCK (NEW AI FEATURE) ---
-            SmartRestock: () => {
-                // 1. Hitung Penjualan per Produk (30 Hari Terakhir)
-                const productStats = {};
-                const thirtyDaysAgo = new Date();
-                thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
-
-                State.data.sales.forEach(s => {
-                    if (new Date(s.timestamp) < thirtyDaysAgo) return; // Skip data lama
-                    
-                    let itemsList = s.cart || [];
-                    // Fallback legacy
-                    if(itemsList.length === 0 && s.items) {
-                        s.items.split(', ').forEach(str => {
-                            const parts = str.split(' x');
-                            if(parts.length === 2) itemsList.push({name: parts[0].trim(), quantity: parseInt(parts[1])});
-                        });
-                    }
-                    
-                    itemsList.forEach(i => {
-                        const name = i.name.trim();
-                        if (!productStats[name]) productStats[name] = 0;
-                        productStats[name] += i.quantity;
-                    });
-                });
-
-                // 2. Analisa Stok vs Penjualan
-                let restockList = State.data.products.map(p => {
-                    const soldLast30Days = productStats[p['Nama Produk']] || 0;
-                    const avgDailySales = soldLast30Days / 30;
-                    const currentStock = (p['Stok Area Kasir adamart 73']||0) + (p['Stok Area Kasir adamart induksi']||0) + (p['Stok Area Kasir adamart kelanis']||0);
-                    
-                    // Prediksi Habis dalam X hari
-                    const daysLeft = avgDailySales > 0 ? currentStock / avgDailySales : 999;
-                    
-                    // Rekomendasi Order: Target stok aman 14 hari
-                    const targetStock = Math.ceil(avgDailySales * 14); 
-                    const suggestOrder = Math.max(0, targetStock - currentStock);
-
-                    return { ...p, avgDailySales, currentStock, daysLeft, suggestOrder, soldLast30Days };
-                });
-
-                // Filter: Barang yang akan habis < 7 hari ATAU Stok Kritis < 5
-                restockList = restockList.filter(p => (p.daysLeft < 7 && p.avgDailySales > 0.1) || p.currentStock < 5).sort((a,b) => a.daysLeft - b.daysLeft);
-
-                // Generate HTML
-                const renderRows = restockList.map((p, idx) => {
-                    const urgencyColor = p.daysLeft < 3 ? 'bg-red-100 text-red-800' : 'bg-yellow-100 text-yellow-800';
-                    return `
-                    <tr class="hover:bg-gray-50 border-b">
-                        <td class="p-4">
-                            <div class="font-bold text-gray-800">${p['Nama Produk']}</div>
-                            <div class="text-xs text-gray-500 font-mono">${p.Barcode}</div>
-                        </td>
-                        <td class="p-4 text-center">
-                            <div class="font-bold">${p.currentStock}</div>
-                            <div class="text-xs text-gray-500">Terjual 30hr: ${p.soldLast30Days}</div>
-                        </td>
-                        <td class="p-4 text-center">
-                            <div class="text-sm font-medium">${p.avgDailySales.toFixed(1)} / hari</div>
-                        </td>
-                        <td class="p-4 text-center">
-                            <span class="px-2 py-1 rounded text-xs font-bold ${urgencyColor}">${p.daysLeft < 1 ? 'HABIS' : Math.floor(p.daysLeft) + ' Hari Lagi'}</span>
-                        </td>
-                        <td class="p-4 text-center">
-                            <div class="flex items-center justify-center gap-2">
-                                <span class="font-bold text-blue-600 text-lg">${p.suggestOrder}</span>
-                                <span class="text-xs text-gray-400">unit</span>
-                            </div>
-                        </td>
-                        <td class="p-4 text-center">
-                            <input type="checkbox" class="restock-check w-5 h-5" data-json='${JSON.stringify({barcode: p.Barcode, name: p['Nama Produk'], qty: p.suggestOrder, hpp: p.HPP, price: p.Harga})}' checked>
-                        </td>
-                    </tr>`;
-                }).join('');
-
-                return `
-                <div class="space-y-6">
-                    <div class="bg-gradient-to-r from-purple-600 to-blue-600 rounded-xl p-6 text-white shadow-lg flex justify-between items-center">
-                        <div>
-                            <h2 class="text-2xl font-bold flex items-center gap-2"><span>🤖</span> Smart Restock AI</h2>
-                            <p class="opacity-90 text-sm mt-1">Rekomendasi belanja berdasarkan kecepatan penjualan 30 hari terakhir.</p>
-                        </div>
-                        <div class="text-right">
-                            <div class="text-3xl font-bold">${restockList.length}</div>
-                            <div class="text-xs opacity-75">Item Perlu Restock</div>
-                        </div>
-                    </div>
-
-                    <div class="bg-white rounded-xl shadow overflow-hidden border border-gray-200">
-                        <div class="p-4 border-b bg-gray-50 flex justify-between items-center">
-                            <h3 class="font-bold text-gray-700">Prioritas Belanja (Urut: Paling Cepat Habis)</h3>
-                            <button onclick="Actions.generateAutoPO()" class="bg-blue-600 text-white px-4 py-2 rounded-lg font-bold hover:bg-blue-700 shadow transition flex items-center gap-2">
-                                <span>🛒</span> Buat PO Otomatis
-                            </button>
-                        </div>
-                        <div class="overflow-auto max-h-[600px]">
-                            <table class="w-full text-left text-sm">
-                                <thead class="bg-gray-100 sticky top-0 z-10 text-gray-600 uppercase text-xs">
-                                    <tr>
-                                        <th class="p-4">Produk</th>
-                                        <th class="p-4 text-center">Sisa Stok</th>
-                                        <th class="p-4 text-center">Velocity (Speed)</th>
-                                        <th class="p-4 text-center">Est. Habis</th>
-                                        <th class="p-4 text-center">Saran Order (14 Hari)</th>
-                                        <th class="p-4 text-center">Pilih</th>
-                                    </tr>
-                                </thead>
-                                <tbody class="divide-y">
-                                    ${restockList.length > 0 ? renderRows : '<tr><td colspan="6" class="p-8 text-center text-gray-500">Semua stok aman! Tidak ada rekomendasi belanja.</td></tr>'}
-                                </tbody>
-                            </table>
-                        </div>
-                    </div>
-                </div>`;
-            },
-
             Dashboard: () => { 
                 const today = new Date();
                 const twoMonthsLater = new Date();
@@ -350,41 +270,231 @@
                 `; 
             },
 
+            SmartRestock: () => {
+                const productStats = {};
+                const thirtyDaysAgo = new Date();
+                thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+
+                State.data.sales.forEach(s => {
+                    if (new Date(s.timestamp) < thirtyDaysAgo) return; 
+                    let itemsList = s.cart || [];
+                    if(itemsList.length === 0 && s.items) {
+                        s.items.split(', ').forEach(str => {
+                            const parts = str.split(' x');
+                            if(parts.length === 2) itemsList.push({name: parts[0].trim(), quantity: parseInt(parts[1])});
+                        });
+                    }
+                    itemsList.forEach(i => {
+                        const name = i.name.trim();
+                        if (!productStats[name]) productStats[name] = 0;
+                        productStats[name] += i.quantity;
+                    });
+                });
+
+                let restockList = State.data.products.map(p => {
+                    const soldLast30Days = productStats[p['Nama Produk']] || 0;
+                    const avgDailySales = soldLast30Days / 30;
+                    const currentStock = (p['Stok Area Kasir adamart 73']||0) + (p['Stok Area Kasir adamart induksi']||0) + (p['Stok Area Kasir adamart kelanis']||0);
+                    const daysLeft = avgDailySales > 0 ? currentStock / avgDailySales : 999;
+                    const targetStock = Math.ceil(avgDailySales * 14); 
+                    const suggestOrder = Math.max(0, targetStock - currentStock);
+                    return { ...p, avgDailySales, currentStock, daysLeft, suggestOrder, soldLast30Days };
+                });
+
+                restockList = restockList.filter(p => (p.daysLeft < 7 && p.avgDailySales > 0.1) || p.currentStock < 5).sort((a,b) => a.daysLeft - b.daysLeft);
+
+                const renderRows = restockList.map((p) => {
+                    const urgencyColor = p.daysLeft < 3 ? 'bg-red-100 text-red-800' : 'bg-yellow-100 text-yellow-800';
+                    return `
+                    <tr class="hover:bg-gray-50 border-b">
+                        <td class="p-4"><div class="font-bold text-gray-800">${p['Nama Produk']}</div><div class="text-xs text-gray-500 font-mono">${p.Barcode}</div></td>
+                        <td class="p-4 text-center"><div class="font-bold">${p.currentStock}</div><div class="text-xs text-gray-500">Terjual 30hr: ${p.soldLast30Days}</div></td>
+                        <td class="p-4 text-center"><div class="text-sm font-medium">${p.avgDailySales.toFixed(1)} / hari</div></td>
+                        <td class="p-4 text-center"><span class="px-2 py-1 rounded text-xs font-bold ${urgencyColor}">${p.daysLeft < 1 ? 'HABIS' : Math.floor(p.daysLeft) + ' Hari Lagi'}</span></td>
+                        <td class="p-4 text-center"><div class="flex items-center justify-center gap-2"><span class="font-bold text-blue-600 text-lg">${p.suggestOrder}</span><span class="text-xs text-gray-400">unit</span></div></td>
+                        <td class="p-4 text-center"><input type="checkbox" class="restock-check w-5 h-5" data-json='${JSON.stringify({barcode: p.Barcode, name: p['Nama Produk'], qty: p.suggestOrder, hpp: p.HPP, price: p.Harga})}' checked></td>
+                    </tr>`;
+                }).join('');
+
+                return `
+                <div class="space-y-6">
+                    <div class="bg-gradient-to-r from-purple-600 to-blue-600 rounded-xl p-6 text-white shadow-lg flex justify-between items-center">
+                        <div><h2 class="text-2xl font-bold flex items-center gap-2"><span>🤖</span> Smart Restock AI</h2><p class="opacity-90 text-sm mt-1">Rekomendasi belanja berdasarkan kecepatan penjualan 30 hari terakhir.</p></div>
+                        <div class="text-right"><div class="text-3xl font-bold">${restockList.length}</div><div class="text-xs opacity-75">Item Perlu Restock</div></div>
+                    </div>
+                    <div class="bg-white rounded-xl shadow overflow-hidden border border-gray-200">
+                        <div class="p-4 border-b bg-gray-50 flex justify-between items-center"><h3 class="font-bold text-gray-700">Prioritas Belanja</h3><button onclick="Actions.generateAutoPO()" class="bg-blue-600 text-white px-4 py-2 rounded-lg font-bold hover:bg-blue-700 shadow transition flex items-center gap-2"><span>🛒</span> Buat PO Otomatis</button></div>
+                        <div class="overflow-auto max-h-[600px]"><table class="w-full text-left text-sm"><thead class="bg-gray-100 sticky top-0 z-10 text-gray-600 uppercase text-xs"><tr><th class="p-4">Produk</th><th class="p-4 text-center">Sisa Stok</th><th class="p-4 text-center">Kecepatan Jual</th><th class="p-4 text-center">Est. Habis</th><th class="p-4 text-center">Saran Order</th><th class="p-4 text-center">Pilih</th></tr></thead><tbody class="divide-y">${restockList.length > 0 ? renderRows : '<tr><td colspan="6" class="p-8 text-center text-gray-500">Semua stok aman! Tidak ada rekomendasi belanja.</td></tr>'}</tbody></table></div>
+                    </div>
+                </div>`;
+            },
+
             Logistics: () => {
                 const logs = State.data.logs;
                 return `
                 <div class="bg-white rounded-xl shadow overflow-hidden flex flex-col h-[calc(100vh-140px)]">
                     <div class="p-6 border-b bg-blue-50 shrink-0 flex justify-between items-center">
-                        <div>
-                            <h3 class="font-bold text-gray-700 text-lg">🚛 Riwayat Terima Barang (Receiving)</h3>
-                            <p class="text-xs text-gray-500">Data ini berasal dari kasir saat melakukan 'Terima Barang'</p>
-                        </div>
-                        <button onclick="loadAllData()" class="text-blue-600 text-sm hover:underline">Refresh Data</button>
+                        <div><h3 class="font-bold text-gray-700 text-lg">🚛 Riwayat Terima Barang</h3><p class="text-xs text-gray-500">Penerimaan barang fisik dari kasir.</p></div>
                     </div>
                     <div class="overflow-auto flex-1">
-                        <table class="w-full text-left text-sm">
-                            <thead class="bg-gray-100 sticky top-0 z-10">
-                                <tr><th class="p-4">Waktu</th><th class="p-4">Area / Toko</th><th class="p-4">User</th><th class="p-4">Detail Barang Masuk</th></tr>
+                        <table class="w-full text-left text-sm"><thead class="bg-gray-100 sticky top-0 z-10"><tr><th class="p-4">Waktu</th><th class="p-4">Area</th><th class="p-4">Penerima</th><th class="p-4">Detail Barang</th></tr></thead><tbody class="divide-y">${logs.length === 0 ? '<tr><td colspan="4" class="p-8 text-center text-gray-400">Belum ada data barang masuk.</td></tr>' : logs.map(l => {
+                            let itemsDisplay = '-';
+                            if(Array.isArray(l.items)) itemsDisplay = l.items.map(i => `<span class="inline-block bg-green-100 text-green-800 px-2 py-1 rounded text-xs mr-1 mb-1 border border-green-200"><b>${i.name}</b>: ${i.qtyReceived || i.qty}</span>`).join('');
+                            return `<tr class="hover:bg-blue-50/30 transition"><td class="p-4 text-gray-600 whitespace-nowrap">${new Date(l.timestamp).toLocaleString('id-ID')}</td><td class="p-4 font-bold text-blue-800">${l.area}</td><td class="p-4 text-gray-600">${l.user || 'Admin'}</td><td class="p-4">${itemsDisplay}</td></tr>`;
+                        }).join('')}</tbody></table>
+                    </div>
+                </div>`;
+            },
+
+            Purchase: () => `<div class="flex justify-end mb-4"><button onclick="Modals.openBatchPO()" class="bg-blue-600 text-white px-4 py-2 rounded font-bold">+ Buat PO Manual</button></div><div class="bg-white rounded shadow overflow-hidden h-[calc(100vh-200px)] flex flex-col"><div class="overflow-auto flex-1"><table class="w-full text-sm text-left"><thead class="bg-gray-100 sticky top-0 z-10"><tr><th class="p-4">Batch</th><th class="p-4">Supplier</th><th class="p-4">Cabang</th><th class="p-4">Status</th><th class="p-4">Items</th><th class="p-4 text-center">Aksi</th></tr></thead><tbody class="divide-y">${State.data.purchases.map(p=>`<tr><td class="p-4 text-blue-600 font-mono font-bold">${p.batchNumber}</td><td class="p-4">${p.supplier}</td><td class="p-4"><span class="px-2 py-1 bg-purple-100 text-purple-800 rounded text-xs font-bold border border-purple-200">${p.branch}</span></td><td class="p-4">${getStatusBadge(p.status)}</td><td class="p-4 font-medium text-gray-500">${JSON.parse(p.items).length} items</td><td class="p-4 text-center"><button onclick="Actions.printPO('${p.batchNumber}')" class="bg-blue-100 text-blue-700 px-3 py-1 rounded font-bold text-xs hover:bg-blue-200">🖨️ Cetak PO</button></td></tr>`).join('')}</tbody></table></div></div>`,
+            
+            Inventory: () => `<div class="grid grid-cols-1 lg:grid-cols-3 gap-6"><div class="bg-white rounded-xl shadow p-6 lg:col-span-1 h-fit"><h3 class="font-bold text-gray-800 mb-4">📦 Input / Update Stok</h3><form id="stockForm" class="space-y-3"><div><label class="text-xs font-bold text-gray-500">Barcode</label><input type="text" id="barcode" class="w-full p-2 border rounded bg-gray-50" placeholder="Scan/Ketik..." required oninput="autoFill()"></div><div><label class="text-xs font-bold text-gray-500">Nama Produk</label><input type="text" id="productName" class="w-full p-2 border rounded" required></div><div class="grid grid-cols-2 gap-2"><div><label class="text-xs font-bold text-gray-500">HPP (Beli)</label><input type="number" id="hpp" class="w-full p-2 border rounded" placeholder="0"></div><div><label class="text-xs font-bold text-gray-500">Harga Jual</label><input type="number" id="price" class="w-full p-2 border rounded" placeholder="0" required></div></div><div><label class="text-xs font-bold text-gray-500">Target Cabang</label><select id="targetArea" class="w-full p-2 border rounded bg-white"><option value="adamart 73">Adamart 73</option><option value="adamart induksi">Induksi</option><option value="adamart kelanis">Kelanis</option></select></div><div class="grid grid-cols-2 gap-2"><div><label class="text-xs font-bold text-gray-500">Tambah Qty</label><input type="number" id="stockAmount" class="w-full p-2 border rounded" placeholder="0" required></div><div><label class="text-xs font-bold text-gray-500">Exp Date</label><input type="date" id="expiryDate" class="w-full p-2 border rounded"></div></div><button type="submit" class="w-full bg-blue-600 text-white py-2 rounded font-bold hover:bg-blue-700 mt-4">Simpan Stok</button></form></div><div class="bg-white rounded-xl shadow overflow-hidden lg:col-span-2 flex flex-col h-[calc(100vh-200px)]"><div class="p-4 border-b bg-gray-50 shrink-0"><input type="text" placeholder="🔍 Cari produk di inventory..." class="w-full p-2 border rounded" oninput="filterInventory(this.value)"></div><div class="overflow-auto flex-1"><table class="w-full text-left text-sm"><thead class="bg-gray-100 text-gray-600 uppercase font-bold sticky top-0 z-10 shadow-sm"><tr><th class="p-4">Produk</th><th class="p-4">HPP/Jual</th><th class="p-4 text-center">73</th><th class="p-4 text-center">Induksi</th><th class="p-4 text-center">Kelanis</th></tr></thead><tbody class="divide-y product-row-container">${State.data.products.map(p => { const hpp = p.HPP || 0; const hppClass = hpp === 0 ? 'text-red-500 font-bold' : 'text-gray-500'; return `<tr class="hover:bg-gray-50 product-row"><td class="p-4"><div class="font-bold">${p['Nama Produk']}</div><div class="text-xs text-gray-500 font-mono">${p.Barcode}</div></td><td class="p-4"><div class="text-xs ${hppClass}">B: ${formatRp(hpp)}</div><div class="font-bold text-green-600">J: ${formatRp(p.Harga)}</div></td><td class="p-4 text-center font-bold ${checkStock(p['Stok Area Kasir adamart 73'])}">${p['Stok Area Kasir adamart 73']||0}</td><td class="p-4 text-center font-bold ${checkStock(p['Stok Area Kasir adamart induksi'])}">${p['Stok Area Kasir adamart induksi']||0}</td><td class="p-4 text-center font-bold ${checkStock(p['Stok Area Kasir adamart kelanis'])}">${p['Stok Area Kasir adamart kelanis']||0}</td></tr>`; }).join('')}</tbody></table></div></div></div>`,
+
+            Shifts: () => `<div class="bg-white rounded-xl shadow overflow-hidden flex flex-col h-[calc(100vh-140px)]"><div class="p-6 border-b bg-blue-50 shrink-0"><h3 class="font-bold text-gray-700 text-lg">Laporan Keuangan Harian</h3></div><div class="overflow-auto flex-1"><table class="w-full text-left text-sm whitespace-nowrap"><thead class="bg-gray-100 sticky top-0 z-10"><tr><th class="p-4">Waktu / Kasir</th><th class="p-4 text-right">Tunai (Fisik)</th><th class="p-4 text-right">QRIS</th><th class="p-4 text-right">Kasbon</th><th class="p-4 text-right font-bold">Total Real</th><th class="p-4 text-right">Selisih</th></tr></thead><tbody class="divide-y">${State.data.shifts.map(s => { const cashNet = s.actualCash - s.startCash; const totalReal = cashNet + (s.totalQris||0) + (s.totalKasbon||0); return `<tr class="hover:bg-gray-50"><td class="p-4"><div class="font-bold">${s.cashierName}</div><div class="text-xs text-gray-500">${new Date(s.openTime).toLocaleDateString()}</div><span class="bg-gray-200 px-2 rounded text-xs">${s.area}</span></td><td class="p-4 text-right font-bold text-gray-800">${formatRp(s.actualCash)}</td><td class="p-4 text-right text-blue-700">${formatRp(s.totalQris||0)}</td><td class="p-4 text-right text-orange-700">${formatRp(s.totalKasbon||0)}</td><td class="p-4 text-right font-extrabold text-gray-900">${formatRp(totalReal)}</td><td class="p-4 text-right font-bold ${s.difference < 0 ? 'text-red-600' : 'text-green-600'}">${s.difference === 0 ? '✅ Pas' : formatRp(s.difference)}</td></tr>`; }).join('')}</tbody></table></div></div>`,
+            
+            // FITUR BARU 1: Rapor Kasir
+            Kasir: () => {
+                const stats = {};
+                State.data.shifts.forEach(s => {
+                    const name = s.cashierName || 'Kasir Anonim';
+                    if(!stats[name]) stats[name] = { count: 0, diff: 0, cash: 0, minusCount: 0 };
+                    stats[name].count++;
+                    stats[name].diff += (s.difference || 0);
+                    stats[name].cash += (s.actualCash || 0);
+                    if((s.difference || 0) < 0) stats[name].minusCount++;
+                });
+
+                const rows = Object.entries(stats).sort((a,b) => b[1].count - a[1].count).map(([name, data]) => {
+                    const statusColor = data.diff < -50000 ? 'text-red-600' : 'text-green-600';
+                    const reliability = data.count > 0 ? ((data.count - data.minusCount) / data.count * 100).toFixed(0) : 0;
+                    return `<tr class="hover:bg-gray-50 border-b">
+                        <td class="p-4 font-bold text-gray-800">${name}</td>
+                        <td class="p-4 text-center">${data.count} Shift</td>
+                        <td class="p-4 text-right font-bold text-blue-600">${formatRp(data.cash)}</td>
+                        <td class="p-4 text-right font-bold ${statusColor}">${formatRp(data.diff)}</td>
+                        <td class="p-4 text-center"><span class="bg-blue-100 text-blue-800 px-2 py-1 rounded text-xs font-bold">${reliability}% Akurat</span></td>
+                    </tr>`;
+                }).join('');
+
+                return `
+                <div class="bg-white rounded-xl shadow overflow-hidden flex flex-col h-[calc(100vh-140px)]">
+                    <div class="p-6 border-b bg-blue-50 shrink-0">
+                        <h3 class="font-bold text-gray-700 text-lg">👨‍💼 Rapor Kinerja Kasir</h3>
+                        <p class="text-xs text-gray-500 mt-1">Penilaian performa berdasarkan jumlah transaksi shift dan ketepatan setoran fisik kas.</p>
+                    </div>
+                    <div class="overflow-auto flex-1">
+                        <table class="w-full text-left text-sm whitespace-nowrap">
+                            <thead class="bg-gray-100 sticky top-0 z-10 text-gray-600 uppercase text-xs">
+                                <tr><th class="p-4">Nama Karyawan</th><th class="p-4 text-center">Total Shift</th><th class="p-4 text-right">Total Setoran Tunai</th><th class="p-4 text-right">Akumulasi Selisih</th><th class="p-4 text-center">Tingkat Akurasi</th></tr>
                             </thead>
-                            <tbody class="divide-y">
-                                ${logs.length === 0 ? '<tr><td colspan="4" class="p-8 text-center text-gray-400">Belum ada data barang masuk.</td></tr>' : 
-                                  logs.map(l => {
-                                    let itemsDisplay = '-';
-                                    if(Array.isArray(l.items)) itemsDisplay = l.items.map(i => `<span class="inline-block bg-green-100 text-green-800 px-2 py-1 rounded text-xs mr-1 mb-1 border border-green-200"><b>${i.name}</b>: ${i.qtyReceived || i.qty}</span>`).join('');
-                                    return `<tr class="hover:bg-blue-50/30 transition"><td class="p-4 text-gray-600 whitespace-nowrap">${new Date(l.timestamp).toLocaleString('id-ID')}</td><td class="p-4 font-bold text-blue-800">${l.area}</td><td class="p-4 text-gray-600">${l.user || 'Admin'}</td><td class="p-4">${itemsDisplay}</td></tr>`;
-                                }).join('')}
-                            </tbody>
+                            <tbody>${rows || '<tr><td colspan="5" class="p-8 text-center text-gray-500">Belum ada data shift.</td></tr>'}</tbody>
                         </table>
                     </div>
                 </div>`;
             },
 
-            Shifts: () => `<div class="bg-white rounded-xl shadow overflow-hidden flex flex-col h-[calc(100vh-140px)]"><div class="p-6 border-b bg-blue-50 shrink-0"><h3 class="font-bold text-gray-700 text-lg">Laporan Keuangan Harian</h3></div><div class="overflow-auto flex-1"><table class="w-full text-left text-sm whitespace-nowrap"><thead class="bg-gray-100 sticky top-0 z-10"><tr><th class="p-4">Waktu / Kasir</th><th class="p-4 text-right">Tunai (Fisik)</th><th class="p-4 text-right">QRIS</th><th class="p-4 text-right">Kasbon</th><th class="p-4 text-right font-bold">Total Real</th><th class="p-4 text-right">Selisih</th></tr></thead><tbody class="divide-y">${State.data.shifts.map(s => { const cashNet = s.actualCash - s.startCash; const totalReal = cashNet + (s.totalQris||0) + (s.totalKasbon||0); return `<tr class="hover:bg-gray-50"><td class="p-4"><div class="font-bold">${s.cashierName}</div><div class="text-xs text-gray-500">${new Date(s.openTime).toLocaleDateString()}</div><span class="bg-gray-200 px-2 rounded text-xs">${s.area}</span></td><td class="p-4 text-right font-bold text-gray-800">${formatRp(s.actualCash)}</td><td class="p-4 text-right text-blue-700">${formatRp(s.totalQris||0)}</td><td class="p-4 text-right text-orange-700">${formatRp(s.totalKasbon||0)}</td><td class="p-4 text-right font-extrabold text-gray-900">${formatRp(totalReal)}</td><td class="p-4 text-right font-bold ${s.difference < 0 ? 'text-red-600' : 'text-green-600'}">${s.difference === 0 ? '✅ Pas' : formatRp(s.difference)}</td></tr>`; }).join('')}</tbody></table></div></div>`,
-            
-            Purchase: () => `<div class="flex justify-end mb-4"><button onclick="Modals.openBatchPO()" class="bg-blue-600 text-white px-4 py-2 rounded font-bold">+ Buat PO Manual</button></div><div class="bg-white rounded shadow overflow-hidden h-[calc(100vh-200px)] flex flex-col"><div class="overflow-auto flex-1"><table class="w-full text-sm text-left"><thead class="bg-gray-100 sticky top-0 z-10"><tr><th class="p-4">Batch</th><th class="p-4">Supplier</th><th class="p-4">Cabang</th><th class="p-4">Status</th><th class="p-4">Items</th></tr></thead><tbody class="divide-y">${State.data.purchases.map(p=>`<tr><td class="p-4 text-blue-600 font-mono font-bold">${p.batchNumber}</td><td class="p-4">${p.supplier}</td><td class="p-4"><span class="px-2 py-1 bg-purple-100 text-purple-800 rounded text-xs font-bold border border-purple-200">${p.branch}</span></td><td class="p-4">${getStatusBadge(p.status)}</td><td class="p-4 font-medium text-gray-500">${JSON.parse(p.items).length} items</td></tr>`).join('')}</tbody></table></div></div>`,
-            
-            Inventory: () => `<div class="grid grid-cols-1 lg:grid-cols-3 gap-6"><div class="bg-white rounded-xl shadow p-6 lg:col-span-1 h-fit"><h3 class="font-bold text-gray-800 mb-4">📦 Input / Update Stok</h3><form id="stockForm" class="space-y-3"><div><label class="text-xs font-bold text-gray-500">Barcode</label><input type="text" id="barcode" class="w-full p-2 border rounded bg-gray-50" placeholder="Scan/Ketik..." required oninput="autoFill()"></div><div><label class="text-xs font-bold text-gray-500">Nama Produk</label><input type="text" id="productName" class="w-full p-2 border rounded" required></div><div class="grid grid-cols-2 gap-2"><div><label class="text-xs font-bold text-gray-500">HPP (Beli)</label><input type="number" id="hpp" class="w-full p-2 border rounded" placeholder="0"></div><div><label class="text-xs font-bold text-gray-500">Harga Jual</label><input type="number" id="price" class="w-full p-2 border rounded" placeholder="0" required></div></div><div><label class="text-xs font-bold text-gray-500">Target Cabang</label><select id="targetArea" class="w-full p-2 border rounded bg-white"><option value="adamart 73">Adamart 73</option><option value="adamart induksi">Induksi</option><option value="adamart kelanis">Kelanis</option></select></div><div class="grid grid-cols-2 gap-2"><div><label class="text-xs font-bold text-gray-500">Tambah Qty</label><input type="number" id="stockAmount" class="w-full p-2 border rounded" placeholder="0" required></div><div><label class="text-xs font-bold text-gray-500">Exp Date</label><input type="date" id="expiryDate" class="w-full p-2 border rounded"></div></div><button type="submit" class="w-full bg-blue-600 text-white py-2 rounded font-bold hover:bg-blue-700 mt-4">Simpan Stok</button></form></div><div class="bg-white rounded-xl shadow overflow-hidden lg:col-span-2 flex flex-col h-[calc(100vh-200px)]"><div class="p-4 border-b bg-gray-50 shrink-0"><input type="text" placeholder="🔍 Cari produk di inventory..." class="w-full p-2 border rounded" oninput="filterInventory(this.value)"></div><div class="overflow-auto flex-1"><table class="w-full text-left text-sm"><thead class="bg-gray-100 text-gray-600 uppercase font-bold sticky top-0 z-10 shadow-sm"><tr><th class="p-4">Produk</th><th class="p-4">HPP/Jual</th><th class="p-4 text-center">73</th><th class="p-4 text-center">Induksi</th><th class="p-4 text-center">Kelanis</th></tr></thead><tbody class="divide-y product-row-container">${State.data.products.map(p => { const hpp = p.HPP || 0; const hppClass = hpp === 0 ? 'text-red-500 font-bold' : 'text-gray-500'; return `<tr class="hover:bg-gray-50 product-row"><td class="p-4"><div class="font-bold">${p['Nama Produk']}</div><div class="text-xs text-gray-500 font-mono">${p.Barcode}</div></td><td class="p-4"><div class="text-xs ${hppClass}">B: ${formatRp(hpp)}</div><div class="font-bold text-green-600">J: ${formatRp(p.Harga)}</div></td><td class="p-4 text-center font-bold ${checkStock(p['Stok Area Kasir adamart 73'])}">${p['Stok Area Kasir adamart 73']||0}</td><td class="p-4 text-center font-bold ${checkStock(p['Stok Area Kasir adamart induksi'])}">${p['Stok Area Kasir adamart induksi']||0}</td><td class="p-4 text-center font-bold ${checkStock(p['Stok Area Kasir adamart kelanis'])}">${p['Stok Area Kasir adamart kelanis']||0}</td></tr>`; }).join('')}</tbody></table></div></div></div>`,
-            
+            // FITUR BARU 2: Retur & Rusak
+            Retur: () => `
+                <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                    <div class="bg-white rounded-xl shadow p-6 lg:col-span-1 h-fit border-t-4 border-orange-500">
+                        <h3 class="font-bold text-gray-800 mb-4">Catat Barang Keluar</h3>
+                        <form id="returForm" class="space-y-4" onsubmit="Actions.submitRetur(event)">
+                            <div class="relative">
+                                <label class="text-xs font-bold text-gray-500">Cari Produk</label>
+                                <input type="text" id="returSearch" placeholder="Ketik nama / barcode..." class="w-full p-2 border rounded" autocomplete="off" oninput="searchProductForForm(this.value, 'retur')">
+                                <div id="retur-search-results" class="absolute z-50 w-full bg-white shadow-xl rounded-b-lg border border-gray-200 max-h-60 overflow-y-auto hidden"></div>
+                            </div>
+                            <div class="bg-gray-50 p-3 rounded text-sm">
+                                <input type="hidden" id="returBarcode">
+                                <div class="font-bold text-gray-700" id="returNameLabel">Pilih produk dulu...</div>
+                            </div>
+                            <div>
+                                <label class="text-xs font-bold text-gray-500">Cabang Asal</label>
+                                <select id="returArea" class="w-full p-2 border rounded bg-white">
+                                    <option value="adamart 73">Adamart 73</option><option value="adamart induksi">Induksi</option><option value="adamart kelanis">Kelanis</option>
+                                </select>
+                            </div>
+                            <div class="grid grid-cols-2 gap-2">
+                                <div><label class="text-xs font-bold text-gray-500">Jumlah Keluar</label><input type="number" id="returQty" class="w-full p-2 border rounded font-bold" min="1" required></div>
+                                <div><label class="text-xs font-bold text-gray-500">Alasan</label><select id="returReason" class="w-full p-2 border rounded bg-white"><option value="Rusak">Rusak</option><option value="Expired">Kedaluwarsa</option><option value="Retur Supplier">Retur Supplier</option></select></div>
+                            </div>
+                            <div><label class="text-xs font-bold text-gray-500">Catatan</label><input type="text" id="returNotes" class="w-full p-2 border rounded" placeholder="Keterangan opsional..."></div>
+                            <button type="submit" class="w-full bg-orange-600 text-white py-2 rounded font-bold hover:bg-orange-700">Keluarkan Stok</button>
+                        </form>
+                    </div>
+                    <div class="bg-white rounded-xl shadow overflow-hidden lg:col-span-2 flex flex-col h-[calc(100vh-140px)]">
+                        <div class="p-4 border-b bg-orange-50 shrink-0"><h3 class="font-bold text-orange-800">Riwayat Retur & Kerusakan</h3></div>
+                        <div class="overflow-auto flex-1">
+                            <table class="w-full text-left text-sm whitespace-nowrap">
+                                <thead class="bg-gray-100 sticky top-0 z-10 text-gray-600"><tr><th class="p-4">Tanggal</th><th class="p-4">Produk</th><th class="p-4">Cabang</th><th class="p-4">Alasan</th><th class="p-4 text-center">Qty</th></tr></thead>
+                                <tbody class="divide-y">${State.data.returns.length === 0 ? '<tr><td colspan="5" class="p-8 text-center text-gray-400">Belum ada data retur.</td></tr>' : State.data.returns.map(r => `
+                                    <tr class="hover:bg-orange-50/50">
+                                        <td class="p-4 text-gray-500">${new Date(r.timestamp).toLocaleDateString('id-ID')}</td>
+                                        <td class="p-4"><b>${r.name}</b><br><span class="text-xs text-gray-400">${r.barcode}</span></td>
+                                        <td class="p-4">${r.area}</td>
+                                        <td class="p-4"><span class="px-2 py-1 rounded text-xs font-bold ${r.reason === 'Rusak' ? 'bg-red-100 text-red-800' : 'bg-yellow-100 text-yellow-800'}">${r.reason}</span></td>
+                                        <td class="p-4 text-center font-bold text-red-600">-${r.qty}</td>
+                                    </tr>`).join('')}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>`,
+
+            // FITUR BARU 3: Audit Stok Fisik
+            Audit: () => `
+                <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                    <div class="bg-white rounded-xl shadow p-6 lg:col-span-1 h-fit border-t-4 border-indigo-500">
+                        <h3 class="font-bold text-gray-800 mb-4">Stock Opname</h3>
+                        <form id="auditForm" class="space-y-4" onsubmit="Actions.submitAudit(event)">
+                            <div class="relative">
+                                <label class="text-xs font-bold text-gray-500">Cari Produk / Scan</label>
+                                <input type="text" id="auditSearch" placeholder="Ketik nama / barcode..." class="w-full p-2 border rounded" autocomplete="off" oninput="searchProductForForm(this.value, 'audit')">
+                                <div id="audit-search-results" class="absolute z-50 w-full bg-white shadow-xl rounded-b-lg border border-gray-200 max-h-60 overflow-y-auto hidden"></div>
+                            </div>
+                            <div class="bg-indigo-50 p-3 rounded text-sm border border-indigo-100">
+                                <input type="hidden" id="auditBarcode">
+                                <div class="font-bold text-indigo-900" id="auditNameLabel">Pilih produk dulu...</div>
+                            </div>
+                            <div>
+                                <label class="text-xs font-bold text-gray-500">Cabang</label>
+                                <select id="auditArea" class="w-full p-2 border rounded bg-white" onchange="Actions.updateAuditSystemStock()">
+                                    <option value="adamart 73">Adamart 73</option><option value="adamart induksi">Induksi</option><option value="adamart kelanis">Kelanis</option>
+                                </select>
+                            </div>
+                            <div class="grid grid-cols-2 gap-4 items-end bg-gray-50 p-3 rounded border">
+                                <div>
+                                    <label class="text-xs font-bold text-gray-500">Stok Sistem</label>
+                                    <div id="auditSystemQty" class="text-2xl font-mono text-gray-400 mt-1">-</div>
+                                </div>
+                                <div>
+                                    <label class="text-xs font-bold text-blue-600">Fisik Sebenarnya</label>
+                                    <input type="number" id="auditPhysicalQty" class="w-full p-2 border-2 border-blue-400 rounded font-bold text-xl" required>
+                                </div>
+                            </div>
+                            <button type="submit" class="w-full bg-indigo-600 text-white py-3 rounded-lg font-bold hover:bg-indigo-700 shadow">Simpan Hasil Audit</button>
+                        </form>
+                    </div>
+                    <div class="bg-white rounded-xl shadow overflow-hidden lg:col-span-2 flex flex-col h-[calc(100vh-140px)]">
+                        <div class="p-4 border-b bg-indigo-50 shrink-0"><h3 class="font-bold text-indigo-800">Riwayat Penyesuaian Audit</h3></div>
+                        <div class="overflow-auto flex-1">
+                            <table class="w-full text-left text-sm whitespace-nowrap">
+                                <thead class="bg-gray-100 sticky top-0 z-10 text-gray-600"><tr><th class="p-4">Tanggal</th><th class="p-4">Produk</th><th class="p-4">Cabang</th><th class="p-4 text-center">Sistem</th><th class="p-4 text-center">Fisik</th><th class="p-4 text-center">Selisih</th></tr></thead>
+                                <tbody class="divide-y">${State.data.audits.length === 0 ? '<tr><td colspan="6" class="p-8 text-center text-gray-400">Belum ada riwayat audit.</td></tr>' : State.data.audits.map(a => `
+                                    <tr class="hover:bg-indigo-50/50">
+                                        <td class="p-4 text-gray-500">${new Date(a.timestamp).toLocaleDateString('id-ID')}</td>
+                                        <td class="p-4"><b>${a.name}</b><br><span class="text-xs text-gray-400">${a.barcode}</span></td>
+                                        <td class="p-4">${a.area}</td>
+                                        <td class="p-4 text-center text-gray-500">${a.systemQty}</td>
+                                        <td class="p-4 text-center font-bold">${a.physicalQty}</td>
+                                        <td class="p-4 text-center font-bold ${a.variance < 0 ? 'text-red-600' : (a.variance > 0 ? 'text-green-600' : 'text-gray-400')}">${a.variance > 0 ? '+'+a.variance : a.variance}</td>
+                                    </tr>`).join('')}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>`,
+
             Reports: () => `
                 <div class="space-y-6">
                     <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
@@ -428,7 +538,7 @@
                 if (!periodElement) return;
                 const period = periodElement.value;
                 
-                const financialData = {}; // Key: Period, Value: {omzet, profit}
+                const financialData = {}; 
                 const productPerformance = {};
                 
                 let totalOmzet = 0, totalHPP = 0, totalProfit = 0;
@@ -444,7 +554,6 @@
                     let saleCost = 0;
                     let itemsList = s.cart || [];
                     
-                    // Fallback for legacy string format
                     if(itemsList.length === 0 && s.items) { 
                          s.items.split(', ').forEach(str => {
                             const parts = str.split(' x');
@@ -453,7 +562,6 @@
                     }
 
                     itemsList.forEach(item => {
-                        // Match product to get HPP
                         const product = State.data.products.find(p => p['Nama Produk'].trim().toLowerCase() === item.name.toLowerCase());
                         const hpp = product ? (parseInt(product.HPP) || 0) : 0;
                         const price = item.price || (product ? product.Harga : 0);
@@ -464,15 +572,12 @@
 
                         saleCost += itemHPP;
 
-                        // Add to Product Leaderboard
                         if(!productPerformance[item.name]) productPerformance[item.name] = {qty:0, profit:0};
                         productPerformance[item.name].qty += item.quantity;
                         productPerformance[item.name].profit += itemProfit;
                     });
 
                     const saleProfit = s.total - saleCost;
-                    
-                    // Aggregates
                     totalOmzet += s.total;
                     totalHPP += saleCost;
                     totalProfit += saleProfit;
@@ -481,15 +586,13 @@
                     financialData[key].profit += saleProfit;
                 });
 
-                // Update KPI Cards
                 const margin = totalOmzet > 0 ? (totalProfit / totalOmzet) * 100 : 0;
                 document.getElementById('rep-omzet').innerText = formatRp(totalOmzet);
                 document.getElementById('rep-hpp').innerText = formatRp(totalHPP);
                 document.getElementById('rep-profit').innerText = formatRp(totalProfit);
                 document.getElementById('rep-margin').innerText = margin.toFixed(1) + '%';
 
-                // Update Chart
-                const labels = Object.keys(financialData).sort((a,b) => a.localeCompare(b)); // Simple sort
+                const labels = Object.keys(financialData).sort((a,b) => a.localeCompare(b));
                 const ctx = document.getElementById('financialChart');
                 if (ctx) {
                     if(State.charts.line) State.charts.line.destroy();
@@ -499,7 +602,7 @@
                             labels: labels,
                             datasets: [
                                 { label: 'Profit (Cuan)', data: labels.map(l => financialData[l].profit), backgroundColor: '#10b981', borderRadius: 4 },
-                                { label: 'Omzet', data: labels.map(l => financialData[l].omzet), backgroundColor: '#3b82f6', borderRadius: 4, hidden: true } // Hidden by default to focus on profit
+                                { label: 'Omzet', data: labels.map(l => financialData[l].omzet), backgroundColor: '#3b82f6', borderRadius: 4, hidden: true }
                             ]
                         },
                         options: { 
@@ -513,11 +616,10 @@
                     });
                 }
 
-                // Update Leaderboard Table (Sorted by Profit)
                 const topBody = document.getElementById('topProductBody');
                 if (topBody) {
                     topBody.innerHTML = Object.entries(productPerformance)
-                        .sort((a,b) => b[1].profit - a[1].profit) // Sort by Profit Descending
+                        .sort((a,b) => b[1].profit - a[1].profit)
                         .slice(0, 10)
                         .map(([n, d]) => `
                             <tr class="border-b hover:bg-gray-50">
@@ -550,59 +652,163 @@
             getMonthOptions: () => { let opts = ''; const startYear = 2025; for (let y = startYear; y <= 2026; y++) { for (let m = 0; m < 12; m++) { const val = `${m+1}-${y}`; const isCur = new Date().getMonth() === m && new Date().getFullYear() === y; opts += `<option value="${val}" ${isCur ? 'selected' : ''}>${new Date(y, m, 1).toLocaleDateString('id-ID', {month:'long', year:'numeric'})}</option>`; } } return opts; }
         };
 
-        // GLOBAL ACTIONS
         const Actions = {
             createBatchPO: async (e) => { e.preventDefault(); const form = e.target; const selectVal = document.getElementById('supplierSelect').value; let supplier = selectVal === 'custom' ? document.getElementById('customSupplier').value.trim() : selectVal; if(State.tempBatchItems.length === 0) return alert("Belum ada item!"); const batchId = 'BATCH-' + Date.now(); const promises = []; const orderDate = form.elements['orderDate'].value; BRANCHES.forEach(branch => { if(document.getElementById(`branch-${branch.replace(/\s+/g, '-')}`).checked) { const poData = { type: 'purchase', batchNumber: batchId, branch: branch, supplier: supplier, orderDate: orderDate, status: 'pending', items: JSON.stringify(State.tempBatchItems), createdAt: new Date().toISOString() }; promises.push(window.addDoc(window.collection(window.db, "purchases"), poData)); } }); await Promise.all(promises); closeModal(); alert("Sukses! PO Batch berhasil dibuat."); loadAllData(); },
             
-            // ACTION: AUTO-GENERATE PO FROM SMART RESTOCK
+            printPO: (batchId) => {
+                const po = State.data.purchases.find(p => p.batchNumber === batchId);
+                if (!po) return alert("Data PO tidak ditemukan");
+                const items = JSON.parse(po.items); let total = 0;
+                const tbody = items.map((i, idx) => {
+                    const hpp = parseInt(i.hpp) || 0; const subtotal = i.qty * hpp; total += subtotal;
+                    return `<tr><td style="border:1px solid #000;padding:8px;text-align:center;">${idx+1}</td><td style="border:1px solid #000;padding:8px;">${i.barcode}<br><b>${i.name}</b></td><td style="border:1px solid #000;padding:8px;text-align:center;">${i.qty} ${i.unit || 'PCS'}</td><td style="border:1px solid #000;padding:8px;text-align:right;">${formatRp(hpp)}</td><td style="border:1px solid #000;padding:8px;text-align:right;">${formatRp(subtotal)}</td></tr>`;
+                }).join('');
+                const printWindow = window.open('', '_blank');
+                printWindow.document.write(`
+                <html><head><title>Cetak PO - ${po.batchNumber}</title>
+                    <style>body{font-family:'Times New Roman',serif;padding:20px;color:#000;font-size:14px;} .header{display:flex;align-items:center;border-bottom:4px double #000;padding-bottom:15px;margin-bottom:20px;} .logo{width:110px;height:auto;margin-right:20px;} .kop{text-align:center;flex:1;} .kop h1{margin:0 0 5px 0;font-size:20px;font-weight:bold;text-transform:uppercase;} .kop p{margin:2px 0;font-size:13px;line-height:1.4;} .title{text-align:center;font-size:18px;font-weight:bold;text-decoration:underline;margin-bottom:25px;} .info{display:flex;justify-content:space-between;margin-bottom:20px;} .info table{font-size:14px;} .info table td{padding:3px 8px;vertical-align:top;} .content-table{width:100%;border-collapse:collapse;margin-bottom:40px;} .content-table th{border:1px solid #000;padding:10px;background:#f0f0f0;font-weight:bold;} .footer{display:flex;justify-content:space-between;margin-top:50px;padding:0 30px;} .sign{text-align:center;width:250px;} .sign-space{height:100px;} @media print{body{padding:0;}}</style>
+                </head><body onload="setTimeout(()=>{window.print();window.close();},500)">
+                    <div class="header"><img src="https://i.ibb.co.com/WvTwLMn5/image-1.png" class="logo" alt="Logo Kopkar"><div class="kop"><h1>Koperasi Karyawan Adaro Karya Mandiri</h1><p>Badan Hukum Nomor : 2128/BH/IX Tanggal 31 Juli 1995</p><p>Office : Jl. Jend. A. Yani Komp. Swadharma Jalur II Blok Mawar RT IV<br>Kel. Mabuun Kec. Murung Pudak Kab. Tabalong Prov. Kalimantan Selatan</p><p>Kode Pos 71571 | Telp/Fax : 0526 – 2023593 | Email : kopkar.adaro@gmail.com</p></div></div>
+                    <div class="title">SURAT PEMESANAN BARANG (PURCHASE ORDER)</div>
+                    <div class="info"><div><table><tr><td>Nomor PO</td><td>:</td><td><b>${po.batchNumber}</b></td></tr><tr><td>Tanggal</td><td>:</td><td>${new Date(po.orderDate).toLocaleDateString('id-ID',{day:'numeric',month:'long',year:'numeric'})}</td></tr><tr><td>Pengiriman</td><td>:</td><td>${po.branch}</td></tr></table></div><div><table><tr><td>Kepada Yth.</td><td>:</td><td><b>${po.supplier}</b></td></tr></table></div></div>
+                    <table class="content-table"><thead><tr><th>No</th><th>Kode & Nama Barang</th><th>Qty</th><th>Harga Satuan (Beli)</th><th>Total Harga</th></tr></thead><tbody>${tbody}</tbody><tfoot><tr><td colspan="4" style="border:1px solid #000;padding:10px;text-align:right;font-weight:bold;">TOTAL NILAI PO</td><td style="border:1px solid #000;padding:10px;text-align:right;font-weight:bold;font-size:16px;">${formatRp(total)}</td></tr></tfoot></table>
+                    <div class="footer"><div class="sign"><p>Mengetahui & Menyetujui,</p><div class="sign-space"></div><p><b>( Manager Adamart )</b></p></div><div class="sign"><p>Diterima Oleh,</p><div class="sign-space"></div><p><b>( Pihak Supplier )</b></p></div></div>
+                </body></html>`);
+                printWindow.document.close();
+            },
+
             generateAutoPO: () => {
                 const checks = document.querySelectorAll('.restock-check:checked');
                 if(checks.length === 0) return alert("Pilih item dulu!");
-                
                 State.tempBatchItems = Array.from(checks).map(c => {
                     const d = JSON.parse(c.dataset.json);
-                    return {
-                        barcode: d.barcode,
-                        name: d.name,
-                        qty: parseInt(d.qty),
-                        hpp: parseInt(d.hpp || 0),
-                        price: parseInt(d.price || 0)
-                    };
+                    return { barcode: d.barcode, name: d.name, qty: parseInt(d.qty), unit: 'PCS', hpp: parseInt(d.hpp || 0), price: parseInt(d.price || 0) };
                 });
-                
                 Modals.openBatchPO();
-                // Auto-fill supplier if mostly from one? For now, let user choose.
             },
 
-            updateStock: async (e) => { e.preventDefault(); const barcode = document.getElementById('barcode').value; const area = document.getElementById('targetArea').value; const qty = parseInt(document.getElementById('stockAmount').value); const hpp = parseInt(document.getElementById('hpp').value) || 0; const price = parseInt(document.getElementById('price').value) || 0; const name = document.getElementById('productName').value; const expiry = document.getElementById('expiryDate').value; const stockKey = `Stok Area Kasir ${area.toLowerCase()}`; try { const q = window.query(window.collection(window.db, "products"), window.where("Barcode", "==", barcode)); const snapshot = await window.getDocs(q); if (!snapshot.empty) { const docRef = snapshot.docs[0].ref; const updateData = { "Nama Produk": name, "Harga": price, "HPP": hpp }; if (qty !== 0) updateData[stockKey] = window.increment(qty); if (expiry) updateData["Tanggal Kadaluarsa"] = new Date(expiry).toISOString(); await window.updateDoc(docRef, updateData); } else { const newData = { Barcode: barcode, "Nama Produk": name, "Harga": price, "HPP": hpp, [stockKey]: qty }; if (expiry) newData["Tanggal Kadaluarsa"] = new Date(expiry).toISOString(); await window.addDoc(window.collection(window.db, "products"), newData); } fetch(APPS_SCRIPT_URL, { method: 'POST', body: JSON.stringify({ action: 'update_stock', data: { barcode, name, price, hpp, area: area.toLowerCase(), quantity: qty, expiryDate: expiry } }) }); alert("Stok Updated!"); document.getElementById('stockForm').reset(); loadAllData(); } catch (err) { console.error(err); alert("Gagal update stok: " + err.message); } }
+            updateStock: async (e) => { e.preventDefault(); const barcode = document.getElementById('barcode').value; const area = document.getElementById('targetArea').value; const qty = parseInt(document.getElementById('stockAmount').value); const hpp = parseInt(document.getElementById('hpp').value) || 0; const price = parseInt(document.getElementById('price').value) || 0; const name = document.getElementById('productName').value; const expiry = document.getElementById('expiryDate').value; const stockKey = `Stok Area Kasir ${area.toLowerCase()}`; try { const existingProduct = State.data.products.find(p => p.Barcode === barcode); if (existingProduct) { const docRef = window.doc(window.db, "products", existingProduct.id); const updateData = { "Nama Produk": name, "Harga": price, "HPP": hpp }; if (qty !== 0) updateData[stockKey] = window.increment(qty); if (expiry) updateData["Tanggal Kadaluarsa"] = new Date(expiry).toISOString(); await window.updateDoc(docRef, updateData); } else { const newData = { Barcode: barcode, "Nama Produk": name, "Harga": price, "HPP": hpp, [stockKey]: qty }; if (expiry) newData["Tanggal Kadaluarsa"] = new Date(expiry).toISOString(); await window.addDoc(window.collection(window.db, "products"), newData); } fetch(APPS_SCRIPT_URL, { method: 'POST', body: JSON.stringify({ action: 'update_stock', data: { barcode, name, price, hpp, area: area.toLowerCase(), quantity: qty, expiryDate: expiry } }) }); alert("Stok Updated!"); document.getElementById('stockForm').reset(); loadAllData(); } catch (err) { console.error(err); alert("Gagal update stok: " + err.message); } },
+
+            // FITUR BARU: Submit Retur & Barang Rusak
+            submitRetur: async (e) => {
+                e.preventDefault();
+                const barcode = document.getElementById('returBarcode').value;
+                const name = document.getElementById('returNameLabel').innerText;
+                const area = document.getElementById('returArea').value;
+                const qty = parseInt(document.getElementById('returQty').value);
+                const reason = document.getElementById('returReason').value;
+                const notes = document.getElementById('returNotes').value;
+
+                if (!barcode) return alert("Pilih produk terlebih dahulu!");
+                
+                try {
+                    const stockKey = `Stok Area Kasir ${area.toLowerCase()}`;
+                    const existingProduct = State.data.products.find(p => p.Barcode === barcode);
+                    
+                    if (!existingProduct) return alert("Produk tidak ditemukan di database.");
+                    
+                    const docRef = window.doc(window.db, "products", existingProduct.id);
+                    await window.updateDoc(docRef, { [stockKey]: window.increment(-qty) });
+                    
+                    await window.addDoc(window.collection(window.db, "returns"), {
+                        barcode, name, area, qty, reason, notes, timestamp: new Date().toISOString()
+                    });
+                    
+                    alert("Barang berhasil dikeluarkan dari sistem.");
+                    loadAllData();
+                } catch (err) { alert("Error: " + err.message); }
+            },
+
+            // FITUR BARU: Update Info Audit Form
+            updateAuditSystemStock: () => {
+                const barcode = document.getElementById('auditBarcode').value;
+                if (!barcode) return;
+                const area = document.getElementById('auditArea').value;
+                const product = State.data.products.find(p => p.Barcode === barcode);
+                if (product) {
+                    const stockKey = `Stok Area Kasir ${area.toLowerCase()}`;
+                    document.getElementById('auditSystemQty').innerText = product[stockKey] || 0;
+                }
+            },
+
+            // FITUR BARU: Submit Audit Stok Fisik
+            submitAudit: async (e) => {
+                e.preventDefault();
+                const barcode = document.getElementById('auditBarcode').value;
+                const name = document.getElementById('auditNameLabel').innerText;
+                const area = document.getElementById('auditArea').value;
+                const physicalQty = parseInt(document.getElementById('auditPhysicalQty').value);
+                const systemQtyText = document.getElementById('auditSystemQty').innerText;
+                
+                if (!barcode || systemQtyText === '-') return alert("Pilih produk dengan benar!");
+                const systemQty = parseInt(systemQtyText);
+                const variance = physicalQty - systemQty;
+
+                if (variance === 0 && !confirm("Stok sudah sesuai. Tetap simpan catatan audit?")) return;
+                
+                try {
+                    const stockKey = `Stok Area Kasir ${area.toLowerCase()}`;
+                    const existingProduct = State.data.products.find(p => p.Barcode === barcode);
+                    
+                    if (existingProduct) {
+                        const docRef = window.doc(window.db, "products", existingProduct.id);
+                        await window.updateDoc(docRef, { [stockKey]: physicalQty }); // Timpa dengan angka fisik
+                        
+                        await window.addDoc(window.collection(window.db, "audits"), {
+                            barcode, name, area, systemQty, physicalQty, variance, timestamp: new Date().toISOString()
+                        });
+                        
+                        alert("Hasil audit berhasil disimpan!");
+                        loadAllData();
+                    }
+                } catch (err) { alert("Error: " + err.message); }
+            }
         };
 
         function setupInventoryListeners() { const form = document.getElementById('stockForm'); if(form) form.addEventListener('submit', Actions.updateStock); }
+        
         const Modals = { 
             openBatchPO: () => { 
-                // Re-use existing or init empty
                 const items = State.tempBatchItems || []; 
-                
-                const content = `<h3 class="text-xl font-bold mb-4">Buat Batch PO ${items.length > 0 ? '(Auto-Filled)' : ''}</h3><form onsubmit="Actions.createBatchPO(event)"><div class="grid grid-cols-2 gap-4 mb-4"><div><select id="supplierSelect" class="p-2 border rounded w-full bg-white text-sm" required onchange="toggleSupplierInput(this)"><option value="">Pilih Supplier</option>${SUPPLIERS.map(s => `<option value="${s}">${s}</option>`).join('')}<option value="custom" class="font-bold text-blue-600">+ Input Manual</option></select><input id="customSupplier" type="text" placeholder="Nama Supplier..." class="p-2 border rounded w-full mt-2 hidden text-sm" disabled></div><input type="date" name="orderDate" class="p-2 border rounded w-full h-[38px] text-sm" required value="${new Date().toISOString().split('T')[0]}"></div><div class="relative mb-4"><input id="smartSearchPO" placeholder="🔍 Cari Barang / Scan Barcode..." class="w-full p-3 border-2 border-blue-400 rounded-lg font-bold focus:outline-none focus:ring-2 focus:ring-blue-600" autocomplete="off" oninput="searchProductForPO(this.value)"><div id="po-search-results" class="absolute z-50 w-full bg-white shadow-xl rounded-b-lg border border-gray-200 max-h-60 overflow-y-auto hidden"></div></div><div class="bg-blue-50 p-4 rounded-lg mb-4 border border-blue-100"><div class="flex items-center gap-2 mb-2"><div class="w-32"><input id="item-barcode" placeholder="Barcode" class="w-full p-2 border rounded text-sm" readonly></div><div class="flex-1"><input id="item-name" placeholder="Nama Barang" class="w-full p-2 border rounded text-sm" readonly></div><div class="w-20"><input id="item-qty" type="number" placeholder="Qty" class="w-full p-2 border rounded text-sm font-bold bg-white border-blue-300"></div><div class="w-24"><input id="item-hpp" type="number" placeholder="HPP" class="w-full p-2 border rounded text-sm"></div><div class="w-24"><input id="item-price" type="number" placeholder="Jual" class="w-full p-2 border rounded text-sm"></div><button type="button" onclick="addItemToTemp()" class="bg-blue-600 text-white px-3 py-1.5 rounded hover:bg-blue-700 font-bold">+</button></div><div id="temp-items-list" class="text-sm text-gray-600 max-h-40 overflow-y-auto space-y-1"></div></div><div class="mb-6"><label class="font-bold block mb-2 text-sm">Kirim ke:</label><div class="flex gap-4 flex-wrap">${BRANCHES.map(b => `<label class="flex items-center gap-2 text-sm"><input type="checkbox" id="branch-${b.replace(/\s+/g, '-')}" checked> ${b}</label>`).join('')}</div></div><button type="submit" class="w-full btn-primary py-2.5 rounded-lg bg-blue-600 text-white font-bold">Buat & Kirim PO</button></form>`; 
-                
+                const content = `<h3 class="text-xl font-bold mb-4">Buat Batch PO ${items.length > 0 ? '(Auto-Filled)' : ''}</h3><form onsubmit="Actions.createBatchPO(event)"><div class="grid grid-cols-2 gap-4 mb-4"><div><select id="supplierSelect" class="p-2 border rounded w-full bg-white text-sm" required onchange="toggleSupplierInput(this)"><option value="">Pilih Supplier</option>${SUPPLIERS.map(s => `<option value="${s}">${s}</option>`).join('')}<option value="custom" class="font-bold text-blue-600">+ Input Manual</option></select><input id="customSupplier" type="text" placeholder="Nama Supplier..." class="p-2 border rounded w-full mt-2 hidden text-sm" disabled></div><input type="date" name="orderDate" class="p-2 border rounded w-full h-[38px] text-sm" required value="${new Date().toISOString().split('T')[0]}"></div><div class="bg-blue-50 p-4 rounded-lg mb-4 border border-blue-100"><label class="text-xs font-bold text-gray-500 uppercase mb-1 block">Cari Barang / Barcode</label><div class="relative mb-2"><input id="item-name" placeholder="Ketik nama atau scan barcode disini..." class="w-full p-3 border-2 border-blue-400 rounded-lg font-bold focus:outline-none focus:ring-2 focus:ring-blue-600 bg-white" autocomplete="off" oninput="searchProductForForm(this.value, 'po')"><div id="po-search-results" class="absolute z-50 w-full bg-white shadow-xl rounded-b-lg border border-gray-200 max-h-60 overflow-y-auto hidden"></div></div><div class="flex items-center gap-2 mb-2"><div class="w-24 hidden md:block"><input id="item-barcode" placeholder="Barcode" class="w-full p-2 border rounded text-sm bg-gray-100" readonly></div><div class="w-20"><input id="item-qty" type="number" placeholder="Qty" class="w-full p-2 border rounded text-sm font-bold bg-white border-blue-300"></div><div class="w-32"><select id="item-unit" class="w-full p-2 border rounded text-sm bg-white border-blue-300"><option value="PCS">PCS</option><optgroup label="Kemasan"><option value="DUS">DUS</option><option value="PACK">PACK</option><option value="RENCENG">RENCENG</option></optgroup><optgroup label="Kuantitas"><option value="LUSIN">LUSIN</option><option value="KODI">KODI</option><option value="GROS">GROS</option></optgroup><optgroup label="Fisik"><option value="KG">KG</option><option value="GRAM">GRAM</option><option value="ONS">ONS</option><option value="LITER">LITER</option><option value="ML">ML</option><option value="GALON">GALON</option><option value="SET">SET</option><option value="PASANG">PASANG</option></optgroup></select></div><div class="flex-1"><input id="item-hpp" type="number" placeholder="Harga Beli (HPP)" class="w-full p-2 border rounded text-sm"></div><button type="button" onclick="addItemToTemp()" class="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 font-bold shadow">+</button></div><div id="temp-items-list" class="text-sm text-gray-600 max-h-40 overflow-y-auto space-y-1 mt-3"></div></div><div class="mb-6"><label class="font-bold block mb-2 text-sm">Kirim ke:</label><div class="flex gap-4 flex-wrap">${BRANCHES.map(b => `<label class="flex items-center gap-2 text-sm"><input type="checkbox" id="branch-${b.replace(/\s+/g, '-')}" checked> ${b}</label>`).join('')}</div></div><button type="submit" class="w-full btn-primary py-3 rounded-lg bg-blue-600 text-white font-bold text-lg shadow-lg">Buat & Kirim PO</button></form>`; 
                 showModal(content); 
-                // Render initial items if any
-                if(items.length > 0) {
-                    document.getElementById('temp-items-list').innerHTML = items.map((i,x)=>`<div class="flex justify-between items-center bg-white p-2 rounded border"><div><span class="font-bold text-xs bg-gray-100 p-1 rounded mr-2">${i.barcode||'-'}</span><span class="font-bold">${i.name}</span> x${i.qty} <span class="text-xs text-gray-500">B:${formatRp(i.hpp)}</span></div><button onclick="removeItemFromTemp(${x})" class="text-red-500 px-2">✕</button></div>`).join('');
-                } else {
-                     document.getElementById('temp-items-list').innerHTML = '<p class="text-xs text-gray-400 italic p-2">Belum ada item.</p>';
-                }
+                if(items.length > 0) { document.getElementById('temp-items-list').innerHTML = items.map((i,x)=>`<div class="flex justify-between items-center bg-white p-2 rounded border"><div><span class="font-bold text-xs bg-gray-100 p-1 rounded mr-2">${i.barcode||'-'}</span><span class="font-bold">${i.name}</span> x${i.qty} ${i.unit||'PCS'} <span class="text-xs text-gray-500">B:${formatRp(i.hpp)}</span></div><button onclick="removeItemFromTemp(${x})" class="text-red-500 px-2 font-bold">✕</button></div>`).join('');
+                } else { document.getElementById('temp-items-list').innerHTML = '<p class="text-xs text-gray-400 italic p-2 bg-white rounded border border-dashed text-center">Belum ada item ditambahkan.</p>'; }
             } 
         };
 
         function showModal(c){ const d=document.createElement('div'); d.className='modal-overlay'; d.innerHTML=`<div class="modal-content p-6 relative shadow-2xl"><button onclick="closeModal()" class="absolute top-4 right-4">✕</button>${c}</div>`; document.body.appendChild(d); }
         function closeModal(){ document.querySelector('.modal-overlay')?.remove(); }
         window.autoFill = () => { const bc = document.getElementById('barcode').value; const p = State.data.products.find(i => String(i.Barcode) === bc); if (p) { document.getElementById('productName').value = p['Nama Produk']; document.getElementById('price').value = p['Harga']; document.getElementById('hpp').value = p['HPP'] || 0; } };
-        window.autoFillPOItem = (b) => { const p = State.data.products.find(i => String(i.Barcode) === b); if (p) { document.getElementById('item-name').value = p['Nama Produk']; document.getElementById('item-price').value = p['Harga']; document.getElementById('item-hpp').value = p['HPP'] || 0; } };
-        window.searchProductForPO = (val) => { const container = document.getElementById('po-search-results'); if(val.length < 2) { container.classList.add('hidden'); return; } const matches = State.data.products.filter(p => p['Nama Produk'].toLowerCase().includes(val.toLowerCase()) || String(p.Barcode).includes(val)).slice(0, 10); if(matches.length === 0) { container.innerHTML = '<div class="p-2 text-sm text-gray-500">Tidak ditemukan.</div>'; } else { container.innerHTML = matches.map(p => `<div class="p-2 hover:bg-blue-50 cursor-pointer border-b text-sm" onclick="selectProductForPO('${p.Barcode}')"><div class="font-bold text-gray-800">${p['Nama Produk']}</div><div class="text-xs text-gray-500 flex justify-between"><span>${p.Barcode}</span><span>HPP: ${formatRp(p.HPP || 0)}</span></div></div>`).join(''); } container.classList.remove('hidden'); };
-        window.selectProductForPO = (barcode) => { const p = State.data.products.find(i => String(i.Barcode) === barcode); if(p) { document.getElementById('item-barcode').value = p.Barcode; document.getElementById('item-name').value = p['Nama Produk']; document.getElementById('item-hpp').value = p.HPP || 0; document.getElementById('item-price').value = p.Harga || 0; document.getElementById('po-search-results').classList.add('hidden'); document.getElementById('smartSearchPO').value = ''; document.getElementById('item-qty').focus(); } };
-        window.addItemToTemp = () => { const barcode=document.getElementById('item-barcode').value; const name=document.getElementById('item-name').value; const qty=document.getElementById('item-qty').value; const hpp=document.getElementById('item-hpp').value; const price=document.getElementById('item-price').value; if(name && qty) { State.tempBatchItems.push({barcode, name, qty, hpp, price}); const list=State.tempBatchItems.map((i,x)=>`<div class="flex justify-between items-center bg-white p-2 rounded border"><div><span class="font-bold text-xs bg-gray-100 p-1 rounded mr-2">${i.barcode||'-'}</span><span class="font-bold">${i.name}</span> x${i.qty} <span class="text-xs text-gray-500">B:${formatRp(i.hpp)} J:${formatRp(i.price)}</span></div><button onclick="removeItemFromTemp(${x})" class="text-red-500 px-2">✕</button></div>`).join(''); document.getElementById('temp-items-list').innerHTML=list; document.getElementById('item-barcode').value=''; document.getElementById('item-name').value=''; document.getElementById('item-qty').value=''; document.getElementById('item-hpp').value=''; document.getElementById('item-price').value=''; document.getElementById('smartSearchPO').focus(); } };
-        window.removeItemFromTemp = (i) => { State.tempBatchItems.splice(i,1); document.getElementById('temp-items-list').innerHTML=State.tempBatchItems.map((i,x)=>`<div class="flex justify-between items-center bg-white p-2 rounded border"><div><span class="font-bold">${i.name}</span> x${i.qty}</div><button onclick="removeItemFromTemp(${x})" class="text-red-500 px-2">✕</button></div>`).join(''); };
+        
+        // PENCARIAN TERPADU UNTUK PO, RETUR, DAN AUDIT
+        window.searchProductForForm = (val, type) => { 
+            const containerId = `${type}-search-results`;
+            const container = document.getElementById(containerId); 
+            if(val.length < 2) { container.classList.add('hidden'); return; } 
+            const matches = State.data.products.filter(p => p['Nama Produk'].toLowerCase().includes(val.toLowerCase()) || String(p.Barcode).includes(val)).slice(0, 10); 
+            if(matches.length === 0) { container.innerHTML = '<div class="p-2 text-sm text-gray-500">Tidak ditemukan.</div>'; } 
+            else { container.innerHTML = matches.map(p => `<div class="p-2 hover:bg-blue-50 cursor-pointer border-b text-sm" onclick="selectProductForForm('${p.Barcode}', '${type}')"><div class="font-bold text-gray-800">${p['Nama Produk']}</div><div class="text-xs text-gray-500 flex justify-between"><span>${p.Barcode}</span><span>HPP: ${formatRp(p.HPP || 0)}</span></div></div>`).join(''); } 
+            container.classList.remove('hidden'); 
+        };
+        
+        window.selectProductForForm = (barcode, type) => { 
+            const p = State.data.products.find(i => String(i.Barcode) === barcode); 
+            if(!p) return;
+            
+            document.getElementById(`${type}-search-results`).classList.add('hidden');
+            
+            if(type === 'po') {
+                document.getElementById('item-barcode').value = p.Barcode; document.getElementById('item-name').value = p['Nama Produk']; document.getElementById('item-hpp').value = p.HPP || 0; document.getElementById('item-qty').focus();
+            } else if (type === 'retur') {
+                document.getElementById('returSearch').value = ''; document.getElementById('returBarcode').value = p.Barcode; document.getElementById('returNameLabel').innerHTML = `<span class="text-orange-600 font-mono mr-2">${p.Barcode}</span>${p['Nama Produk']}`; document.getElementById('returQty').focus();
+            } else if (type === 'audit') {
+                document.getElementById('auditSearch').value = ''; document.getElementById('auditBarcode').value = p.Barcode; document.getElementById('auditNameLabel').innerHTML = `<span class="text-indigo-600 font-mono mr-2">${p.Barcode}</span>${p['Nama Produk']}`; Actions.updateAuditSystemStock(); document.getElementById('auditPhysicalQty').focus();
+            }
+        };
+
+        window.addItemToTemp = () => { const barcode=document.getElementById('item-barcode').value; const name=document.getElementById('item-name').value; const qty=document.getElementById('item-qty').value; const unit=document.getElementById('item-unit').value; const hpp=document.getElementById('item-hpp').value; if(name && qty) { State.tempBatchItems.push({barcode, name, qty, unit, hpp, price: 0}); const list=State.tempBatchItems.map((i,x)=>`<div class="flex justify-between items-center bg-white p-2 rounded border"><div><span class="font-bold text-xs bg-gray-100 p-1 rounded mr-2">${i.barcode||'-'}</span><span class="font-bold">${i.name}</span> x${i.qty} ${i.unit||'PCS'} <span class="text-xs text-gray-500">B:${formatRp(i.hpp)}</span></div><button onclick="removeItemFromTemp(${x})" class="text-red-500 px-2 font-bold">✕</button></div>`).join(''); document.getElementById('temp-items-list').innerHTML=list; document.getElementById('item-barcode').value=''; document.getElementById('item-name').value=''; document.getElementById('item-qty').value=''; document.getElementById('item-hpp').value=''; document.getElementById('item-name').focus(); } };
+        window.removeItemFromTemp = (i) => { State.tempBatchItems.splice(i,1); document.getElementById('temp-items-list').innerHTML=State.tempBatchItems.length > 0 ? State.tempBatchItems.map((i,x)=>`<div class="flex justify-between items-center bg-white p-2 rounded border"><div><span class="font-bold">${i.name}</span> x${i.qty} ${i.unit||'PCS'}</div><button onclick="removeItemFromTemp(${x})" class="text-red-500 px-2 font-bold">✕</button></div>`).join('') : '<p class="text-xs text-gray-400 italic p-2 bg-white rounded border border-dashed text-center">Belum ada item ditambahkan.</p>'; };
         window.toggleSupplierInput = (el) => { const i=document.getElementById('customSupplier'); if(el.value==='custom'){i.classList.remove('hidden');i.disabled=false;i.focus();}else{i.classList.add('hidden');i.disabled=true;} };
         window.filterInventory = (v) => { document.querySelectorAll('.product-row').forEach(r => r.style.display = r.innerText.toLowerCase().includes(v.toLowerCase()) ? '' : 'none'); };
         
