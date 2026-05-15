@@ -74,6 +74,7 @@
             <div class="px-6 py-2 text-xs font-bold text-blue-200 uppercase tracking-wider mt-2">Utama</div>
             <a onclick="navigate('dashboard')" class="sidebar-item px-6 py-2.5 cursor-pointer flex items-center gap-3 hover:bg-white/10"><span>📊</span> Dashboard</a>
             <a onclick="navigate('smart_restock')" class="sidebar-item px-6 py-2.5 cursor-pointer flex items-center gap-3 hover:bg-white/10 bg-white/10 border-l-4 border-purple-400"><span>🤖</span> Smart Restock</a>
+            <a onclick="navigate('expiry')" class="sidebar-item px-6 py-2.5 cursor-pointer flex items-center gap-3 hover:bg-white/10"><span>⏳</span> Smart Kadaluarsa</a>
             
             <div class="px-6 py-2 text-xs font-bold text-blue-200 uppercase tracking-wider mt-2">Operasional</div>
             <a onclick="navigate('purchase')" class="sidebar-item px-6 py-2.5 cursor-pointer flex items-center gap-3 hover:bg-white/10"><span>🛒</span> Purchase Order</a>
@@ -191,6 +192,7 @@
             switch (State.currentPage) {
                 case 'dashboard': title.innerText = 'Dashboard Overview'; container.innerHTML = Pages.Dashboard(); break;
                 case 'smart_restock': title.innerText = 'Smart Restock (AI Prediction)'; container.innerHTML = Pages.SmartRestock(); break;
+                case 'expiry': title.innerText = 'Smart Barang Kadaluarsa'; container.innerHTML = Pages.Expiry(); break;
                 case 'logistics': title.innerText = 'Logistik Toko (Barang Masuk)'; container.innerHTML = Pages.Logistics(); break;
                 case 'inventory': title.innerText = 'Inventory Master'; container.innerHTML = Pages.Inventory(); setupInventoryListeners(); break;
                 case 'purchase': title.innerText = 'Purchase Orders (Supplier)'; container.innerHTML = Pages.Purchase(); break;
@@ -215,10 +217,11 @@
                 }).sort((a,b) => a.totalStok - b.totalStok).slice(0, 10);
 
                 const expiringItems = State.data.products.filter(p => {
-                    if(!p.ExpiryDate) return false;
-                    const expDate = new Date(p.ExpiryDate);
+                    const expVal = p.ExpiryDate || p['Tanggal Kadaluarsa'];
+                    if(!expVal) return false;
+                    const expDate = new Date(expVal);
                     return expDate >= today && expDate <= twoMonthsLater;
-                }).sort((a,b) => new Date(a.ExpiryDate) - new Date(b.ExpiryDate)).slice(0, 10);
+                }).sort((a,b) => new Date(a.ExpiryDate || a['Tanggal Kadaluarsa']) - new Date(b.ExpiryDate || b['Tanggal Kadaluarsa'])).slice(0, 10);
 
                 const renderLowStock = (items) => items.length === 0 ? '<div class="text-gray-400 italic text-sm p-4">Stok aman semua</div>' : items.map(p => {
                          const total = (p['Stok Area Kasir adamart 73']||0) + (p['Stok Area Kasir adamart induksi']||0) + (p['Stok Area Kasir adamart kelanis']||0);
@@ -226,7 +229,7 @@
                     }).join('');
 
                 const renderExpiry = (items) => items.length === 0 ? '<div class="text-gray-400 italic text-sm p-4">Tidak ada barang mendekati expired</div>' : items.map(p => {
-                        const expDate = new Date(p.ExpiryDate);
+                        const expDate = new Date(p.ExpiryDate || p['Tanggal Kadaluarsa']);
                         const diffTime = Math.abs(expDate - today);
                         const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24)); 
                         return `<div class="flex justify-between items-center border-b py-2 last:border-0"><div><div class="font-bold text-sm text-gray-700">${p['Nama Produk']}</div><div class="text-xs text-gray-500">Exp: ${expDate.toLocaleDateString('id-ID')}</div></div><span class="bg-yellow-100 text-yellow-800 text-xs font-bold px-2 py-1 rounded-full">${diffDays} Hari Lagi</span></div>`;
@@ -262,12 +265,111 @@
                     <div class="bg-white rounded-xl shadow border border-yellow-100 overflow-hidden">
                         <div class="p-4 bg-yellow-50 border-b border-yellow-100 flex justify-between items-center">
                             <h3 class="font-bold text-yellow-700 flex items-center gap-2"><span>⏳</span> Akan Expired (2 Bulan)</h3>
-                            <button onclick="navigate('inventory')" class="text-xs text-yellow-600 hover:underline">Lihat Semua</button>
+                            <button onclick="navigate('expiry')" class="text-xs bg-yellow-100 px-2 py-1 rounded text-yellow-800 font-bold hover:bg-yellow-200">Lihat Detail</button>
                         </div>
                         <div class="p-4 max-h-60 overflow-y-auto">${renderExpiry(expiringItems)}</div>
                     </div>
                 </div>
                 `; 
+            },
+
+            Expiry: () => {
+                const today = new Date();
+                const sixtyDaysLater = new Date();
+                sixtyDaysLater.setDate(today.getDate() + 60);
+
+                let expiringList = State.data.products.filter(p => {
+                    const expVal = p.ExpiryDate || p['Tanggal Kadaluarsa'];
+                    if(!expVal) return false;
+                    const expDate = new Date(expVal);
+                    return expDate >= today && expDate <= sixtyDaysLater;
+                }).map(p => {
+                    const expDate = new Date(p.ExpiryDate || p['Tanggal Kadaluarsa']);
+                    const diffTime = expDate.getTime() - today.getTime();
+                    const daysLeft = Math.max(0, Math.ceil(diffTime / (1000 * 60 * 60 * 24)));
+                    return { ...p, expDate, daysLeft };
+                }).sort((a,b) => a.daysLeft - b.daysLeft);
+
+                const renderRows = expiringList.map(p => {
+                    const s73 = p['Stok Area Kasir adamart 73'] || 0;
+                    const sInd = p['Stok Area Kasir adamart induksi'] || 0;
+                    const sKel = p['Stok Area Kasir adamart kelanis'] || 0;
+                    const totalStok = s73 + sInd + sKel;
+                    
+                    let suggestion = '';
+                    let badgeColor = '';
+                    
+                    if (p.daysLeft <= 14) {
+                        suggestion = 'Segera Retur / Diskon';
+                        badgeColor = 'bg-red-100 text-red-800 border-red-200';
+                    } else if (p.daysLeft <= 30) {
+                        suggestion = 'Promo Bundling';
+                        badgeColor = 'bg-orange-100 text-orange-800 border-orange-200';
+                    } else {
+                        suggestion = 'Mutasi Cabang Ramai';
+                        badgeColor = 'bg-yellow-100 text-yellow-800 border-yellow-200';
+                    }
+
+                    return `
+                    <tr class="hover:bg-gray-50 border-b">
+                        <td class="p-4">
+                            <div class="font-bold text-gray-800">${p['Nama Produk']}</div>
+                            <div class="text-xs text-gray-500 font-mono">${p.Barcode}</div>
+                        </td>
+                        <td class="p-4 text-center">
+                            <div class="font-bold text-gray-800">${p.expDate.toLocaleDateString('id-ID')}</div>
+                            <div class="text-xs font-bold text-red-600">${p.daysLeft} Hari Lagi</div>
+                        </td>
+                        <td class="p-4 text-center"><span class="font-bold ${checkStock(s73)}">${s73}</span></td>
+                        <td class="p-4 text-center"><span class="font-bold ${checkStock(sInd)}">${sInd}</span></td>
+                        <td class="p-4 text-center"><span class="font-bold ${checkStock(sKel)}">${sKel}</span></td>
+                        <td class="p-4 text-center font-bold text-blue-600">${totalStok}</td>
+                        <td class="p-4 text-center">
+                            <span class="px-2 py-1 rounded text-xs font-bold border ${badgeColor}">${suggestion}</span>
+                        </td>
+                    </tr>`;
+                }).join('');
+
+                return `
+                <div class="space-y-6">
+                    <div class="bg-gradient-to-r from-yellow-500 to-orange-500 rounded-xl p-6 text-white shadow-lg flex justify-between items-center">
+                        <div>
+                            <h2 class="text-2xl font-bold flex items-center gap-2"><span>⏳</span> Smart Barang Kadaluarsa</h2>
+                            <p class="opacity-90 text-sm mt-1">Daftar produk yang mendekati masa expired dalam 60 hari ke depan.</p>
+                        </div>
+                        <div class="text-right">
+                            <div class="text-3xl font-bold">${expiringList.length}</div>
+                            <div class="text-xs opacity-75">Item Terdeteksi</div>
+                        </div>
+                    </div>
+
+                    <div class="bg-white rounded-xl shadow overflow-hidden border border-gray-200">
+                        <div class="p-4 border-b bg-gray-50 flex justify-between items-center">
+                            <h3 class="font-bold text-gray-700">Rincian Stok & Strategi</h3>
+                            <button onclick="navigate('retur')" class="bg-orange-600 text-white px-4 py-2 rounded-lg font-bold hover:bg-orange-700 shadow transition text-sm flex items-center gap-2">
+                                <span>🔄</span> Proses Retur
+                            </button>
+                        </div>
+                        <div class="overflow-auto max-h-[600px]">
+                            <table class="w-full text-left text-sm whitespace-nowrap">
+                                <thead class="bg-gray-100 sticky top-0 z-10 text-gray-600 uppercase text-xs">
+                                    <tr>
+                                        <th class="p-4">Produk</th>
+                                        <th class="p-4 text-center">Tanggal Expired</th>
+                                        <th class="p-4 text-center">Adamart 73</th>
+                                        <th class="p-4 text-center">Induksi</th>
+                                        <th class="p-4 text-center">Kelanis</th>
+                                        <th class="p-4 text-center">Total Stok</th>
+                                        <th class="p-4 text-center">Saran Strategi</th>
+                                    </tr>
+                                </thead>
+                                <tbody class="divide-y">
+                                    ${expiringList.length > 0 ? renderRows : '<tr><td colspan="7" class="p-8 text-center text-gray-500">Stok aman! Tidak ada barang mendekati kadaluarsa.</td></tr>'}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>`;
             },
 
             SmartRestock: () => {
@@ -296,12 +398,16 @@
                     const avgDailySales = soldLast30Days / 30;
                     const currentStock = (p['Stok Area Kasir adamart 73']||0) + (p['Stok Area Kasir adamart induksi']||0) + (p['Stok Area Kasir adamart kelanis']||0);
                     const daysLeft = avgDailySales > 0 ? currentStock / avgDailySales : 999;
-                    const targetStock = Math.ceil(avgDailySales * 14); 
+                    
+                    // PERBAIKAN LOGIKA: Target stok aman 14 hari. Set batas minimum rak 5 unit agar tidak order 1 pcs.
+                    const targetStock = Math.max(5, Math.ceil(avgDailySales * 14)); 
                     const suggestOrder = Math.max(0, targetStock - currentStock);
+                    
                     return { ...p, avgDailySales, currentStock, daysLeft, suggestOrder, soldLast30Days };
                 });
 
-                restockList = restockList.filter(p => (p.daysLeft < 7 && p.avgDailySales > 0.1) || p.currentStock < 5).sort((a,b) => a.daysLeft - b.daysLeft);
+                // PERBAIKAN FILTER: Sembunyikan barang dengan saran order 0
+                restockList = restockList.filter(p => p.suggestOrder > 0 && (p.daysLeft < 7 || p.currentStock < 5)).sort((a,b) => a.daysLeft - b.daysLeft);
 
                 const renderRows = restockList.map((p) => {
                     const urgencyColor = p.daysLeft < 3 ? 'bg-red-100 text-red-800' : 'bg-yellow-100 text-yellow-800';
@@ -680,9 +786,25 @@
             generateAutoPO: () => {
                 const checks = document.querySelectorAll('.restock-check:checked');
                 if(checks.length === 0) return alert("Pilih item dulu!");
+                
+                const getLastPurchaseInfo = (barcode) => {
+                    for (let po of State.data.purchases) {
+                        try {
+                            const items = JSON.parse(po.items);
+                            const found = items.find(i => i.barcode === barcode);
+                            if (found && found.hpp > 0) return { hpp: parseInt(found.hpp), unit: found.unit || 'PCS' };
+                        } catch(e){}
+                    }
+                    return null;
+                };
+
                 State.tempBatchItems = Array.from(checks).map(c => {
                     const d = JSON.parse(c.dataset.json);
-                    return { barcode: d.barcode, name: d.name, qty: parseInt(d.qty), unit: 'PCS', hpp: parseInt(d.hpp || 0), price: parseInt(d.price || 0) };
+                    const lastPo = getLastPurchaseInfo(d.barcode);
+                    const finalHpp = lastPo ? lastPo.hpp : parseInt(d.hpp || 0);
+                    const finalUnit = lastPo ? lastPo.unit : 'PCS';
+                    
+                    return { barcode: d.barcode, name: d.name, qty: parseInt(d.qty), unit: finalUnit, hpp: finalHpp, price: parseInt(d.price || 0) };
                 });
                 Modals.openBatchPO();
             },
@@ -770,7 +892,8 @@
         const Modals = { 
             openBatchPO: () => { 
                 const items = State.tempBatchItems || []; 
-                const content = `<h3 class="text-xl font-bold mb-4">Buat Batch PO ${items.length > 0 ? '(Auto-Filled)' : ''}</h3><form onsubmit="Actions.createBatchPO(event)"><div class="grid grid-cols-2 gap-4 mb-4"><div><select id="supplierSelect" class="p-2 border rounded w-full bg-white text-sm" required onchange="toggleSupplierInput(this)"><option value="">Pilih Supplier</option>${SUPPLIERS.map(s => `<option value="${s}">${s}</option>`).join('')}<option value="custom" class="font-bold text-blue-600">+ Input Manual</option></select><input id="customSupplier" type="text" placeholder="Nama Supplier..." class="p-2 border rounded w-full mt-2 hidden text-sm" disabled></div><input type="date" name="orderDate" class="p-2 border rounded w-full h-[38px] text-sm" required value="${new Date().toISOString().split('T')[0]}"></div><div class="bg-blue-50 p-4 rounded-lg mb-4 border border-blue-100"><label class="text-xs font-bold text-gray-500 uppercase mb-1 block">Cari Barang / Barcode</label><div class="relative mb-2"><input id="item-name" placeholder="Ketik nama atau scan barcode disini..." class="w-full p-3 border-2 border-blue-400 rounded-lg font-bold focus:outline-none focus:ring-2 focus:ring-blue-600 bg-white" autocomplete="off" oninput="searchProductForForm(this.value, 'po')"><div id="po-search-results" class="absolute z-50 w-full bg-white shadow-xl rounded-b-lg border border-gray-200 max-h-60 overflow-y-auto hidden"></div></div><div class="flex items-center gap-2 mb-2"><div class="w-24 hidden md:block"><input id="item-barcode" placeholder="Barcode" class="w-full p-2 border rounded text-sm bg-gray-100" readonly></div><div class="w-20"><input id="item-qty" type="number" placeholder="Qty" class="w-full p-2 border rounded text-sm font-bold bg-white border-blue-300"></div><div class="w-32"><select id="item-unit" class="w-full p-2 border rounded text-sm bg-white border-blue-300"><option value="PCS">PCS</option><optgroup label="Kemasan"><option value="DUS">DUS</option><option value="PACK">PACK</option><option value="RENCENG">RENCENG</option></optgroup><optgroup label="Kuantitas"><option value="LUSIN">LUSIN</option><option value="KODI">KODI</option><option value="GROS">GROS</option></optgroup><optgroup label="Fisik"><option value="KG">KG</option><option value="GRAM">GRAM</option><option value="ONS">ONS</option><option value="LITER">LITER</option><option value="ML">ML</option><option value="GALON">GALON</option><option value="SET">SET</option><option value="PASANG">PASANG</option></optgroup></select></div><div class="flex-1"><input id="item-hpp" type="number" placeholder="Harga Beli (HPP)" class="w-full p-2 border rounded text-sm"></div><button type="button" onclick="addItemToTemp()" class="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 font-bold shadow">+</button></div><div id="temp-items-list" class="text-sm text-gray-600 max-h-40 overflow-y-auto space-y-1 mt-3"></div></div><div class="mb-6"><label class="font-bold block mb-2 text-sm">Kirim ke:</label><div class="flex gap-4 flex-wrap">${BRANCHES.map(b => `<label class="flex items-center gap-2 text-sm"><input type="checkbox" id="branch-${b.replace(/\s+/g, '-')}" checked> ${b}</label>`).join('')}</div></div><button type="submit" class="w-full btn-primary py-3 rounded-lg bg-blue-600 text-white font-bold text-lg shadow-lg">Buat & Kirim PO</button></form>`; 
+                let totalEstimasi = items.reduce((sum, i) => sum + (parseInt(i.qty) * parseInt(i.hpp)), 0);
+                const content = `<h3 class="text-xl font-bold mb-4">Buat Batch PO ${items.length > 0 ? '(Auto-Filled)' : ''}</h3><form onsubmit="Actions.createBatchPO(event)"><div class="grid grid-cols-2 gap-4 mb-4"><div><select id="supplierSelect" class="p-2 border rounded w-full bg-white text-sm" required onchange="toggleSupplierInput(this)"><option value="">Pilih Supplier</option>${SUPPLIERS.map(s => `<option value="${s}">${s}</option>`).join('')}<option value="custom" class="font-bold text-blue-600">+ Input Manual</option></select><input id="customSupplier" type="text" placeholder="Nama Supplier..." class="p-2 border rounded w-full mt-2 hidden text-sm" disabled></div><input type="date" name="orderDate" class="p-2 border rounded w-full h-[38px] text-sm" required value="${new Date().toISOString().split('T')[0]}"></div><div class="bg-blue-50 p-4 rounded-lg mb-4 border border-blue-100"><label class="text-xs font-bold text-gray-500 uppercase mb-1 block">Cari Barang / Barcode</label><div class="relative mb-2"><input id="item-name" placeholder="Ketik nama atau scan barcode disini..." class="w-full p-3 border-2 border-blue-400 rounded-lg font-bold focus:outline-none focus:ring-2 focus:ring-blue-600 bg-white" autocomplete="off" oninput="searchProductForForm(this.value, 'po')"><div id="po-search-results" class="absolute z-50 w-full bg-white shadow-xl rounded-b-lg border border-gray-200 max-h-60 overflow-y-auto hidden"></div></div><div class="flex items-center gap-2 mb-2"><div class="w-24 hidden md:block"><input id="item-barcode" placeholder="Barcode" class="w-full p-2 border rounded text-sm bg-gray-100" readonly></div><div class="w-20"><input id="item-qty" type="number" placeholder="Qty" class="w-full p-2 border rounded text-sm font-bold bg-white border-blue-300"></div><div class="w-32"><select id="item-unit" class="w-full p-2 border rounded text-sm bg-white border-blue-300"><option value="PCS">PCS</option><optgroup label="Kemasan"><option value="DUS">DUS</option><option value="PACK">PACK</option><option value="RENCENG">RENCENG</option></optgroup><optgroup label="Kuantitas"><option value="LUSIN">LUSIN</option><option value="KODI">KODI</option><option value="GROS">GROS</option></optgroup><optgroup label="Fisik"><option value="KG">KG</option><option value="GRAM">GRAM</option><option value="ONS">ONS</option><option value="LITER">LITER</option><option value="ML">ML</option><option value="GALON">GALON</option><option value="SET">SET</option><option value="PASANG">PASANG</option></optgroup></select></div><div class="flex-1"><input id="item-hpp" type="number" placeholder="Harga Beli (HPP)" class="w-full p-2 border rounded text-sm"></div><button type="button" onclick="addItemToTemp()" class="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 font-bold shadow">+</button></div><div id="temp-items-list" class="text-sm text-gray-600 max-h-40 overflow-y-auto space-y-1 mt-3"></div><div class="text-right font-bold text-xl text-blue-800 mt-3 pt-3 border-t border-blue-200" id="po-total-estimasi">Total Estimasi: ${formatRp(totalEstimasi)}</div></div><div class="mb-6"><label class="font-bold block mb-2 text-sm">Kirim ke:</label><div class="flex gap-4 flex-wrap">${BRANCHES.map(b => `<label class="flex items-center gap-2 text-sm"><input type="checkbox" id="branch-${b.replace(/\s+/g, '-')}" checked> ${b}</label>`).join('')}</div></div><button type="submit" class="w-full btn-primary py-3 rounded-lg bg-blue-600 text-white font-bold text-lg shadow-lg">Buat & Kirim PO</button></form>`; 
                 showModal(content); 
                 if(items.length > 0) { document.getElementById('temp-items-list').innerHTML = items.map((i,x)=>`<div class="flex justify-between items-center bg-white p-2 rounded border"><div><span class="font-bold text-xs bg-gray-100 p-1 rounded mr-2">${i.barcode||'-'}</span><span class="font-bold">${i.name}</span> x${i.qty} ${i.unit||'PCS'} <span class="text-xs text-gray-500">B:${formatRp(i.hpp)}</span></div><button onclick="removeItemFromTemp(${x})" class="text-red-500 px-2 font-bold">✕</button></div>`).join('');
                 } else { document.getElementById('temp-items-list').innerHTML = '<p class="text-xs text-gray-400 italic p-2 bg-white rounded border border-dashed text-center">Belum ada item ditambahkan.</p>'; }
@@ -807,8 +930,10 @@
             }
         };
 
-        window.addItemToTemp = () => { const barcode=document.getElementById('item-barcode').value; const name=document.getElementById('item-name').value; const qty=document.getElementById('item-qty').value; const unit=document.getElementById('item-unit').value; const hpp=document.getElementById('item-hpp').value; if(name && qty) { State.tempBatchItems.push({barcode, name, qty, unit, hpp, price: 0}); const list=State.tempBatchItems.map((i,x)=>`<div class="flex justify-between items-center bg-white p-2 rounded border"><div><span class="font-bold text-xs bg-gray-100 p-1 rounded mr-2">${i.barcode||'-'}</span><span class="font-bold">${i.name}</span> x${i.qty} ${i.unit||'PCS'} <span class="text-xs text-gray-500">B:${formatRp(i.hpp)}</span></div><button onclick="removeItemFromTemp(${x})" class="text-red-500 px-2 font-bold">✕</button></div>`).join(''); document.getElementById('temp-items-list').innerHTML=list; document.getElementById('item-barcode').value=''; document.getElementById('item-name').value=''; document.getElementById('item-qty').value=''; document.getElementById('item-hpp').value=''; document.getElementById('item-name').focus(); } };
-        window.removeItemFromTemp = (i) => { State.tempBatchItems.splice(i,1); document.getElementById('temp-items-list').innerHTML=State.tempBatchItems.length > 0 ? State.tempBatchItems.map((i,x)=>`<div class="flex justify-between items-center bg-white p-2 rounded border"><div><span class="font-bold">${i.name}</span> x${i.qty} ${i.unit||'PCS'}</div><button onclick="removeItemFromTemp(${x})" class="text-red-500 px-2 font-bold">✕</button></div>`).join('') : '<p class="text-xs text-gray-400 italic p-2 bg-white rounded border border-dashed text-center">Belum ada item ditambahkan.</p>'; };
+        window.updateTotalEstimasi = () => { const t = State.tempBatchItems.reduce((s, i) => s + (parseInt(i.qty) * parseInt(i.hpp)), 0); const el = document.getElementById('po-total-estimasi'); if (el) el.innerText = 'Total Estimasi: ' + formatRp(t); };
+
+        window.addItemToTemp = () => { const barcode=document.getElementById('item-barcode').value; const name=document.getElementById('item-name').value; const qty=document.getElementById('item-qty').value; const unit=document.getElementById('item-unit').value; const hpp=document.getElementById('item-hpp').value; if(name && qty) { State.tempBatchItems.push({barcode, name, qty, unit, hpp, price: 0}); const list=State.tempBatchItems.map((i,x)=>`<div class="flex justify-between items-center bg-white p-2 rounded border"><div><span class="font-bold text-xs bg-gray-100 p-1 rounded mr-2">${i.barcode||'-'}</span><span class="font-bold">${i.name}</span> x${i.qty} ${i.unit||'PCS'} <span class="text-xs text-gray-500">B:${formatRp(i.hpp)}</span></div><button onclick="removeItemFromTemp(${x})" class="text-red-500 px-2 font-bold">✕</button></div>`).join(''); document.getElementById('temp-items-list').innerHTML=list; window.updateTotalEstimasi(); document.getElementById('item-barcode').value=''; document.getElementById('item-name').value=''; document.getElementById('item-qty').value=''; document.getElementById('item-hpp').value=''; document.getElementById('item-name').focus(); } };
+        window.removeItemFromTemp = (i) => { State.tempBatchItems.splice(i,1); document.getElementById('temp-items-list').innerHTML=State.tempBatchItems.length > 0 ? State.tempBatchItems.map((i,x)=>`<div class="flex justify-between items-center bg-white p-2 rounded border"><div><span class="font-bold">${i.name}</span> x${i.qty} ${i.unit||'PCS'} <span class="text-xs text-gray-500">B:${formatRp(i.hpp)}</span></div><button onclick="removeItemFromTemp(${x})" class="text-red-500 px-2 font-bold">✕</button></div>`).join('') : '<p class="text-xs text-gray-400 italic p-2 bg-white rounded border border-dashed text-center">Belum ada item ditambahkan.</p>'; window.updateTotalEstimasi(); };
         window.toggleSupplierInput = (el) => { const i=document.getElementById('customSupplier'); if(el.value==='custom'){i.classList.remove('hidden');i.disabled=false;i.focus();}else{i.classList.add('hidden');i.disabled=true;} };
         window.filterInventory = (v) => { document.querySelectorAll('.product-row').forEach(r => r.style.display = r.innerText.toLowerCase().includes(v.toLowerCase()) ? '' : 'none'); };
         
