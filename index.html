@@ -1,9 +1,16 @@
 <!DOCTYPE html>
-<html lang="id">
+<html lang="id" class="h-full bg-slate-50">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Adamart - Manager Dashboard (Smart AI)</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Adamart - Manager Dashboard (v7.0 Smart Enterprise)</title>
+    
+    <!-- Google Fonts: Plus Jakarta Sans & Inter -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    
+    <!-- Tailwind CSS CDN -->
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     
@@ -42,76 +49,195 @@
             } else {
                 signInAnonymously(auth).catch((error) => {
                     console.error("Auth error:", error);
-                    alert("Gagal Login Firebase: " + error.message);
+                    if(window.showToast) window.showToast("Gagal Login Firebase: " + error.message, "error");
                 });
             }
         });
     </script>
 
-    <script>tailwind.config = { theme: { extend: { colors: { 'adamart': { 50: '#f0f9ff', 500: '#0ea5e9', 600: '#0284c7', 900: '#0c4a6e' } } } } }</script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Plus Jakarta Sans', 'Inter', 'sans-serif'],
+                    },
+                    colors: {
+                        adamart: {
+                            50: '#f0f9ff',
+                            100: '#e0f2fe',
+                            500: '#0ea5e9',
+                            600: '#0284c7',
+                            700: '#0369a1',
+                            900: '#0c4a6e'
+                        }
+                    }
+                }
+            }
+        }
+    </script>
     <style>
-        body { font-family: 'Inter', sans-serif; background: #f3f4f6; height: 100vh; overflow: hidden; } 
-        .sidebar { transition: width 0.3s ease; background: linear-gradient(180deg, #0F2C59 0%, #1e3a5f 100%); color: white; } 
-        .sidebar-item:hover { background: rgba(255,255,255,0.1); } 
-        .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.5); display: flex; align-items: center; justify-content: center; z-index: 50; } 
-        .modal-content { background: white; border-radius: 1rem; max-width: 800px; width: 90%; max-height: 90vh; overflow-y: auto; } 
-        .animate-spin { animation: spin 1s linear infinite; } 
-        @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+        body { font-family: 'Plus Jakarta Sans', sans-serif; -webkit-tap-highlight-color: transparent; } 
+        .sidebar-item { transition: all 0.2s ease-in-out; min-height: 48px; }
+        .sidebar-item:hover, .sidebar-item.active { background: rgba(255, 255, 255, 0.12); backdrop-filter: blur(8px); } 
+        .modal-overlay { position: fixed; inset: 0; background: rgba(15, 23, 42, 0.65); backdrop-filter: blur(4px); display: flex; align-items: center; justify-content: center; z-index: 60; padding: 1rem; } 
+        .modal-content { background: white; border-radius: 1.25rem; max-width: 800px; width: 100%; max-height: 90vh; overflow-y: auto; box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25); } 
+        
         ::-webkit-scrollbar { width: 6px; height: 6px; }
-        ::-webkit-scrollbar-track { background: #f1f1f1; }
-        ::-webkit-scrollbar-thumb { background: #ccc; border-radius: 3px; }
-        ::-webkit-scrollbar-thumb:hover { background: #aaa; }
+        ::-webkit-scrollbar-track { background: #f1f5f9; }
+        ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+        
+        input, select, button, textarea { min-height: 44px; }
+        .touch-target { min-height: 48px; min-width: 48px; }
+
+        #toast-container { position: fixed; bottom: 5rem; right: 1rem; z-index: 100; display: flex; flex-direction: column; gap: 0.5rem; max-width: 90vw; width: 360px; pointer-events: none; }
+        @media (min-width: 768px) { #toast-container { bottom: 1.5rem; right: 1.5rem; } }
+        .toast-item { pointer-events: auto; transform: translateY(20px); opacity: 0; transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1); }
+        .toast-item.show { transform: translateY(0); opacity: 1; }
+
+        .skeleton { background: linear-gradient(90deg, #f1f5f9 25%, #e2e8f0 50%, #f1f5f9 75%); background-size: 200% 100%; animation: skeleton-loading 1.5s infinite; }
+        @keyframes skeleton-loading { 0% { background-position: 200% 0; } 100% { background-position: -200% 0; } }
+
+        .quick-stock-btn { transition: all 0.15s ease-in-out; }
+        .quick-stock-btn:hover { transform: translateY(-1px); }
+        .quick-stock-btn:active { transform: scale(0.96); }
     </style>
 </head>
-<body class="flex h-full">
-    <!-- SIDEBAR -->
-    <aside class="sidebar w-64 flex flex-col hidden md:flex overflow-y-auto">
-        <div class="p-6 shrink-0">
-            <h2 class="text-xl font-bold tracking-wider">ADAMART</h2>
-            <p class="text-xs opacity-70">Integrated System</p>
+<body class="flex h-screen bg-slate-50 text-slate-800 overflow-hidden">
+
+    <!-- BACKDROP MOBILE/TABLET SIDEBAR -->
+    <div id="sidebar-backdrop" onclick="toggleSidebar(false)" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-40 hidden lg:hidden"></div>
+
+    <!-- SIDEBAR DRAWER (RESPONSIVE TABLET & DESKTOP) -->
+    <aside id="main-sidebar" class="fixed inset-y-0 left-0 z-50 w-72 bg-gradient-to-b from-slate-900 via-slate-900 to-slate-950 text-white flex flex-col transform -translate-x-full lg:translate-x-0 lg:static transition-transform duration-300 ease-in-out shadow-2xl lg:shadow-none overflow-y-auto shrink-0">
+        <div class="p-5 flex items-center justify-between border-b border-slate-800/80 shrink-0">
+            <div class="flex items-center gap-3">
+                <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-sky-500 to-blue-600 flex items-center justify-center font-bold text-xl shadow-lg shadow-sky-500/20 text-white">A</div>
+                <div>
+                    <h2 class="text-lg font-extrabold tracking-wider bg-gradient-to-r from-white to-slate-300 bg-clip-text text-transparent">ADAMART</h2>
+                    <p class="text-[11px] text-sky-400 font-semibold tracking-wide uppercase">v7.0 Enterprise</p>
+                </div>
+            </div>
+            <button onclick="toggleSidebar(false)" class="lg:hidden p-2 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 touch-target flex items-center justify-center" aria-label="Close sidebar">✕</button>
         </div>
-        <nav class="flex-1 py-2 space-y-1 text-sm">
-            <div class="px-6 py-2 text-xs font-bold text-blue-200 uppercase tracking-wider mt-2">Utama</div>
-            <a onclick="navigate('dashboard')" class="sidebar-item px-6 py-2.5 cursor-pointer flex items-center gap-3 hover:bg-white/10"><span>📊</span> Dashboard</a>
-            <a onclick="navigate('smart_restock')" class="sidebar-item px-6 py-2.5 cursor-pointer flex items-center gap-3 hover:bg-white/10 bg-white/10 border-l-4 border-purple-400"><span>🤖</span> Smart Restock</a>
-            <a onclick="navigate('expiry')" class="sidebar-item px-6 py-2.5 cursor-pointer flex items-center gap-3 hover:bg-white/10"><span>⏳</span> Smart Kadaluarsa</a>
+
+        <nav class="flex-1 py-4 px-3 space-y-1 text-sm">
+            <div class="px-4 py-2 text-[11px] font-bold text-slate-400 uppercase tracking-wider">Utama</div>
+            <a onclick="navigate('dashboard')" id="nav-dashboard" class="sidebar-item px-4 py-3 rounded-xl cursor-pointer flex items-center justify-between text-slate-300 hover:text-white">
+                <div class="flex items-center gap-3 font-medium"><span>📊</span> Dashboard</div>
+            </a>
+            <a onclick="navigate('smart_restock')" id="nav-smart_restock" class="sidebar-item px-4 py-3 rounded-xl cursor-pointer flex items-center justify-between text-slate-300 hover:text-white">
+                <div class="flex items-center gap-3 font-medium"><span>🤖</span> Smart Restock</div>
+                <span id="badge-restock-count" class="hidden bg-purple-500/20 text-purple-300 border border-purple-500/30 text-xs font-bold px-2 py-0.5 rounded-full">0</span>
+            </a>
+            <a onclick="navigate('expiry')" id="nav-expiry" class="sidebar-item px-4 py-3 rounded-xl cursor-pointer flex items-center justify-between text-slate-300 hover:text-white">
+                <div class="flex items-center gap-3 font-medium"><span>⏳</span> Smart Kadaluarsa</div>
+                <span id="badge-expiry-count" class="hidden bg-amber-500/20 text-amber-300 border border-amber-500/30 text-xs font-bold px-2 py-0.5 rounded-full">0</span>
+            </a>
             
-            <div class="px-6 py-2 text-xs font-bold text-blue-200 uppercase tracking-wider mt-2">Operasional</div>
-            <a onclick="navigate('purchase')" class="sidebar-item px-6 py-2.5 cursor-pointer flex items-center gap-3 hover:bg-white/10"><span>🛒</span> Purchase Order</a>
-            <a onclick="navigate('inventory')" class="sidebar-item px-6 py-2.5 cursor-pointer flex items-center gap-3 hover:bg-white/10"><span>📦</span> Master Produk</a>
-            <a onclick="navigate('logistics')" class="sidebar-item px-6 py-2.5 cursor-pointer flex items-center gap-3 hover:bg-white/10"><span>🚛</span> Barang Masuk</a>
-            <a onclick="navigate('retur')" class="sidebar-item px-6 py-2.5 cursor-pointer flex items-center gap-3 hover:bg-white/10"><span>🔄</span> Retur & Rusak</a>
-            <a onclick="navigate('audit')" class="sidebar-item px-6 py-2.5 cursor-pointer flex items-center gap-3 hover:bg-white/10"><span>📋</span> Audit Stok</a>
+            <div class="px-4 py-2 text-[11px] font-bold text-slate-400 uppercase tracking-wider mt-4">Operasional & Stok</div>
+            <a onclick="navigate('purchase')" id="nav-purchase" class="sidebar-item px-4 py-3 rounded-xl cursor-pointer flex items-center gap-3 text-slate-300 hover:text-white font-medium">
+                <span>🛒</span> Purchase Order
+            </a>
+            <a onclick="navigate('inventory')" id="nav-inventory" class="sidebar-item px-4 py-3 rounded-xl cursor-pointer flex items-center gap-3 text-slate-300 hover:text-white font-medium">
+                <span>📦</span> Master Produk
+            </a>
+            <a onclick="navigate('logistics')" id="nav-logistics" class="sidebar-item px-4 py-3 rounded-xl cursor-pointer flex items-center gap-3 text-slate-300 hover:text-white font-medium">
+                <span>🚛</span> Barang Masuk
+            </a>
+            <a onclick="navigate('retur')" id="nav-retur" class="sidebar-item px-4 py-3 rounded-xl cursor-pointer flex items-center gap-3 text-slate-300 hover:text-white font-medium">
+                <span>🔄</span> Retur & Rusak
+            </a>
+            <a onclick="navigate('audit')" id="nav-audit" class="sidebar-item px-4 py-3 rounded-xl cursor-pointer flex items-center gap-3 text-slate-300 hover:text-white font-medium">
+                <span>📋</span> Stock Opname Audit
+            </a>
             
-            <div class="px-6 py-2 text-xs font-bold text-blue-200 uppercase tracking-wider mt-2">Laporan & Karyawan</div>
-            <a onclick="navigate('reports')" class="sidebar-item px-6 py-2.5 cursor-pointer flex items-center gap-3 hover:bg-white/10"><span>📈</span> Analisa Profit</a>
-            <a onclick="navigate('shifts')" class="sidebar-item px-6 py-2.5 cursor-pointer flex items-center gap-3 hover:bg-white/10"><span>🕒</span> Laporan Shift</a>
-            <a onclick="navigate('kasir')" class="sidebar-item px-6 py-2.5 cursor-pointer flex items-center gap-3 hover:bg-white/10"><span>👨‍💼</span> Rapor Kasir</a>
-            <a onclick="navigate('evoucher')" class="sidebar-item px-6 py-2.5 cursor-pointer flex items-center gap-3 hover:bg-white/10 text-yellow-100"><span>🎫</span> E-Voucher</a>
+            <div class="px-4 py-2 text-[11px] font-bold text-slate-400 uppercase tracking-wider mt-4">Laporan & Karyawan</div>
+            <a onclick="navigate('reports')" id="nav-reports" class="sidebar-item px-4 py-3 rounded-xl cursor-pointer flex items-center gap-3 text-slate-300 hover:text-white font-medium">
+                <span>📈</span> Analisa Profit
+            </a>
+            <a onclick="navigate('shifts')" id="nav-shifts" class="sidebar-item px-4 py-3 rounded-xl cursor-pointer flex items-center gap-3 text-slate-300 hover:text-white font-medium">
+                <span>🕒</span> Laporan Shift
+            </a>
+            <a onclick="navigate('kasir')" id="nav-kasir" class="sidebar-item px-4 py-3 rounded-xl cursor-pointer flex items-center gap-3 text-slate-300 hover:text-white font-medium">
+                <span>👨‍💼</span> Rapor Kasir
+            </a>
+            <a onclick="navigate('evoucher')" id="nav-evoucher" class="sidebar-item px-4 py-3 rounded-xl cursor-pointer flex items-center gap-3 text-amber-200 hover:text-white font-medium">
+                <span>🎫</span> E-Voucher Kopkar
+            </a>
         </nav>
-        <div class="p-4 text-xs opacity-50 text-center shrink-0">v6.1 AI & Audit</div>
+        
+        <div class="p-4 border-t border-slate-800/80 text-xs text-slate-400 text-center shrink-0">
+            Adamart Manager AI &bull; Tablet Ready
+        </div>
     </aside>
 
-    <!-- MAIN CONTENT -->
-    <div class="flex-1 flex flex-col min-w-0 overflow-hidden">
-        <header class="bg-white p-4 border-b shadow-sm flex justify-between items-center z-10 shrink-0">
-            <h1 id="page-title" class="text-xl font-bold text-gray-800">Dashboard</h1>
-            <div class="flex items-center gap-4">
-                <button onclick="loadAllData()" class="p-2 bg-gray-100 rounded-full hover:bg-gray-200" title="Refresh Data">🔄</button>
-                <div class="text-sm text-right">
-                    <div class="font-bold text-gray-800">Manager</div>
-                    <div class="text-xs text-green-600">● Firebase Online</div>
+    <!-- MAIN CONTENT WRAPPER -->
+    <div class="flex-1 flex flex-col min-w-0 overflow-hidden pb-16 lg:pb-0">
+        <!-- HEADER -->
+        <header class="bg-white/90 backdrop-blur-md px-4 sm:px-6 py-3.5 border-b border-slate-200/80 shadow-sm flex justify-between items-center z-10 shrink-0">
+            <div class="flex items-center gap-3">
+                <button onclick="toggleSidebar(true)" class="lg:hidden p-2 rounded-xl text-slate-600 hover:bg-slate-100 touch-target flex items-center justify-center" aria-label="Open menu">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path></svg>
+                </button>
+                <h1 id="page-title" class="text-lg sm:text-xl font-bold text-slate-800 truncate">Dashboard</h1>
+            </div>
+            
+            <div class="flex items-center gap-2 sm:gap-4">
+                <button onclick="loadAllData()" class="p-2.5 bg-slate-100 text-slate-600 rounded-xl hover:bg-slate-200 transition touch-target flex items-center justify-center" title="Refresh Data">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path></svg>
+                </button>
+                <div class="text-right hidden sm:block">
+                    <div class="font-bold text-sm text-slate-800">Manager Adamart</div>
+                    <div class="text-xs text-emerald-600 font-medium flex items-center justify-end gap-1.5">
+                        <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span> Firebase Online
+                    </div>
                 </div>
             </div>
         </header>
-        <main class="flex-1 overflow-y-auto p-6" id="main-container">
-            <div id="loadingState" class="text-center py-20">
-                <div class="animate-spin text-4xl mb-4">⏳</div>
-                <p class="text-gray-500">Menghubungkan & Mengambil data Real-time...</p>
+
+        <!-- MAIN CONTAINER -->
+        <main class="flex-1 overflow-y-auto p-4 sm:p-6" id="main-container">
+            <div id="loadingState" class="space-y-6 py-8">
+                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                    <div class="h-32 skeleton rounded-2xl"></div>
+                    <div class="h-32 skeleton rounded-2xl"></div>
+                    <div class="h-32 skeleton rounded-2xl"></div>
+                </div>
+                <div class="h-64 skeleton rounded-2xl"></div>
             </div>
+
             <div id="content-area" class="hidden space-y-6"></div>
         </main>
     </div>
+
+    <!-- STICKY BOTTOM NAVIGATION BAR -->
+    <nav class="fixed bottom-0 inset-x-0 bg-white/95 backdrop-blur-md border-t border-slate-200 z-30 flex justify-around items-center p-1.5 lg:hidden shadow-lg">
+        <button onclick="navigate('dashboard')" class="flex flex-col items-center justify-center py-1 px-3 rounded-xl text-slate-600 hover:text-sky-600 touch-target">
+            <span class="text-xl">📊</span>
+            <span class="text-[10px] font-semibold mt-0.5">Dashboard</span>
+        </button>
+        <button onclick="navigate('smart_restock')" class="flex flex-col items-center justify-center py-1 px-3 rounded-xl text-slate-600 hover:text-purple-600 touch-target">
+            <span class="text-xl">🤖</span>
+            <span class="text-[10px] font-semibold mt-0.5">Restock</span>
+        </button>
+        <button onclick="navigate('inventory')" class="flex flex-col items-center justify-center py-1 px-3 rounded-xl text-slate-600 hover:text-sky-600 touch-target">
+            <span class="text-xl">📦</span>
+            <span class="text-[10px] font-semibold mt-0.5">Master</span>
+        </button>
+        <button onclick="navigate('reports')" class="flex flex-col items-center justify-center py-1 px-3 rounded-xl text-slate-600 hover:text-emerald-600 touch-target">
+            <span class="text-xl">📈</span>
+            <span class="text-[10px] font-semibold mt-0.5">Profit</span>
+        </button>
+        <button onclick="navigate('evoucher')" class="flex flex-col items-center justify-center py-1 px-3 rounded-xl text-slate-600 hover:text-amber-600 touch-target">
+            <span class="text-xl">🎫</span>
+            <span class="text-[10px] font-semibold mt-0.5">Voucher</span>
+        </button>
+    </nav>
+
+    <!-- TOAST NOTIFICATION CONTAINER -->
+    <div id="toast-container"></div>
 
     <script>
         const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbwkZVsoGXdgxck4xwOXk2fW4Oawn6diXu2bUX0sAIRFCfGeS1jTr6QjEH6Fr6-RFbnDAw/exec';
@@ -123,6 +249,7 @@
         const State = { 
             currentPage: 'dashboard', 
             dashboardFilter: 'today',
+            restockAreaFilter: 'all',
             data: { products: [], sales: [], purchases: [], shifts: [], logs: [], returns: [], audits: [] }, 
             tempBatchItems: [], 
             charts: { line: null, doughnut: null } 
@@ -130,11 +257,47 @@
 
         const EvoucherState = { view: 'login', users: [], selectedPeriod: '', loading: false, foundUser: null };
 
+        // Toast Notification System
+        window.showToast = (msg, type = 'info') => {
+            const container = document.getElementById('toast-container');
+            const toast = document.createElement('div');
+            
+            let bg = 'bg-slate-900 text-white';
+            let icon = 'ℹ️';
+            if (type === 'success') { bg = 'bg-emerald-600 text-white'; icon = '✅'; }
+            else if (type === 'error') { bg = 'bg-rose-600 text-white'; icon = '⚠️'; }
+            else if (type === 'warning') { bg = 'bg-amber-500 text-white'; icon = '🔔'; }
+
+            toast.className = `toast-item p-4 rounded-xl shadow-xl flex items-center gap-3 font-semibold text-sm ${bg}`;
+            toast.innerHTML = `<span>${icon}</span><span class="flex-1">${msg}</span>`;
+            
+            container.appendChild(toast);
+            setTimeout(() => toast.classList.add('show'), 10);
+            
+            setTimeout(() => {
+                toast.classList.remove('show');
+                setTimeout(() => toast.remove(), 300);
+            }, 3500);
+        };
+
+        // Responsive Drawer Toggle
+        window.toggleSidebar = (show) => {
+            const sidebar = document.getElementById('main-sidebar');
+            const backdrop = document.getElementById('sidebar-backdrop');
+            if (show) {
+                sidebar.classList.remove('-translate-x-full');
+                backdrop.classList.remove('hidden');
+            } else {
+                sidebar.classList.add('-translate-x-full');
+                backdrop.classList.add('hidden');
+            }
+        };
+
         window.updateDashFilter = (val) => { State.dashboardFilter = val; renderPage(); };
+        window.updateRestockAreaFilter = (area) => { State.restockAreaFilter = area; renderPage(); };
 
         document.addEventListener('firebase-ready', () => { loadAllData(); });
 
-        // Fungsi pembungkus (wrapper) untuk mencegah error pada satu koleksi mematikan seluruh aplikasi
         async function fetchCollectionSafe(colName, customQuery = null) {
             try {
                 const ref = customQuery ? customQuery : window.collection(window.db, colName);
@@ -143,8 +306,8 @@
                 snap.forEach(d => data.push({ id: d.id, ...d.data() }));
                 return data;
             } catch (e) {
-                console.warn(`[Peringatan Firebase] Akses ke koleksi '${colName}' gagal/ditolak. Pastikan Security Rules mengizinkan:`, e.message);
-                return []; // Mengembalikan array kosong agar halaman tetap bisa di-render
+                console.warn(`[Firebase Warning] Koleksi '${colName}':`, e.message);
+                return [];
             }
         }
 
@@ -169,26 +332,104 @@
                 State.data.shifts = shiftData;
                 State.data.logs = logData;
                 
-                // Sorting memori manual khusus koleksi baru untuk menghindari Indexing Error
                 State.data.returns = retData.sort((a,b) => new Date(b.timestamp) - new Date(a.timestamp));
                 State.data.audits = audData.sort((a,b) => new Date(b.timestamp) - new Date(a.timestamp));
                 
+                calculateABCAnalysis();
+
                 renderPage(); 
+                updateBadges();
+
                 document.getElementById('loadingState').classList.add('hidden'); 
                 document.getElementById('content-area').classList.remove('hidden');
             } catch (e) { 
                 console.error(e); 
-                alert("Gagal sinkronisasi data utama: " + e.message); 
+                window.showToast("Gagal sinkronisasi data: " + e.message, "error"); 
             }
         }
 
-        window.navigate = (page) => { State.currentPage = page; renderPage(); };
+        function calculateABCAnalysis() {
+            const productRevenue = {};
+            State.data.sales.forEach(s => {
+                let itemsList = s.cart || [];
+                if (itemsList.length === 0 && s.items) {
+                    s.items.split(', ').forEach(str => {
+                        const parts = str.split(' x');
+                        if (parts.length === 2) itemsList.push({ name: parts[0].trim(), quantity: parseInt(parts[1]) });
+                    });
+                }
+                itemsList.forEach(item => {
+                    const name = item.name.trim();
+                    const p = State.data.products.find(prod => prod['Nama Produk'].trim().toLowerCase() === name.toLowerCase());
+                    const price = item.price || (p ? p.Harga : 0);
+                    if (!productRevenue[name]) productRevenue[name] = 0;
+                    productRevenue[name] += price * item.quantity;
+                });
+            });
+
+            const sorted = Object.entries(productRevenue).sort((a, b) => b[1] - a[1]);
+            const totalRev = sorted.reduce((sum, [, rev]) => sum + rev, 0);
+
+            let cumulative = 0;
+            const abcMap = {};
+            sorted.forEach(([name, rev]) => {
+                cumulative += rev;
+                const pct = totalRev > 0 ? (cumulative / totalRev) * 100 : 100;
+                if (pct <= 70) abcMap[name] = 'A';
+                else if (pct <= 90) abcMap[name] = 'B';
+                else abcMap[name] = 'C';
+            });
+
+            State.data.products.forEach(p => {
+                p.abcCategory = abcMap[p['Nama Produk']] || 'C';
+            });
+        }
+
+        function updateBadges() {
+            const lowStockCount = State.data.products.filter(p => {
+                const total = (p['Stok Area Kasir adamart 73']||0) + (p['Stok Area Kasir adamart induksi']||0) + (p['Stok Area Kasir adamart kelanis']||0);
+                return total < 10;
+            }).length;
+
+            const today = new Date();
+            const sixtyDaysLater = new Date();
+            sixtyDaysLater.setDate(today.getDate() + 60);
+
+            const expCount = State.data.products.filter(p => {
+                const expVal = p.ExpiryDate || p['Tanggal Kadaluarsa'];
+                if(!expVal) return false;
+                const expDate = new Date(expVal);
+                return expDate >= today && expDate <= sixtyDaysLater;
+            }).length;
+
+            const rBadge = document.getElementById('badge-restock-count');
+            const eBadge = document.getElementById('badge-expiry-count');
+
+            if (rBadge) {
+                if (lowStockCount > 0) { rBadge.innerText = lowStockCount; rBadge.classList.remove('hidden'); }
+                else rBadge.classList.add('hidden');
+            }
+            if (eBadge) {
+                if (expCount > 0) { eBadge.innerText = expCount; eBadge.classList.remove('hidden'); }
+                else eBadge.classList.add('hidden');
+            }
+        }
+
+        window.navigate = (page) => { 
+            State.currentPage = page; 
+            toggleSidebar(false);
+            renderPage(); 
+        };
 
         function renderPage() {
             const container = document.getElementById('content-area'); 
             const title = document.getElementById('page-title'); 
             container.innerHTML = '';
             
+            document.querySelectorAll('.sidebar-item').forEach(el => el.classList.remove('active', 'bg-white/10', 'border-l-4', 'border-sky-400'));
+            const activeNav = document.getElementById(`nav-${State.currentPage}`);
+            if (activeNav) activeNav.classList.add('active', 'border-l-4', 'border-sky-400');
+
             if(State.charts.line) { State.charts.line.destroy(); State.charts.line = null; }
             if(State.charts.doughnut) { State.charts.doughnut.destroy(); State.charts.doughnut = null; }
 
@@ -226,16 +467,16 @@
                     return expDate >= today && expDate <= twoMonthsLater;
                 }).sort((a,b) => new Date(a.ExpiryDate || a['Tanggal Kadaluarsa']) - new Date(b.ExpiryDate || b['Tanggal Kadaluarsa'])).slice(0, 10);
 
-                const renderLowStock = (items) => items.length === 0 ? '<div class="text-gray-400 italic text-sm p-4">Stok aman semua</div>' : items.map(p => {
+                const renderLowStock = (items) => items.length === 0 ? '<div class="text-slate-400 italic text-sm p-4 text-center">Semua stok produk aman</div>' : items.map(p => {
                          const total = (p['Stok Area Kasir adamart 73']||0) + (p['Stok Area Kasir adamart induksi']||0) + (p['Stok Area Kasir adamart kelanis']||0);
-                         return `<div class="flex justify-between items-center border-b py-2 last:border-0"><div><div class="font-bold text-sm text-gray-700">${p['Nama Produk']}</div><div class="text-xs text-gray-500">${p.Barcode}</div></div><span class="bg-red-100 text-red-800 text-xs font-bold px-2 py-1 rounded-full">${total} Unit</span></div>`;
+                         return `<div class="flex justify-between items-center border-b border-slate-100 py-3 last:border-0"><div><div class="font-bold text-sm text-slate-800">${p['Nama Produk']}</div><div class="text-xs text-slate-400 font-mono">${p.Barcode}</div></div><span class="bg-rose-100 text-rose-800 text-xs font-bold px-3 py-1 rounded-full border border-rose-200">${total} Unit</span></div>`;
                     }).join('');
 
-                const renderExpiry = (items) => items.length === 0 ? '<div class="text-gray-400 italic text-sm p-4">Tidak ada barang mendekati expired</div>' : items.map(p => {
+                const renderExpiry = (items) => items.length === 0 ? '<div class="text-slate-400 italic text-sm p-4 text-center">Tidak ada barang mendekati expired</div>' : items.map(p => {
                         const expDate = new Date(p.ExpiryDate || p['Tanggal Kadaluarsa']);
                         const diffTime = Math.abs(expDate - today);
                         const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24)); 
-                        return `<div class="flex justify-between items-center border-b py-2 last:border-0"><div><div class="font-bold text-sm text-gray-700">${p['Nama Produk']}</div><div class="text-xs text-gray-500">Exp: ${expDate.toLocaleDateString('id-ID')}</div></div><span class="bg-yellow-100 text-yellow-800 text-xs font-bold px-2 py-1 rounded-full">${diffDays} Hari Lagi</span></div>`;
+                        return `<div class="flex justify-between items-center border-b border-slate-100 py-3 last:border-0"><div><div class="font-bold text-sm text-slate-800">${p['Nama Produk']}</div><div class="text-xs text-slate-400 font-medium">Exp: ${expDate.toLocaleDateString('id-ID')}</div></div><span class="bg-amber-100 text-amber-800 text-xs font-bold px-3 py-1 rounded-full border border-amber-200">${diffDays} Hari Lagi</span></div>`;
                     }).join('');
 
                 let filteredSales = State.data.sales;
@@ -276,83 +517,93 @@
                 const trxKelanis = filteredSales.filter(s => s.area && s.area.toLowerCase().includes('kelanis')).length;
 
                 return `
-                <div class="flex justify-between items-center mb-4 bg-white p-4 rounded-xl shadow-sm border border-gray-100">
+                <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 bg-white p-5 rounded-2xl shadow-sm border border-slate-200/80">
                     <div>
-                        <h2 class="text-lg font-bold text-gray-800">Ringkasan Performa</h2>
-                        <p class="text-xs text-gray-500">Pilih periode untuk melihat rincian pendapatan & transaksi</p>
+                        <h2 class="text-lg font-bold text-slate-800">Ringkasan Performa Adamart</h2>
+                        <p class="text-xs text-slate-500 mt-0.5">Pantau omzet, transaksi, dan stok secara real-time</p>
                     </div>
-                    <select onchange="updateDashFilter(this.value)" class="p-2.5 border-2 border-blue-100 rounded-lg text-sm bg-blue-50 text-blue-800 font-bold focus:outline-none focus:border-blue-300 cursor-pointer">
+                    <select onchange="updateDashFilter(this.value)" class="p-3 border-2 border-sky-100 rounded-xl text-sm bg-sky-50 text-sky-800 font-bold focus:outline-none focus:border-sky-400 cursor-pointer touch-target w-full sm:w-auto">
                         <option value="today" ${State.dashboardFilter === 'today' ? 'selected' : ''}>Hari Ini</option>
                         <option value="this_month" ${State.dashboardFilter === 'this_month' ? 'selected' : ''}>Bulan Ini</option>
                         <option value="all_time" ${State.dashboardFilter === 'all_time' ? 'selected' : ''}>Semua Waktu</option>
                     </select>
                 </div>
 
-                <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
-                    <div class="bg-white p-5 rounded-xl shadow border-l-4 border-green-500 flex flex-col justify-between">
-                        <div class="cursor-pointer hover:bg-green-50 rounded-lg p-2 -m-2 transition mb-2" onclick="navigate('reports')">
-                            <div class="text-gray-500 text-sm font-bold flex justify-between items-center">Total Pendapatan <span class="text-[10px] bg-green-100 text-green-700 px-2 py-1 rounded-full font-bold">Lihat Profit</span></div>
-                            <div class="text-2xl font-bold text-gray-800">${formatRp(totalRev)}</div>
+                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
+                    <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-200/80 border-l-4 border-l-emerald-500 flex flex-col justify-between hover:shadow-md transition">
+                        <div class="cursor-pointer hover:bg-emerald-50/50 rounded-xl p-2 -m-2 transition mb-2" onclick="navigate('reports')">
+                            <div class="text-slate-500 text-xs font-bold uppercase tracking-wider flex justify-between items-center">
+                                Total Pendapatan
+                                <span class="text-[10px] bg-emerald-100 text-emerald-800 px-2.5 py-1 rounded-full font-bold">Analisa Profit &rarr;</span>
+                            </div>
+                            <div class="text-2xl sm:text-3xl font-extrabold text-slate-900 mt-2">${formatRp(totalRev)}</div>
                         </div>
-                        <div class="mt-2 space-y-2 border-t border-gray-100 pt-3">
+                        <div class="space-y-2 border-t border-slate-100 pt-3">
                             <div class="flex justify-between items-center text-xs">
-                                <span class="font-bold text-gray-500">🏢 Adamart 73</span>
-                                <span class="font-bold text-gray-800">${formatRp(rev73)}</span>
+                                <span class="font-medium text-slate-500">🏢 Adamart 73</span>
+                                <span class="font-bold text-slate-800">${formatRp(rev73)}</span>
                             </div>
                             <div class="flex justify-between items-center text-xs">
-                                <span class="font-bold text-gray-500">⚡ Induksi</span>
-                                <span class="font-bold text-gray-800">${formatRp(revInduksi)}</span>
+                                <span class="font-medium text-slate-500">⚡ Induksi</span>
+                                <span class="font-bold text-slate-800">${formatRp(revInduksi)}</span>
                             </div>
                             <div class="flex justify-between items-center text-xs">
-                                <span class="font-bold text-gray-500">🌟 Kelanis</span>
-                                <span class="font-bold text-gray-800">${formatRp(revKelanis)}</span>
+                                <span class="font-medium text-slate-500">🌟 Kelanis</span>
+                                <span class="font-bold text-slate-800">${formatRp(revKelanis)}</span>
                             </div>
                         </div>
                     </div>
                     
-                    <div class="bg-white p-5 rounded-xl shadow border-l-4 border-blue-500 flex flex-col justify-between">
+                    <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-200/80 border-l-4 border-l-sky-500 flex flex-col justify-between hover:shadow-md transition">
                         <div class="p-2 -m-2 mb-2">
-                            <div class="text-gray-500 text-sm font-bold">Total Transaksi</div>
-                            <div class="text-2xl font-bold text-gray-800">${trxTotal}</div>
+                            <div class="text-slate-500 text-xs font-bold uppercase tracking-wider">Total Transaksi</div>
+                            <div class="text-2xl sm:text-3xl font-extrabold text-slate-900 mt-2">${trxTotal} <span class="text-xs font-normal text-slate-400">Struk</span></div>
                         </div>
-                        <div class="mt-2 space-y-2 border-t border-gray-100 pt-3">
+                        <div class="space-y-2 border-t border-slate-100 pt-3">
                             <div class="flex justify-between items-center text-xs">
-                                <span class="font-bold text-gray-500">🏢 Adamart 73</span>
-                                <span class="font-bold text-gray-800">${trx73} struk</span>
+                                <span class="font-medium text-slate-500">🏢 Adamart 73</span>
+                                <span class="font-bold text-slate-800">${trx73} Struk</span>
                             </div>
                             <div class="flex justify-between items-center text-xs">
-                                <span class="font-bold text-gray-500">⚡ Induksi</span>
-                                <span class="font-bold text-gray-800">${trxInduksi} struk</span>
+                                <span class="font-medium text-slate-500">⚡ Induksi</span>
+                                <span class="font-bold text-slate-800">${trxInduksi} Struk</span>
                             </div>
                             <div class="flex justify-between items-center text-xs">
-                                <span class="font-bold text-gray-500">🌟 Kelanis</span>
-                                <span class="font-bold text-gray-800">${trxKelanis} struk</span>
+                                <span class="font-medium text-slate-500">🌟 Kelanis</span>
+                                <span class="font-bold text-slate-800">${trxKelanis} Struk</span>
                             </div>
                         </div>
                     </div>
 
-                    <div class="bg-white p-6 rounded-xl shadow border-l-4 border-purple-500 cursor-pointer hover:bg-purple-50" onclick="navigate('logistics')">
-                        <div class="text-purple-600 text-sm font-bold">Barang Masuk</div>
-                        <div class="text-2xl font-bold text-purple-700">${filteredLogs.length}</div>
-                        <div class="text-xs text-gray-400 mt-2">Aktivitas restock logistik</div>
+                    <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-200/80 border-l-4 border-l-purple-500 cursor-pointer hover:bg-purple-50/50 hover:shadow-md transition sm:col-span-2 lg:col-span-1 flex flex-col justify-between" onclick="navigate('logistics')">
+                        <div>
+                            <div class="text-purple-600 text-xs font-bold uppercase tracking-wider flex justify-between">
+                                Barang Masuk <span>🚛</span>
+                            </div>
+                            <div class="text-2xl sm:text-3xl font-extrabold text-purple-900 mt-2">${filteredLogs.length} <span class="text-xs font-normal text-slate-400">Penerimaan</span></div>
+                        </div>
+                        <div class="text-xs text-purple-700 font-medium bg-purple-50 p-3 rounded-xl border border-purple-100 mt-4 flex items-center justify-between">
+                            <span>Aktivitas Restock Logistik</span>
+                            <span class="font-bold">&rarr;</span>
+                        </div>
                     </div>
                 </div>
 
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
-                    <div class="bg-white rounded-xl shadow border border-red-100 overflow-hidden">
-                        <div class="p-4 bg-red-50 border-b border-red-100 flex justify-between items-center">
-                            <h3 class="font-bold text-red-700 flex items-center gap-2"><span>⚠️</span> Stok Kritis (< 10)</h3>
-                            <button onclick="navigate('smart_restock')" class="text-xs bg-red-100 px-2 py-1 rounded text-red-700 font-bold hover:bg-red-200">Analisa AI</button>
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                    <div class="bg-white rounded-2xl shadow-sm border border-slate-200/80 overflow-hidden">
+                        <div class="p-4 bg-rose-50/80 border-b border-rose-100 flex justify-between items-center">
+                            <h3 class="font-bold text-rose-800 text-sm flex items-center gap-2"><span>⚠️</span> Stok Kritis (< 10 Unit)</h3>
+                            <button onclick="navigate('smart_restock')" class="text-xs bg-rose-100 px-3 py-1.5 rounded-lg text-rose-800 font-bold hover:bg-rose-200 transition touch-target">Analisa AI &rarr;</button>
                         </div>
-                        <div class="p-4 max-h-60 overflow-y-auto">${renderLowStock(lowStockItems)}</div>
+                        <div class="p-4 max-h-72 overflow-y-auto divide-y divide-slate-100">${renderLowStock(lowStockItems)}</div>
                     </div>
 
-                    <div class="bg-white rounded-xl shadow border border-yellow-100 overflow-hidden">
-                        <div class="p-4 bg-yellow-50 border-b border-yellow-100 flex justify-between items-center">
-                            <h3 class="font-bold text-yellow-700 flex items-center gap-2"><span>⏳</span> Akan Expired (2 Bulan)</h3>
-                            <button onclick="navigate('expiry')" class="text-xs bg-yellow-100 px-2 py-1 rounded text-yellow-800 font-bold hover:bg-yellow-200">Lihat Detail</button>
+                    <div class="bg-white rounded-2xl shadow-sm border border-slate-200/80 overflow-hidden">
+                        <div class="p-4 bg-amber-50/80 border-b border-amber-100 flex justify-between items-center">
+                            <h3 class="font-bold text-amber-800 text-sm flex items-center gap-2"><span>⏳</span> Akan Expired (60 Hari)</h3>
+                            <button onclick="navigate('expiry')" class="text-xs bg-amber-100 px-3 py-1.5 rounded-lg text-amber-900 font-bold hover:bg-amber-200 transition touch-target">Lihat Detail &rarr;</button>
                         </div>
-                        <div class="p-4 max-h-60 overflow-y-auto">${renderExpiry(expiringItems)}</div>
+                        <div class="p-4 max-h-72 overflow-y-auto divide-y divide-slate-100">${renderExpiry(expiringItems)}</div>
                     </div>
                 </div>
                 `; 
@@ -386,58 +637,58 @@
                     
                     if (p.daysLeft <= 14) {
                         suggestion = 'Segera Retur / Diskon';
-                        badgeColor = 'bg-red-100 text-red-800 border-red-200';
+                        badgeColor = 'bg-rose-100 text-rose-800 border-rose-200';
                     } else if (p.daysLeft <= 30) {
                         suggestion = 'Promo Bundling';
-                        badgeColor = 'bg-orange-100 text-orange-800 border-orange-200';
+                        badgeColor = 'bg-amber-100 text-amber-800 border-amber-200';
                     } else {
                         suggestion = 'Mutasi Cabang Ramai';
-                        badgeColor = 'bg-yellow-100 text-yellow-800 border-yellow-200';
+                        badgeColor = 'bg-sky-100 text-sky-800 border-sky-200';
                     }
 
                     return `
-                    <tr class="hover:bg-gray-50 border-b">
+                    <tr class="hover:bg-slate-50 border-b border-slate-100">
                         <td class="p-4">
-                            <div class="font-bold text-gray-800">${p['Nama Produk']}</div>
-                            <div class="text-xs text-gray-500 font-mono">${p.Barcode}</div>
+                            <div class="font-bold text-slate-800">${p['Nama Produk']}</div>
+                            <div class="text-xs text-slate-400 font-mono">${p.Barcode}</div>
                         </td>
                         <td class="p-4 text-center">
-                            <div class="font-bold text-gray-800">${p.expDate.toLocaleDateString('id-ID')}</div>
-                            <div class="text-xs font-bold text-red-600">${p.daysLeft} Hari Lagi</div>
+                            <div class="font-bold text-slate-800">${p.expDate.toLocaleDateString('id-ID')}</div>
+                            <div class="text-xs font-bold text-rose-600">${p.daysLeft} Hari Lagi</div>
                         </td>
                         <td class="p-4 text-center"><span class="font-bold ${checkStock(s73)}">${s73}</span></td>
                         <td class="p-4 text-center"><span class="font-bold ${checkStock(sInd)}">${sInd}</span></td>
                         <td class="p-4 text-center"><span class="font-bold ${checkStock(sKel)}">${sKel}</span></td>
-                        <td class="p-4 text-center font-bold text-blue-600">${totalStok}</td>
+                        <td class="p-4 text-center font-bold text-sky-600">${totalStok}</td>
                         <td class="p-4 text-center">
-                            <span class="px-2 py-1 rounded text-xs font-bold border ${badgeColor}">${suggestion}</span>
+                            <span class="px-3 py-1 rounded-full text-xs font-bold border ${badgeColor}">${suggestion}</span>
                         </td>
                     </tr>`;
                 }).join('');
 
                 return `
                 <div class="space-y-6">
-                    <div class="bg-gradient-to-r from-yellow-500 to-orange-500 rounded-xl p-6 text-white shadow-lg flex justify-between items-center">
+                    <div class="bg-gradient-to-r from-amber-500 to-orange-600 rounded-2xl p-6 text-white shadow-lg flex justify-between items-center">
                         <div>
-                            <h2 class="text-2xl font-bold flex items-center gap-2"><span>⏳</span> Smart Barang Kadaluarsa</h2>
-                            <p class="opacity-90 text-sm mt-1">Daftar produk yang mendekati masa expired dalam 60 hari ke depan.</p>
+                            <h2 class="text-xl sm:text-2xl font-extrabold flex items-center gap-2"><span>⏳</span> Smart Barang Kadaluarsa</h2>
+                            <p class="opacity-90 text-xs sm:text-sm mt-1">Deteksi dini produk kadaluarsa dalam 60 hari ke depan.</p>
                         </div>
                         <div class="text-right">
-                            <div class="text-3xl font-bold">${expiringList.length}</div>
-                            <div class="text-xs opacity-75">Item Terdeteksi</div>
+                            <div class="text-2xl sm:text-4xl font-extrabold">${expiringList.length}</div>
+                            <div class="text-xs opacity-80">Item Terdeteksi</div>
                         </div>
                     </div>
 
-                    <div class="bg-white rounded-xl shadow overflow-hidden border border-gray-200">
-                        <div class="p-4 border-b bg-gray-50 flex justify-between items-center">
-                            <h3 class="font-bold text-gray-700">Rincian Stok & Strategi</h3>
-                            <button onclick="navigate('retur')" class="bg-orange-600 text-white px-4 py-2 rounded-lg font-bold hover:bg-orange-700 shadow transition text-sm flex items-center gap-2">
+                    <div class="bg-white rounded-2xl shadow-sm overflow-hidden border border-slate-200/80">
+                        <div class="p-4 border-b border-slate-100 bg-slate-50 flex justify-between items-center">
+                            <h3 class="font-bold text-slate-700 text-sm">Rincian Stok & Strategi Penanganan</h3>
+                            <button onclick="navigate('retur')" class="bg-orange-600 text-white px-4 py-2 rounded-xl font-bold hover:bg-orange-700 shadow-sm transition text-xs sm:text-sm flex items-center gap-2 touch-target">
                                 <span>🔄</span> Proses Retur
                             </button>
                         </div>
-                        <div class="overflow-auto max-h-[600px]">
+                        <div class="overflow-x-auto max-h-[600px]">
                             <table class="w-full text-left text-sm whitespace-nowrap">
-                                <thead class="bg-gray-100 sticky top-0 z-10 text-gray-600 uppercase text-xs">
+                                <thead class="bg-slate-100 sticky top-0 z-10 text-slate-600 uppercase text-xs font-bold">
                                     <tr>
                                         <th class="p-4">Produk</th>
                                         <th class="p-4 text-center">Tanggal Expired</th>
@@ -448,8 +699,8 @@
                                         <th class="p-4 text-center">Saran Strategi</th>
                                     </tr>
                                 </thead>
-                                <tbody class="divide-y">
-                                    ${expiringList.length > 0 ? renderRows : '<tr><td colspan="7" class="p-8 text-center text-gray-500">Stok aman! Tidak ada barang mendekati kadaluarsa.</td></tr>'}
+                                <tbody class="divide-y divide-slate-100">
+                                    ${expiringList.length > 0 ? renderRows : '<tr><td colspan="7" class="p-8 text-center text-slate-400">Stok aman! Tidak ada barang mendekati kadaluarsa.</td></tr>'}
                                 </tbody>
                             </table>
                         </div>
@@ -458,12 +709,20 @@
             },
 
             SmartRestock: () => {
+                const selectedArea = State.restockAreaFilter || 'all';
                 const productStats = {};
                 const thirtyDaysAgo = new Date();
                 thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
 
                 State.data.sales.forEach(s => {
                     if (new Date(s.timestamp) < thirtyDaysAgo) return; 
+                    
+                    if (selectedArea !== 'all') {
+                        const sArea = (s.area || '').toLowerCase();
+                        const matchKeyword = selectedArea.replace('adamart ', '').toLowerCase();
+                        if (!sArea.includes(matchKeyword)) return;
+                    }
+
                     let itemsList = s.cart || [];
                     if(itemsList.length === 0 && s.items) {
                         s.items.split(', ').forEach(str => {
@@ -481,41 +740,96 @@
                 let restockList = State.data.products.map(p => {
                     const soldLast30Days = productStats[p['Nama Produk']] || 0;
                     const avgDailySales = soldLast30Days / 30;
-                    const currentStock = (p['Stok Area Kasir adamart 73']||0) + (p['Stok Area Kasir adamart induksi']||0) + (p['Stok Area Kasir adamart kelanis']||0);
-                    const daysLeft = avgDailySales > 0 ? currentStock / avgDailySales : 999;
                     
-                    // PERBAIKAN LOGIKA: Target stok aman 14 hari. Set batas minimum rak 5 unit agar tidak order 1 pcs.
+                    let currentStock = 0;
+                    if (selectedArea === 'all') {
+                        currentStock = (p['Stok Area Kasir adamart 73']||0) + (p['Stok Area Kasir adamart induksi']||0) + (p['Stok Area Kasir adamart kelanis']||0);
+                    } else {
+                        const stockKey = `Stok Area Kasir ${selectedArea.toLowerCase()}`;
+                        currentStock = p[stockKey] || 0;
+                    }
+
+                    const daysLeft = avgDailySales > 0 ? currentStock / avgDailySales : (currentStock === 0 ? 0 : 999);
                     const targetStock = Math.max(5, Math.ceil(avgDailySales * 14)); 
                     const suggestOrder = Math.max(0, targetStock - currentStock);
                     
                     return { ...p, avgDailySales, currentStock, daysLeft, suggestOrder, soldLast30Days };
                 });
 
-                // PERBAIKAN FILTER: Sembunyikan barang dengan saran order 0
                 restockList = restockList.filter(p => p.suggestOrder > 0 && (p.daysLeft < 7 || p.currentStock < 5)).sort((a,b) => a.daysLeft - b.daysLeft);
 
                 const renderRows = restockList.map((p) => {
-                    const urgencyColor = p.daysLeft < 3 ? 'bg-red-100 text-red-800' : 'bg-yellow-100 text-yellow-800';
+                    const urgencyColor = p.daysLeft < 3 ? 'bg-rose-100 text-rose-800 border-rose-200' : 'bg-amber-100 text-amber-800 border-amber-200';
+                    const abcBadge = p.abcCategory === 'A' ? 'bg-emerald-100 text-emerald-800' : (p.abcCategory === 'B' ? 'bg-sky-100 text-sky-800' : 'bg-slate-100 text-slate-600');
+                    
                     return `
-                    <tr class="hover:bg-gray-50 border-b">
-                        <td class="p-4"><div class="font-bold text-gray-800">${p['Nama Produk']}</div><div class="text-xs text-gray-500 font-mono">${p.Barcode}</div></td>
-                        <td class="p-4 text-center"><div class="font-bold">${p.currentStock}</div><div class="text-xs text-gray-500">Terjual 30hr: ${p.soldLast30Days}</div></td>
-                        <td class="p-4 text-center"><div class="text-sm font-medium">${p.avgDailySales.toFixed(1)} / hari</div></td>
-                        <td class="p-4 text-center"><span class="px-2 py-1 rounded text-xs font-bold ${urgencyColor}">${p.daysLeft < 1 ? 'HABIS' : Math.floor(p.daysLeft) + ' Hari Lagi'}</span></td>
-                        <td class="p-4 text-center"><div class="flex items-center justify-center gap-2"><span class="font-bold text-blue-600 text-lg">${p.suggestOrder}</span><span class="text-xs text-gray-400">unit</span></div></td>
-                        <td class="p-4 text-center"><input type="checkbox" class="restock-check w-5 h-5" data-json='${JSON.stringify({barcode: p.Barcode, name: p['Nama Produk'], qty: p.suggestOrder, hpp: p.HPP, price: p.Harga})}' checked></td>
+                    <tr class="hover:bg-slate-50 border-b border-slate-100">
+                        <td class="p-4">
+                            <div class="font-bold text-slate-800 flex items-center gap-2">
+                                ${p['Nama Produk']}
+                                <span class="px-2 py-0.5 rounded text-[10px] font-bold ${abcBadge}">Cat ${p.abcCategory}</span>
+                            </div>
+                            <div class="text-xs text-slate-400 font-mono">${p.Barcode}</div>
+                        </td>
+                        <td class="p-4 text-center"><div class="font-bold text-slate-800">${p.currentStock}</div><div class="text-xs text-slate-400">Terjual 30hr: ${p.soldLast30Days}</div></td>
+                        <td class="p-4 text-center"><div class="text-sm font-medium text-slate-700">${p.avgDailySales.toFixed(1)} / hari</div></td>
+                        <td class="p-4 text-center"><span class="px-3 py-1 rounded-full text-xs font-bold border ${urgencyColor}">${p.daysLeft < 1 ? 'HABIS' : Math.floor(p.daysLeft) + ' Hari Lagi'}</span></td>
+                        <td class="p-4 text-center"><div class="flex items-center justify-center gap-1.5"><span class="font-extrabold text-sky-600 text-lg">${p.suggestOrder}</span><span class="text-xs text-slate-400 font-medium">unit</span></div></td>
+                        <td class="p-4 text-center"><input type="checkbox" class="restock-check w-5 h-5 accent-sky-600 rounded cursor-pointer touch-target" data-json='${JSON.stringify({barcode: p.Barcode, name: p['Nama Produk'], qty: p.suggestOrder, hpp: p.HPP, price: p.Harga})}' checked></td>
                     </tr>`;
                 }).join('');
 
+                const areaLabelDisplay = selectedArea === 'all' ? 'Semua Cabang' : selectedArea.replace('adamart ', '').toUpperCase();
+
                 return `
                 <div class="space-y-6">
-                    <div class="bg-gradient-to-r from-purple-600 to-blue-600 rounded-xl p-6 text-white shadow-lg flex justify-between items-center">
-                        <div><h2 class="text-2xl font-bold flex items-center gap-2"><span>🤖</span> Smart Restock AI</h2><p class="opacity-90 text-sm mt-1">Rekomendasi belanja berdasarkan kecepatan penjualan 30 hari terakhir.</p></div>
-                        <div class="text-right"><div class="text-3xl font-bold">${restockList.length}</div><div class="text-xs opacity-75">Item Perlu Restock</div></div>
+                    <div class="bg-gradient-to-r from-purple-600 to-indigo-600 rounded-2xl p-6 text-white shadow-lg flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+                        <div>
+                            <h2 class="text-xl sm:text-2xl font-extrabold flex items-center gap-2"><span>🤖</span> Smart Restock AI</h2>
+                            <p class="opacity-90 text-xs sm:text-sm mt-1">Rekomendasi belanja otomatis berbasis kelajuan penjualan 30 hari.</p>
+                        </div>
+                        
+                        <div class="flex items-center gap-3 w-full sm:w-auto">
+                            <select onchange="updateRestockAreaFilter(this.value)" class="p-3 border-2 border-purple-200 rounded-xl text-sm bg-white text-purple-900 font-bold focus:outline-none focus:border-purple-400 cursor-pointer touch-target w-full sm:w-auto shadow-sm">
+                                <option value="all" ${selectedArea === 'all' ? 'selected' : ''}>🌐 Semua Cabang (Gabungan)</option>
+                                <option value="adamart 73" ${selectedArea === 'adamart 73' ? 'selected' : ''}>🏢 khusus Adamart 73</option>
+                                <option value="adamart induksi" ${selectedArea === 'adamart induksi' ? 'selected' : ''}>⚡ khusus Adamart Induksi</option>
+                                <option value="adamart kelanis" ${selectedArea === 'adamart kelanis' ? 'selected' : ''}>🌟 khusus Adamart Kelanis</option>
+                            </select>
+                            <div class="text-right shrink-0 bg-white/10 px-4 py-2 rounded-xl backdrop-blur-sm border border-white/20">
+                                <div class="text-2xl font-extrabold">${restockList.length}</div>
+                                <div class="text-[10px] opacity-80 uppercase font-bold">Item Perlu Restock</div>
+                            </div>
+                        </div>
                     </div>
-                    <div class="bg-white rounded-xl shadow overflow-hidden border border-gray-200">
-                        <div class="p-4 border-b bg-gray-50 flex justify-between items-center"><h3 class="font-bold text-gray-700">Prioritas Belanja</h3><button onclick="Actions.generateAutoPO()" class="bg-blue-600 text-white px-4 py-2 rounded-lg font-bold hover:bg-blue-700 shadow transition flex items-center gap-2"><span>🛒</span> Buat PO Otomatis</button></div>
-                        <div class="overflow-auto max-h-[600px]"><table class="w-full text-left text-sm"><thead class="bg-gray-100 sticky top-0 z-10 text-gray-600 uppercase text-xs"><tr><th class="p-4">Produk</th><th class="p-4 text-center">Sisa Stok</th><th class="p-4 text-center">Kecepatan Jual</th><th class="p-4 text-center">Est. Habis</th><th class="p-4 text-center">Saran Order</th><th class="p-4 text-center">Pilih</th></tr></thead><tbody class="divide-y">${restockList.length > 0 ? renderRows : '<tr><td colspan="6" class="p-8 text-center text-gray-500">Semua stok aman! Tidak ada rekomendasi belanja.</td></tr>'}</tbody></table></div>
+
+                    <div class="bg-white rounded-2xl shadow-sm overflow-hidden border border-slate-200/80">
+                        <div class="p-4 border-b border-slate-100 bg-slate-50 flex justify-between items-center flex-wrap gap-3">
+                            <div>
+                                <h3 class="font-bold text-slate-700 text-sm">Prioritas Restock Belanja (${areaLabelDisplay})</h3>
+                                <p class="text-xs text-slate-400">Daftar item dengan stok &lt; 5 atau estimasi habis &lt; 7 hari di ${areaLabelDisplay}</p>
+                            </div>
+                            <button onclick="Actions.generateAutoPO()" class="bg-sky-600 text-white px-4 py-2.5 rounded-xl font-bold hover:bg-sky-700 shadow-sm transition flex items-center gap-2 touch-target text-xs sm:text-sm">
+                                <span>🛒</span> Buat PO Otomatis (${areaLabelDisplay})
+                            </button>
+                        </div>
+                        <div class="overflow-x-auto max-h-[600px]">
+                            <table class="w-full text-left text-sm whitespace-nowrap">
+                                <thead class="bg-slate-100 sticky top-0 z-10 text-slate-600 uppercase text-xs font-bold">
+                                    <tr>
+                                        <th class="p-4">Produk</th>
+                                        <th class="p-4 text-center">Sisa Stok (${areaLabelDisplay})</th>
+                                        <th class="p-4 text-center">Kecepatan Jual</th>
+                                        <th class="p-4 text-center">Est. Habis</th>
+                                        <th class="p-4 text-center">Saran Order</th>
+                                        <th class="p-4 text-center">Pilih</th>
+                                    </tr>
+                                </thead>
+                                <tbody class="divide-y divide-slate-100">
+                                    ${restockList.length > 0 ? renderRows : `<tr><td colspan="6" class="p-8 text-center text-slate-400">Semua stok di ${areaLabelDisplay} aman! Tidak ada rekomendasi belanja.</td></tr>`}
+                                </tbody>
+                            </table>
+                        </div>
                     </div>
                 </div>`;
             },
@@ -523,27 +837,225 @@
             Logistics: () => {
                 const logs = State.data.logs;
                 return `
-                <div class="bg-white rounded-xl shadow overflow-hidden flex flex-col h-[calc(100vh-140px)]">
-                    <div class="p-6 border-b bg-blue-50 shrink-0 flex justify-between items-center">
-                        <div><h3 class="font-bold text-gray-700 text-lg">🚛 Riwayat Terima Barang</h3><p class="text-xs text-gray-500">Penerimaan barang fisik dari kasir.</p></div>
+                <div class="bg-white rounded-2xl shadow-sm overflow-hidden flex flex-col h-[calc(100vh-160px)] border border-slate-200/80">
+                    <div class="p-5 border-b border-slate-100 bg-sky-50/50 shrink-0 flex justify-between items-center">
+                        <div><h3 class="font-bold text-slate-800 text-base">🚛 Riwayat Terima Barang Masuk</h3><p class="text-xs text-slate-500 mt-0.5">Catatan penerimaan fisik barang dari kasir & pengiriman supplier.</p></div>
                     </div>
-                    <div class="overflow-auto flex-1">
-                        <table class="w-full text-left text-sm"><thead class="bg-gray-100 sticky top-0 z-10"><tr><th class="p-4">Waktu</th><th class="p-4">Area</th><th class="p-4">Penerima</th><th class="p-4">Detail Barang</th></tr></thead><tbody class="divide-y">${logs.length === 0 ? '<tr><td colspan="4" class="p-8 text-center text-gray-400">Belum ada data barang masuk.</td></tr>' : logs.map(l => {
-                            let itemsDisplay = '-';
-                            if(Array.isArray(l.items)) itemsDisplay = l.items.map(i => `<span class="inline-block bg-green-100 text-green-800 px-2 py-1 rounded text-xs mr-1 mb-1 border border-green-200"><b>${i.name}</b>: ${i.qtyReceived || i.qty}</span>`).join('');
-                            return `<tr class="hover:bg-blue-50/30 transition"><td class="p-4 text-gray-600 whitespace-nowrap">${new Date(l.timestamp).toLocaleString('id-ID')}</td><td class="p-4 font-bold text-blue-800">${l.area}</td><td class="p-4 text-gray-600">${l.user || 'Admin'}</td><td class="p-4">${itemsDisplay}</td></tr>`;
-                        }).join('')}</tbody></table>
+                    <div class="overflow-x-auto flex-1">
+                        <table class="w-full text-left text-sm whitespace-nowrap">
+                            <thead class="bg-slate-100 sticky top-0 z-10 text-slate-600 uppercase text-xs font-bold">
+                                <tr><th class="p-4">Waktu</th><th class="p-4">Area</th><th class="p-4">Penerima</th><th class="p-4">Detail Barang Masuk</th></tr>
+                            </thead>
+                            <tbody class="divide-y divide-slate-100">
+                                ${logs.length === 0 ? '<tr><td colspan="4" class="p-8 text-center text-slate-400">Belum ada data barang masuk.</td></tr>' : logs.map(l => {
+                                    let itemsDisplay = '-';
+                                    if(Array.isArray(l.items)) itemsDisplay = l.items.map(i => `<span class="inline-block bg-emerald-50 text-emerald-800 border border-emerald-200 px-2.5 py-1 rounded-lg text-xs mr-1 mb-1"><b>${i.name}</b>: ${i.qtyReceived || i.qty}</span>`).join('');
+                                    return `<tr class="hover:bg-slate-50"><td class="p-4 text-slate-500 whitespace-nowrap text-xs">${new Date(l.timestamp).toLocaleString('id-ID')}</td><td class="p-4 font-bold text-sky-800">${l.area}</td><td class="p-4 text-slate-600">${l.user || 'Admin'}</td><td class="p-4">${itemsDisplay}</td></tr>`;
+                                }).join('')}
+                            </tbody>
+                        </table>
                     </div>
                 </div>`;
             },
 
-            Purchase: () => `<div class="flex justify-end mb-4"><button onclick="Modals.openBatchPO()" class="bg-blue-600 text-white px-4 py-2 rounded font-bold">+ Buat PO Manual</button></div><div class="bg-white rounded shadow overflow-hidden h-[calc(100vh-200px)] flex flex-col"><div class="overflow-auto flex-1"><table class="w-full text-sm text-left"><thead class="bg-gray-100 sticky top-0 z-10"><tr><th class="p-4">Batch</th><th class="p-4">Supplier</th><th class="p-4">Cabang</th><th class="p-4">Status</th><th class="p-4">Items</th><th class="p-4 text-center">Aksi</th></tr></thead><tbody class="divide-y">${State.data.purchases.map(p=>`<tr><td class="p-4 text-blue-600 font-mono font-bold">${p.batchNumber}</td><td class="p-4">${p.supplier}</td><td class="p-4"><span class="px-2 py-1 bg-purple-100 text-purple-800 rounded text-xs font-bold border border-purple-200">${p.branch}</span></td><td class="p-4">${getStatusBadge(p.status)}</td><td class="p-4 font-medium text-gray-500">${JSON.parse(p.items).length} items</td><td class="p-4 text-center"><button onclick="Actions.printPO('${p.batchNumber}')" class="bg-blue-100 text-blue-700 px-3 py-1 rounded font-bold text-xs hover:bg-blue-200">🖨️ Cetak PO</button></td></tr>`).join('')}</tbody></table></div></div>`,
+            Purchase: () => `
+            <div class="space-y-4">
+                <div class="flex justify-between items-center">
+                    <h3 class="text-lg font-bold text-slate-800">Daftar Purchase Orders</h3>
+                    <button onclick="Modals.openBatchPO()" class="bg-sky-600 text-white px-4 py-2.5 rounded-xl font-bold hover:bg-sky-700 shadow-sm transition touch-target text-sm">+ Buat PO Manual</button>
+                </div>
+                <div class="bg-white rounded-2xl shadow-sm overflow-hidden h-[calc(100vh-220px)] flex flex-col border border-slate-200/80">
+                    <div class="overflow-x-auto flex-1">
+                        <table class="w-full text-sm text-left whitespace-nowrap">
+                            <thead class="bg-slate-100 sticky top-0 z-10 text-slate-600 uppercase text-xs font-bold">
+                                <tr><th class="p-4">Batch ID</th><th class="p-4">Supplier</th><th class="p-4">Cabang</th><th class="p-4">Status</th><th class="p-4">Total Item</th><th class="p-4 text-center">Aksi</th></tr>
+                            </thead>
+                            <tbody class="divide-y divide-slate-100">
+                                ${State.data.purchases.map(p=>`
+                                    <tr class="hover:bg-slate-50">
+                                        <td class="p-4 text-sky-600 font-mono font-bold">${p.batchNumber}</td>
+                                        <td class="p-4 font-semibold text-slate-800">${p.supplier}</td>
+                                        <td class="p-4"><span class="px-2.5 py-1 bg-purple-100 text-purple-800 rounded-lg text-xs font-bold border border-purple-200">${p.branch}</span></td>
+                                        <td class="p-4">${getStatusBadge(p.status)}</td>
+                                        <td class="p-4 font-medium text-slate-500">${JSON.parse(p.items).length} items</td>
+                                        <td class="p-4 text-center"><button onclick="Actions.printPO('${p.batchNumber}')" class="bg-sky-50 text-sky-700 border border-sky-200 px-3 py-1.5 rounded-lg font-bold text-xs hover:bg-sky-100 touch-target">🖨️ Cetak PO Kopkar</button></td>
+                                    </tr>`).join('')}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>`,
             
-            Inventory: () => `<div class="grid grid-cols-1 lg:grid-cols-3 gap-6"><div class="bg-white rounded-xl shadow p-6 lg:col-span-1 h-fit"><h3 class="font-bold text-gray-800 mb-4">📦 Input / Update Stok</h3><form id="stockForm" class="space-y-3"><div><label class="text-xs font-bold text-gray-500">Barcode</label><input type="text" id="barcode" class="w-full p-2 border rounded bg-gray-50" placeholder="Scan/Ketik..." required oninput="autoFill()"></div><div><label class="text-xs font-bold text-gray-500">Nama Produk</label><input type="text" id="productName" class="w-full p-2 border rounded" required></div><div class="grid grid-cols-2 gap-2"><div><label class="text-xs font-bold text-gray-500">HPP (Beli)</label><input type="number" id="hpp" class="w-full p-2 border rounded" placeholder="0"></div><div><label class="text-xs font-bold text-gray-500">Harga Jual</label><input type="number" id="price" class="w-full p-2 border rounded" placeholder="0" required></div></div><div><label class="text-xs font-bold text-gray-500">Target Cabang</label><select id="targetArea" class="w-full p-2 border rounded bg-white"><option value="adamart 73">Adamart 73</option><option value="adamart induksi">Induksi</option><option value="adamart kelanis">Kelanis</option></select></div><div class="grid grid-cols-2 gap-2"><div><label class="text-xs font-bold text-gray-500">Tambah Qty</label><input type="number" id="stockAmount" class="w-full p-2 border rounded" placeholder="0" required></div><div><label class="text-xs font-bold text-gray-500">Exp Date</label><input type="date" id="expiryDate" class="w-full p-2 border rounded"></div></div><button type="submit" class="w-full bg-blue-600 text-white py-2 rounded font-bold hover:bg-blue-700 mt-4">Simpan Stok</button></form></div><div class="bg-white rounded-xl shadow overflow-hidden lg:col-span-2 flex flex-col h-[calc(100vh-200px)]"><div class="p-4 border-b bg-gray-50 shrink-0"><input type="text" placeholder="🔍 Cari produk di inventory..." class="w-full p-2 border rounded" oninput="filterInventory(this.value)"></div><div class="overflow-auto flex-1"><table class="w-full text-left text-sm"><thead class="bg-gray-100 text-gray-600 uppercase font-bold sticky top-0 z-10 shadow-sm"><tr><th class="p-4">Produk</th><th class="p-4">HPP/Jual</th><th class="p-4 text-center">73</th><th class="p-4 text-center">Induksi</th><th class="p-4 text-center">Kelanis</th></tr></thead><tbody class="divide-y product-row-container">${State.data.products.map(p => { const hpp = p.HPP || 0; const hppClass = hpp === 0 ? 'text-red-500 font-bold' : 'text-gray-500'; return `<tr class="hover:bg-gray-50 product-row"><td class="p-4"><div class="font-bold">${p['Nama Produk']}</div><div class="text-xs text-gray-500 font-mono">${p.Barcode}</div></td><td class="p-4"><div class="text-xs ${hppClass}">B: ${formatRp(hpp)}</div><div class="font-bold text-green-600">J: ${formatRp(p.Harga)}</div></td><td class="p-4 text-center font-bold ${checkStock(p['Stok Area Kasir adamart 73'])}">${p['Stok Area Kasir adamart 73']||0}</td><td class="p-4 text-center font-bold ${checkStock(p['Stok Area Kasir adamart induksi'])}">${p['Stok Area Kasir adamart induksi']||0}</td><td class="p-4 text-center font-bold ${checkStock(p['Stok Area Kasir adamart kelanis'])}">${p['Stok Area Kasir adamart kelanis']||0}</td></tr>`; }).join('')}</tbody></table></div></div></div>`,
+            Inventory: () => `
+            <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+                <!-- FORM INPUT / UPDATE STOK (FORM KIRI) -->
+                <div class="bg-white rounded-2xl shadow-sm p-6 lg:col-span-4 h-fit border border-slate-200/80">
+                    <div class="flex justify-between items-center mb-4">
+                        <h3 class="font-bold text-slate-800 text-base">📦 Master Form</h3>
+                        <span class="text-[11px] font-semibold text-sky-600 bg-sky-50 px-2.5 py-1 rounded-lg border border-sky-100">Click Row Auto-Fill</span>
+                    </div>
+                    <form id="stockForm" class="space-y-3.5">
+                        <div>
+                            <label class="text-xs font-bold text-slate-500 uppercase">Barcode Produk</label>
+                            <input type="text" id="barcode" class="w-full p-3 border border-slate-300 rounded-xl bg-slate-50 mt-1 touch-target font-mono" placeholder="Scan atau ketik barcode..." required oninput="autoFill()">
+                        </div>
+                        <div>
+                            <label class="text-xs font-bold text-slate-500 uppercase">Nama Produk</label>
+                            <input type="text" id="productName" class="w-full p-3 border border-slate-300 rounded-xl mt-1 touch-target" required placeholder="Nama barang...">
+                        </div>
+                        <div class="grid grid-cols-2 gap-2.5">
+                            <div>
+                                <label class="text-xs font-bold text-slate-500 uppercase">HPP (Beli)</label>
+                                <input type="number" id="hpp" class="w-full p-3 border border-slate-300 rounded-xl mt-1 touch-target" placeholder="0">
+                            </div>
+                            <div>
+                                <label class="text-xs font-bold text-slate-500 uppercase">Harga Jual</label>
+                                <input type="number" id="price" class="w-full p-3 border border-slate-300 rounded-xl mt-1 touch-target font-bold" placeholder="0" required>
+                            </div>
+                        </div>
+                        <div>
+                            <label class="text-xs font-bold text-slate-500 uppercase">Target Cabang</label>
+                            <select id="targetArea" class="w-full p-3 border border-slate-300 rounded-xl bg-white mt-1 touch-target">
+                                <option value="adamart 73">Adamart 73</option>
+                                <option value="adamart induksi">Adamart Induksi</option>
+                                <option value="adamart kelanis">Adamart Kelanis</option>
+                            </select>
+                        </div>
+                        <div class="grid grid-cols-2 gap-2.5">
+                            <div>
+                                <label class="text-xs font-bold text-slate-500 uppercase">Tambah Qty</label>
+                                <input type="number" id="stockAmount" class="w-full p-3 border border-slate-300 rounded-xl mt-1 touch-target font-bold" placeholder="0" required>
+                            </div>
+                            <div>
+                                <label class="text-xs font-bold text-slate-500 uppercase">Exp Date</label>
+                                <input type="date" id="expiryDate" class="w-full p-3 border border-slate-300 rounded-xl mt-1 touch-target">
+                            </div>
+                        </div>
+                        
+                        <div class="pt-1">
+                            <label class="text-[11px] font-bold text-slate-400 uppercase block mb-1.5">Preset Tambah Qty Cepat:</label>
+                            <div class="flex gap-1.5 flex-wrap">
+                                <button type="button" onclick="setPresetQty(1)" class="px-2.5 py-1 bg-slate-100 hover:bg-sky-100 text-slate-700 font-bold rounded-lg text-xs border border-slate-200 touch-target">+1</button>
+                                <button type="button" onclick="setPresetQty(5)" class="px-2.5 py-1 bg-slate-100 hover:bg-sky-100 text-slate-700 font-bold rounded-lg text-xs border border-slate-200 touch-target">+5</button>
+                                <button type="button" onclick="setPresetQty(10)" class="px-2.5 py-1 bg-slate-100 hover:bg-sky-100 text-slate-700 font-bold rounded-lg text-xs border border-slate-200 touch-target">+10</button>
+                                <button type="button" onclick="setPresetQty(24)" class="px-2.5 py-1 bg-sky-50 hover:bg-sky-100 text-sky-800 font-bold rounded-lg text-xs border border-sky-200 touch-target">+24 (Dus)</button>
+                                <button type="button" onclick="setPresetQty(50)" class="px-2.5 py-1 bg-purple-50 hover:bg-purple-100 text-purple-800 font-bold rounded-lg text-xs border border-purple-200 touch-target">+50</button>
+                            </div>
+                        </div>
 
-            Shifts: () => `<div class="bg-white rounded-xl shadow overflow-hidden flex flex-col h-[calc(100vh-140px)]"><div class="p-6 border-b bg-blue-50 shrink-0"><h3 class="font-bold text-gray-700 text-lg">Laporan Keuangan Harian</h3></div><div class="overflow-auto flex-1"><table class="w-full text-left text-sm whitespace-nowrap"><thead class="bg-gray-100 sticky top-0 z-10"><tr><th class="p-4">Waktu / Kasir</th><th class="p-4 text-right">Tunai (Fisik)</th><th class="p-4 text-right">QRIS</th><th class="p-4 text-right">Kasbon</th><th class="p-4 text-right font-bold">Total Real</th><th class="p-4 text-right">Selisih</th></tr></thead><tbody class="divide-y">${State.data.shifts.map(s => { const cashNet = s.actualCash - s.startCash; const totalReal = cashNet + (s.totalQris||0) + (s.totalKasbon||0); return `<tr class="hover:bg-gray-50"><td class="p-4"><div class="font-bold">${s.cashierName}</div><div class="text-xs text-gray-500">${new Date(s.openTime).toLocaleDateString()}</div><span class="bg-gray-200 px-2 rounded text-xs">${s.area}</span></td><td class="p-4 text-right font-bold text-gray-800">${formatRp(s.actualCash)}</td><td class="p-4 text-right text-blue-700">${formatRp(s.totalQris||0)}</td><td class="p-4 text-right text-orange-700">${formatRp(s.totalKasbon||0)}</td><td class="p-4 text-right font-extrabold text-gray-900">${formatRp(totalReal)}</td><td class="p-4 text-right font-bold ${s.difference < 0 ? 'text-red-600' : 'text-green-600'}">${s.difference === 0 ? '✅ Pas' : formatRp(s.difference)}</td></tr>`; }).join('')}</tbody></table></div></div>`,
+                        <button type="submit" class="w-full bg-sky-600 text-white py-3.5 rounded-xl font-bold hover:bg-sky-700 shadow-md transition mt-4 touch-target text-base">Simpan Stok Produk</button>
+                    </form>
+                </div>
+
+                <!-- TABLE INVENTORY MASTER -->
+                <div class="bg-white rounded-2xl shadow-sm overflow-hidden lg:col-span-8 flex flex-col h-[calc(100vh-160px)] border border-slate-200/80">
+                    <div class="p-4 border-b border-slate-100 bg-slate-50/50 shrink-0 flex flex-col sm:flex-row justify-between items-center gap-3">
+                        <input type="text" placeholder="🔍 Cari nama produk / barcode / kategori ABC..." class="w-full sm:w-80 p-3 border border-slate-300 rounded-xl text-sm touch-target" oninput="filterInventory(this.value)">
+                        <div class="flex items-center gap-2">
+                            <span class="text-xs font-semibold text-emerald-700 bg-emerald-50 px-2.5 py-1 rounded-lg border border-emerald-100">⚡ Tap Stok = Update Instan</span>
+                            <span class="text-xs font-bold text-slate-500">${State.data.products.length} Items</span>
+                        </div>
+                    </div>
+                    <div class="overflow-x-auto flex-1">
+                        <table class="w-full text-left text-sm whitespace-nowrap">
+                            <thead class="bg-slate-100 text-slate-600 uppercase font-bold sticky top-0 z-10 shadow-sm text-xs">
+                                <tr>
+                                    <th class="p-4">Produk & ABC</th>
+                                    <th class="p-4">HPP vs Jual</th>
+                                    <th class="p-4 text-center">Stok 73</th>
+                                    <th class="p-4 text-center">Stok Induksi</th>
+                                    <th class="p-4 text-center">Stok Kelanis</th>
+                                </tr>
+                            </thead>
+                            <tbody class="divide-y divide-slate-100 product-row-container">
+                                ${State.data.products.map(p => { 
+                                    const hpp = p.HPP || 0; 
+                                    const hppClass = hpp === 0 ? 'text-rose-500 font-bold' : 'text-slate-400'; 
+                                    const abcBadge = p.abcCategory === 'A' ? 'bg-emerald-100 text-emerald-800 border-emerald-200' : (p.abcCategory === 'B' ? 'bg-sky-100 text-sky-800 border-sky-200' : 'bg-slate-100 text-slate-600 border-slate-200');
+                                    
+                                    const s73 = p['Stok Area Kasir adamart 73'] || 0;
+                                    const sInd = p['Stok Area Kasir adamart induksi'] || 0;
+                                    const sKel = p['Stok Area Kasir adamart kelanis'] || 0;
+                                    
+                                    const cleanName = (p['Nama Produk'] || '').replace(/'/g, "\\'");
+
+                                    return `
+                                    <tr class="hover:bg-slate-50 product-row">
+                                        <td class="p-4 cursor-pointer hover:bg-sky-50/50 transition rounded-l-xl" onclick="selectRowForUpdate('${p.Barcode}')" title="Klik untuk auto-fill form kiri">
+                                            <div class="font-bold text-slate-800 flex items-center gap-2">
+                                                ${p['Nama Produk']}
+                                                <span class="px-2 py-0.5 rounded text-[10px] font-extrabold border ${abcBadge}">Cat ${p.abcCategory || 'C'}</span>
+                                            </div>
+                                            <div class="text-xs text-slate-400 font-mono flex items-center gap-2">
+                                                <span>${p.Barcode}</span>
+                                                <span class="text-[10px] text-sky-600 font-semibold">&larr; auto-fill</span>
+                                            </div>
+                                        </td>
+                                        <td class="p-4">
+                                            <div class="text-xs ${hppClass}">B: ${formatRp(hpp)}</div>
+                                            <div class="font-bold text-emerald-600">J: ${formatRp(p.Harga)}</div>
+                                        </td>
+                                        
+                                        <td class="p-4 text-center">
+                                            <button type="button" onclick="Actions.openQuickStockModal('${p.Barcode}', '${cleanName}', 'adamart 73', ${s73})" class="px-3 py-1.5 rounded-xl border border-slate-200 bg-white hover:bg-sky-50 hover:border-sky-300 font-bold ${checkStock(s73)} transition flex items-center justify-center gap-1.5 mx-auto touch-target shadow-2xs group" title="Tap untuk Quick Update Stok Adamart 73">
+                                                <span>${s73}</span>
+                                                <span class="text-[11px] text-slate-300 group-hover:text-sky-600 font-normal">✏️</span>
+                                            </button>
+                                        </td>
+                                        <td class="p-4 text-center">
+                                            <button type="button" onclick="Actions.openQuickStockModal('${p.Barcode}', '${cleanName}', 'adamart induksi', ${sInd})" class="px-3 py-1.5 rounded-xl border border-slate-200 bg-white hover:bg-sky-50 hover:border-sky-300 font-bold ${checkStock(sInd)} transition flex items-center justify-center gap-1.5 mx-auto touch-target shadow-2xs group" title="Tap untuk Quick Update Stok Induksi">
+                                                <span>${sInd}</span>
+                                                <span class="text-[11px] text-slate-300 group-hover:text-sky-600 font-normal">✏️</span>
+                                            </button>
+                                        </td>
+                                        <td class="p-4 text-center">
+                                            <button type="button" onclick="Actions.openQuickStockModal('${p.Barcode}', '${cleanName}', 'adamart kelanis', ${sKel})" class="px-3 py-1.5 rounded-xl border border-slate-200 bg-white hover:bg-sky-50 hover:border-sky-300 font-bold ${checkStock(sKel)} transition flex items-center justify-center gap-1.5 mx-auto touch-target shadow-2xs group" title="Tap untuk Quick Update Stok Kelanis">
+                                                <span>${sKel}</span>
+                                                <span class="text-[11px] text-slate-300 group-hover:text-sky-600 font-normal">✏️</span>
+                                            </button>
+                                        </td>
+                                    </tr>`; 
+                                }).join('')}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>`,
+
+            Shifts: () => `
+            <div class="bg-white rounded-2xl shadow-sm overflow-hidden flex flex-col h-[calc(100vh-160px)] border border-slate-200/80">
+                <div class="p-5 border-b border-slate-100 bg-sky-50/50 shrink-0 flex justify-between items-center">
+                    <h3 class="font-bold text-slate-800 text-base">🕒 Laporan Keuangan Shift Harian Kasir</h3>
+                    <button onclick="exportShiftReportToCSV()" class="bg-white text-sky-700 border border-sky-200 px-3.5 py-2 rounded-xl text-xs font-bold hover:bg-sky-50 touch-target">📥 Export CSV</button>
+                </div>
+                <div class="overflow-x-auto flex-1">
+                    <table class="w-full text-left text-sm whitespace-nowrap">
+                        <thead class="bg-slate-100 sticky top-0 z-10 text-slate-600 uppercase text-xs font-bold">
+                            <tr><th class="p-4">Waktu & Kasir</th><th class="p-4 text-right">Tunai (Fisik)</th><th class="p-4 text-right">QRIS</th><th class="p-4 text-right">Kasbon</th><th class="p-4 text-right font-bold">Total Real</th><th class="p-4 text-right">Selisih</th></tr>
+                        </thead>
+                        <tbody class="divide-y divide-slate-100">
+                            ${State.data.shifts.map(s => { 
+                                const cashNet = s.actualCash - s.startCash; 
+                                const totalReal = cashNet + (s.totalQris||0) + (s.totalKasbon||0); 
+                                return `
+                                <tr class="hover:bg-slate-50">
+                                    <td class="p-4">
+                                        <div class="font-bold text-slate-800">${s.cashierName}</div>
+                                        <div class="text-xs text-slate-400">${new Date(s.openTime).toLocaleDateString()}</div>
+                                        <span class="bg-slate-100 text-slate-700 px-2.5 py-0.5 rounded text-xs font-semibold">${s.area}</span>
+                                    </td>
+                                    <td class="p-4 text-right font-bold text-slate-800">${formatRp(s.actualCash)}</td>
+                                    <td class="p-4 text-right text-sky-700 font-semibold">${formatRp(s.totalQris||0)}</td>
+                                    <td class="p-4 text-right text-amber-700 font-semibold">${formatRp(s.totalKasbon||0)}</td>
+                                    <td class="p-4 text-right font-extrabold text-slate-900">${formatRp(totalReal)}</td>
+                                    <td class="p-4 text-right font-bold ${s.difference < 0 ? 'text-rose-600' : 'text-emerald-600'}">${s.difference === 0 ? '✅ Pas' : formatRp(s.difference)}</td>
+                                </tr>`; 
+                            }).join('')}
+                        </tbody>
+                    </table>
+                </div>
+            </div>`,
             
-            // FITUR BARU 1: Rapor Kasir
             Kasir: () => {
                 const stats = {};
                 State.data.shifts.forEach(s => {
@@ -556,166 +1068,196 @@
                 });
 
                 const rows = Object.entries(stats).sort((a,b) => b[1].count - a[1].count).map(([name, data]) => {
-                    const statusColor = data.diff < -50000 ? 'text-red-600' : 'text-green-600';
+                    const statusColor = data.diff < -50000 ? 'text-rose-600' : 'text-emerald-600';
                     const reliability = data.count > 0 ? ((data.count - data.minusCount) / data.count * 100).toFixed(0) : 0;
-                    return `<tr class="hover:bg-gray-50 border-b">
-                        <td class="p-4 font-bold text-gray-800">${name}</td>
-                        <td class="p-4 text-center">${data.count} Shift</td>
-                        <td class="p-4 text-right font-bold text-blue-600">${formatRp(data.cash)}</td>
+                    return `
+                    <tr class="hover:bg-slate-50 border-b border-slate-100">
+                        <td class="p-4 font-bold text-slate-800">${name}</td>
+                        <td class="p-4 text-center font-medium">${data.count} Shift</td>
+                        <td class="p-4 text-right font-bold text-sky-600">${formatRp(data.cash)}</td>
                         <td class="p-4 text-right font-bold ${statusColor}">${formatRp(data.diff)}</td>
-                        <td class="p-4 text-center"><span class="bg-blue-100 text-blue-800 px-2 py-1 rounded text-xs font-bold">${reliability}% Akurat</span></td>
+                        <td class="p-4 text-center"><span class="bg-sky-100 text-sky-800 px-3 py-1 rounded-full text-xs font-bold border border-sky-200">${reliability}% Akurat</span></td>
                     </tr>`;
                 }).join('');
 
                 return `
-                <div class="bg-white rounded-xl shadow overflow-hidden flex flex-col h-[calc(100vh-140px)]">
-                    <div class="p-6 border-b bg-blue-50 shrink-0">
-                        <h3 class="font-bold text-gray-700 text-lg">👨‍💼 Rapor Kinerja Kasir</h3>
-                        <p class="text-xs text-gray-500 mt-1">Penilaian performa berdasarkan jumlah transaksi shift dan ketepatan setoran fisik kas.</p>
+                <div class="bg-white rounded-2xl shadow-sm overflow-hidden flex flex-col h-[calc(100vh-160px)] border border-slate-200/80">
+                    <div class="p-5 border-b border-slate-100 bg-sky-50/50 shrink-0">
+                        <h3 class="font-bold text-slate-800 text-base">👨‍💼 Rapor Kinerja Kasir Adamart</h3>
+                        <p class="text-xs text-slate-500 mt-1">Penilaian performa berdasarkan frekuensi shift dan ketepatan setoran fisiknya.</p>
                     </div>
-                    <div class="overflow-auto flex-1">
+                    <div class="overflow-x-auto flex-1">
                         <table class="w-full text-left text-sm whitespace-nowrap">
-                            <thead class="bg-gray-100 sticky top-0 z-10 text-gray-600 uppercase text-xs">
+                            <thead class="bg-slate-100 sticky top-0 z-10 text-slate-600 uppercase text-xs font-bold">
                                 <tr><th class="p-4">Nama Karyawan</th><th class="p-4 text-center">Total Shift</th><th class="p-4 text-right">Total Setoran Tunai</th><th class="p-4 text-right">Akumulasi Selisih</th><th class="p-4 text-center">Tingkat Akurasi</th></tr>
                             </thead>
-                            <tbody>${rows || '<tr><td colspan="5" class="p-8 text-center text-gray-500">Belum ada data shift.</td></tr>'}</tbody>
+                            <tbody class="divide-y divide-slate-100">${rows || '<tr><td colspan="5" class="p-8 text-center text-slate-400">Belum ada data shift.</td></tr>'}</tbody>
                         </table>
                     </div>
                 </div>`;
             },
 
-            // FITUR BARU 2: Retur & Rusak
             Retur: () => `
-                <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                    <div class="bg-white rounded-xl shadow p-6 lg:col-span-1 h-fit border-t-4 border-orange-500">
-                        <h3 class="font-bold text-gray-800 mb-4">Catat Barang Keluar</h3>
-                        <form id="returForm" class="space-y-4" onsubmit="Actions.submitRetur(event)">
-                            <div class="relative">
-                                <label class="text-xs font-bold text-gray-500">Cari Produk</label>
-                                <input type="text" id="returSearch" placeholder="Ketik nama / barcode..." class="w-full p-2 border rounded" autocomplete="off" oninput="searchProductForForm(this.value, 'retur')">
-                                <div id="retur-search-results" class="absolute z-50 w-full bg-white shadow-xl rounded-b-lg border border-gray-200 max-h-60 overflow-y-auto hidden"></div>
-                            </div>
-                            <div class="bg-gray-50 p-3 rounded text-sm">
-                                <input type="hidden" id="returBarcode">
-                                <div class="font-bold text-gray-700" id="returNameLabel">Pilih produk dulu...</div>
-                            </div>
-                            <div>
-                                <label class="text-xs font-bold text-gray-500">Cabang Asal</label>
-                                <select id="returArea" class="w-full p-2 border rounded bg-white">
-                                    <option value="adamart 73">Adamart 73</option><option value="adamart induksi">Induksi</option><option value="adamart kelanis">Kelanis</option>
-                                </select>
-                            </div>
-                            <div class="grid grid-cols-2 gap-2">
-                                <div><label class="text-xs font-bold text-gray-500">Jumlah Keluar</label><input type="number" id="returQty" class="w-full p-2 border rounded font-bold" min="1" required></div>
-                                <div><label class="text-xs font-bold text-gray-500">Alasan</label><select id="returReason" class="w-full p-2 border rounded bg-white"><option value="Rusak">Rusak</option><option value="Expired">Kedaluwarsa</option><option value="Retur Supplier">Retur Supplier</option></select></div>
-                            </div>
-                            <div><label class="text-xs font-bold text-gray-500">Catatan</label><input type="text" id="returNotes" class="w-full p-2 border rounded" placeholder="Keterangan opsional..."></div>
-                            <button type="submit" class="w-full bg-orange-600 text-white py-2 rounded font-bold hover:bg-orange-700">Keluarkan Stok</button>
-                        </form>
-                    </div>
-                    <div class="bg-white rounded-xl shadow overflow-hidden lg:col-span-2 flex flex-col h-[calc(100vh-140px)]">
-                        <div class="p-4 border-b bg-orange-50 shrink-0"><h3 class="font-bold text-orange-800">Riwayat Retur & Kerusakan</h3></div>
-                        <div class="overflow-auto flex-1">
-                            <table class="w-full text-left text-sm whitespace-nowrap">
-                                <thead class="bg-gray-100 sticky top-0 z-10 text-gray-600"><tr><th class="p-4">Tanggal</th><th class="p-4">Produk</th><th class="p-4">Cabang</th><th class="p-4">Alasan</th><th class="p-4 text-center">Qty</th></tr></thead>
-                                <tbody class="divide-y">${State.data.returns.length === 0 ? '<tr><td colspan="5" class="p-8 text-center text-gray-400">Belum ada data retur.</td></tr>' : State.data.returns.map(r => `
-                                    <tr class="hover:bg-orange-50/50">
-                                        <td class="p-4 text-gray-500">${new Date(r.timestamp).toLocaleDateString('id-ID')}</td>
-                                        <td class="p-4"><b>${r.name}</b><br><span class="text-xs text-gray-400">${r.barcode}</span></td>
-                                        <td class="p-4">${r.area}</td>
-                                        <td class="p-4"><span class="px-2 py-1 rounded text-xs font-bold ${r.reason === 'Rusak' ? 'bg-red-100 text-red-800' : 'bg-yellow-100 text-yellow-800'}">${r.reason}</span></td>
-                                        <td class="p-4 text-center font-bold text-red-600">-${r.qty}</td>
-                                    </tr>`).join('')}
-                                </tbody>
-                            </table>
+            <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+                <div class="bg-white rounded-2xl shadow-sm p-6 lg:col-span-5 h-fit border-t-4 border-orange-500 border-x border-b border-slate-200/80">
+                    <h3 class="font-bold text-slate-800 text-base mb-4">Catat Barang Keluar & Retur</h3>
+                    <form id="returForm" class="space-y-4" onsubmit="Actions.submitRetur(event)">
+                        <div class="relative">
+                            <label class="text-xs font-bold text-slate-500 uppercase">Cari Produk / Barcode</label>
+                            <input type="text" id="returSearch" placeholder="Ketik nama atau scan barcode..." class="w-full p-3 border border-slate-300 rounded-xl mt-1 touch-target" autocomplete="off" oninput="searchProductForForm(this.value, 'retur')">
+                            <div id="retur-search-results" class="absolute z-50 w-full bg-white shadow-xl rounded-xl border border-slate-200 max-h-60 overflow-y-auto hidden mt-1"></div>
                         </div>
+                        <div class="bg-slate-50 p-4 rounded-xl text-sm border border-slate-200">
+                            <input type="hidden" id="returBarcode">
+                            <div class="font-bold text-slate-800" id="returNameLabel">Pilih produk yang akan diretur...</div>
+                        </div>
+                        <div>
+                            <label class="text-xs font-bold text-slate-500 uppercase">Cabang Asal</label>
+                            <select id="returArea" class="w-full p-3 border border-slate-300 rounded-xl bg-white mt-1 touch-target">
+                                <option value="adamart 73">Adamart 73</option>
+                                <option value="adamart induksi">Adamart Induksi</option>
+                                <option value="adamart kelanis">Adamart Kelanis</option>
+                            </select>
+                        </div>
+                        <div class="grid grid-cols-2 gap-3">
+                            <div><label class="text-xs font-bold text-slate-500 uppercase">Jumlah Keluar</label><input type="number" id="returQty" class="w-full p-3 border border-slate-300 rounded-xl font-bold mt-1 touch-target" min="1" required placeholder="0"></div>
+                            <div><label class="text-xs font-bold text-slate-500 uppercase">Alasan</label><select id="returReason" class="w-full p-3 border border-slate-300 rounded-xl bg-white mt-1 touch-target"><option value="Rusak">Rusak</option><option value="Expired">Kedaluwarsa</option><option value="Retur Supplier">Retur Supplier</option></select></div>
+                        </div>
+                        <div><label class="text-xs font-bold text-slate-500 uppercase">Catatan Tambahan</label><input type="text" id="returNotes" class="w-full p-3 border border-slate-300 rounded-xl mt-1 touch-target" placeholder="Keterangan opsional..."></div>
+                        <button type="submit" class="w-full bg-orange-600 text-white py-3.5 rounded-xl font-bold hover:bg-orange-700 shadow-md transition touch-target text-base">Keluarkan Stok Produk</button>
+                    </form>
+                </div>
+                <div class="bg-white rounded-2xl shadow-sm overflow-hidden lg:col-span-7 flex flex-col h-[calc(100vh-160px)] border border-slate-200/80">
+                    <div class="p-4 border-b border-slate-100 bg-orange-50/50 shrink-0 flex justify-between items-center">
+                        <h3 class="font-bold text-orange-900 text-sm">Riwayat Retur & Kerusakan Barang</h3>
+                        <button onclick="exportReturnReportToCSV()" class="bg-white text-orange-700 border border-orange-200 px-3 py-1.5 rounded-lg text-xs font-bold hover:bg-orange-50">📥 Export CSV</button>
                     </div>
-                </div>`,
+                    <div class="overflow-x-auto flex-1">
+                        <table class="w-full text-left text-sm whitespace-nowrap">
+                            <thead class="bg-slate-100 sticky top-0 z-10 text-slate-600 uppercase text-xs font-bold">
+                                <tr><th class="p-4">Tanggal</th><th class="p-4">Produk</th><th class="p-4">Cabang</th><th class="p-4">Alasan</th><th class="p-4 text-center">Qty</th></tr>
+                            </thead>
+                            <tbody class="divide-y divide-slate-100">
+                                ${State.data.returns.length === 0 ? '<tr><td colspan="5" class="p-8 text-center text-slate-400">Belum ada data retur.</td></tr>' : State.data.returns.map(r => `
+                                <tr class="hover:bg-slate-50">
+                                    <td class="p-4 text-slate-500 text-xs">${new Date(r.timestamp).toLocaleDateString('id-ID')}</td>
+                                    <td class="p-4"><b>${r.name}</b><br><span class="text-xs text-slate-400 font-mono">${r.barcode}</span></td>
+                                    <td class="p-4 font-semibold text-slate-700">${r.area}</td>
+                                    <td class="p-4"><span class="px-2.5 py-1 rounded-full text-xs font-bold ${r.reason === 'Rusak' ? 'bg-rose-100 text-rose-800 border border-rose-200' : 'bg-amber-100 text-amber-800 border border-amber-200'}">${r.reason}</span></td>
+                                    <td class="p-4 text-center font-extrabold text-rose-600">-${r.qty}</td>
+                                </tr>`).join('')}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>`,
 
-            // FITUR BARU 3: Audit Stok Fisik
-            Audit: () => `
-                <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                    <div class="bg-white rounded-xl shadow p-6 lg:col-span-1 h-fit border-t-4 border-indigo-500">
-                        <h3 class="font-bold text-gray-800 mb-4">Stock Opname</h3>
+            Audit: () => {
+                const renderAuditRows = State.data.audits.map(a => {
+                    const product = State.data.products.find(p => p.Barcode === a.barcode);
+                    const hpp = product ? (parseInt(product.HPP) || 0) : 0;
+                    const varianceRp = a.variance * hpp;
+                    
+                    return `
+                    <tr class="hover:bg-slate-50 border-b border-slate-100">
+                        <td class="p-4 text-slate-500 text-xs">${new Date(a.timestamp).toLocaleDateString('id-ID')}</td>
+                        <td class="p-4"><b>${a.name}</b><br><span class="text-xs text-slate-400 font-mono">${a.barcode}</span></td>
+                        <td class="p-4 font-semibold text-slate-700">${a.area}</td>
+                        <td class="p-4 text-center text-slate-500">${a.systemQty}</td>
+                        <td class="p-4 text-center font-bold text-slate-900">${a.physicalQty}</td>
+                        <td class="p-4 text-center font-extrabold ${a.variance < 0 ? 'text-rose-600' : (a.variance > 0 ? 'text-emerald-600' : 'text-slate-400')}">
+                            ${a.variance > 0 ? '+'+a.variance : a.variance}
+                        </td>
+                        <td class="p-4 text-right font-mono font-bold ${varianceRp < 0 ? 'text-rose-600' : (varianceRp > 0 ? 'text-emerald-600' : 'text-slate-400')}">
+                            ${formatRp(varianceRp)}
+                        </td>
+                    </tr>`;
+                }).join('');
+
+                return `
+                <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+                    <div class="bg-white rounded-2xl shadow-sm p-6 lg:col-span-5 h-fit border-t-4 border-indigo-600 border-x border-b border-slate-200/80">
+                        <h3 class="font-bold text-slate-800 text-base mb-4">Stock Opname & Adjust Stok</h3>
                         <form id="auditForm" class="space-y-4" onsubmit="Actions.submitAudit(event)">
                             <div class="relative">
-                                <label class="text-xs font-bold text-gray-500">Cari Produk / Scan</label>
-                                <input type="text" id="auditSearch" placeholder="Ketik nama / barcode..." class="w-full p-2 border rounded" autocomplete="off" oninput="searchProductForForm(this.value, 'audit')">
-                                <div id="audit-search-results" class="absolute z-50 w-full bg-white shadow-xl rounded-b-lg border border-gray-200 max-h-60 overflow-y-auto hidden"></div>
+                                <label class="text-xs font-bold text-slate-500 uppercase">Cari Produk / Scan Barcode</label>
+                                <input type="text" id="auditSearch" placeholder="Ketik nama atau scan barcode..." class="w-full p-3 border border-slate-300 rounded-xl mt-1 touch-target" autocomplete="off" oninput="searchProductForForm(this.value, 'audit')">
+                                <div id="audit-search-results" class="absolute z-50 w-full bg-white shadow-xl rounded-xl border border-slate-200 max-h-60 overflow-y-auto hidden mt-1"></div>
                             </div>
-                            <div class="bg-indigo-50 p-3 rounded text-sm border border-indigo-100">
+                            <div class="bg-indigo-50/70 p-4 rounded-xl text-sm border border-indigo-100">
                                 <input type="hidden" id="auditBarcode">
-                                <div class="font-bold text-indigo-900" id="auditNameLabel">Pilih produk dulu...</div>
+                                <div class="font-bold text-indigo-900" id="auditNameLabel">Pilih produk untuk di-audit...</div>
                             </div>
                             <div>
-                                <label class="text-xs font-bold text-gray-500">Cabang</label>
-                                <select id="auditArea" class="w-full p-2 border rounded bg-white" onchange="Actions.updateAuditSystemStock()">
-                                    <option value="adamart 73">Adamart 73</option><option value="adamart induksi">Induksi</option><option value="adamart kelanis">Kelanis</option>
+                                <label class="text-xs font-bold text-slate-500 uppercase">Cabang</label>
+                                <select id="auditArea" class="w-full p-3 border border-slate-300 rounded-xl bg-white mt-1 touch-target" onchange="Actions.updateAuditSystemStock()">
+                                    <option value="adamart 73">Adamart 73</option>
+                                    <option value="adamart induksi">Adamart Induksi</option>
+                                    <option value="adamart kelanis">Adamart Kelanis</option>
                                 </select>
                             </div>
-                            <div class="grid grid-cols-2 gap-4 items-end bg-gray-50 p-3 rounded border">
+                            <div class="grid grid-cols-2 gap-4 items-end bg-slate-50 p-4 rounded-xl border border-slate-200">
                                 <div>
-                                    <label class="text-xs font-bold text-gray-500">Stok Sistem</label>
-                                    <div id="auditSystemQty" class="text-2xl font-mono text-gray-400 mt-1">-</div>
+                                    <label class="text-xs font-bold text-slate-500 uppercase">Stok Sistem</label>
+                                    <div id="auditSystemQty" class="text-2xl font-mono font-bold text-slate-400 mt-1">-</div>
                                 </div>
                                 <div>
-                                    <label class="text-xs font-bold text-blue-600">Fisik Sebenarnya</label>
-                                    <input type="number" id="auditPhysicalQty" class="w-full p-2 border-2 border-blue-400 rounded font-bold text-xl" required>
+                                    <label class="text-xs font-bold text-sky-600 uppercase">Fisik Sebenarnya</label>
+                                    <input type="number" id="auditPhysicalQty" class="w-full p-3 border-2 border-sky-400 rounded-xl font-extrabold text-2xl text-slate-900 mt-1 touch-target" required placeholder="0">
                                 </div>
                             </div>
-                            <button type="submit" class="w-full bg-indigo-600 text-white py-3 rounded-lg font-bold hover:bg-indigo-700 shadow">Simpan Hasil Audit</button>
+                            <button type="submit" class="w-full bg-indigo-600 text-white py-3.5 rounded-xl font-bold hover:bg-indigo-700 shadow-md transition touch-target text-base">Simpan Hasil Audit Stok</button>
                         </form>
                     </div>
-                    <div class="bg-white rounded-xl shadow overflow-hidden lg:col-span-2 flex flex-col h-[calc(100vh-140px)]">
-                        <div class="p-4 border-b bg-indigo-50 shrink-0"><h3 class="font-bold text-indigo-800">Riwayat Penyesuaian Audit</h3></div>
-                        <div class="overflow-auto flex-1">
+                    <div class="bg-white rounded-2xl shadow-sm overflow-hidden lg:col-span-7 flex flex-col h-[calc(100vh-160px)] border border-slate-200/80">
+                        <div class="p-4 border-b border-slate-100 bg-indigo-50/50 shrink-0 flex justify-between items-center">
+                            <h3 class="font-bold text-indigo-900 text-sm">Riwayat Penyesuaian Audit & Selisih Rp</h3>
+                            <button onclick="exportAuditReportToCSV()" class="bg-white text-indigo-700 border border-indigo-200 px-3 py-1.5 rounded-lg text-xs font-bold hover:bg-indigo-50">📥 Export CSV</button>
+                        </div>
+                        <div class="overflow-x-auto flex-1">
                             <table class="w-full text-left text-sm whitespace-nowrap">
-                                <thead class="bg-gray-100 sticky top-0 z-10 text-gray-600"><tr><th class="p-4">Tanggal</th><th class="p-4">Produk</th><th class="p-4">Cabang</th><th class="p-4 text-center">Sistem</th><th class="p-4 text-center">Fisik</th><th class="p-4 text-center">Selisih</th></tr></thead>
-                                <tbody class="divide-y">${State.data.audits.length === 0 ? '<tr><td colspan="6" class="p-8 text-center text-gray-400">Belum ada riwayat audit.</td></tr>' : State.data.audits.map(a => `
-                                    <tr class="hover:bg-indigo-50/50">
-                                        <td class="p-4 text-gray-500">${new Date(a.timestamp).toLocaleDateString('id-ID')}</td>
-                                        <td class="p-4"><b>${a.name}</b><br><span class="text-xs text-gray-400">${a.barcode}</span></td>
-                                        <td class="p-4">${a.area}</td>
-                                        <td class="p-4 text-center text-gray-500">${a.systemQty}</td>
-                                        <td class="p-4 text-center font-bold">${a.physicalQty}</td>
-                                        <td class="p-4 text-center font-bold ${a.variance < 0 ? 'text-red-600' : (a.variance > 0 ? 'text-green-600' : 'text-gray-400')}">${a.variance > 0 ? '+'+a.variance : a.variance}</td>
-                                    </tr>`).join('')}
+                                <thead class="bg-slate-100 sticky top-0 z-10 text-slate-600 uppercase text-xs font-bold">
+                                    <tr><th class="p-4">Tanggal</th><th class="p-4">Produk</th><th class="p-4">Cabang</th><th class="p-4 text-center">Sistem</th><th class="p-4 text-center">Fisik</th><th class="p-4 text-center">Selisih Unit</th><th class="p-4 text-right">Selisih Nominal</th></tr>
+                                </thead>
+                                <tbody class="divide-y divide-slate-100">
+                                    ${State.data.audits.length === 0 ? '<tr><td colspan="7" class="p-8 text-center text-slate-400">Belum ada riwayat audit stok.</td></tr>' : renderAuditRows}
                                 </tbody>
                             </table>
                         </div>
                     </div>
-                </div>`,
+                </div>`;
+            },
 
             Reports: () => `
                 <div class="space-y-6">
                     <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
-                        <div class="bg-white p-4 rounded-lg shadow border border-blue-100"><div class="text-xs text-gray-500">Total Omzet</div><div class="text-2xl font-bold text-blue-600" id="rep-omzet">Loading...</div></div>
-                        <div class="bg-white p-4 rounded-lg shadow border border-red-100"><div class="text-xs text-gray-500">Total Modal (HPP)</div><div class="text-2xl font-bold text-red-500" id="rep-hpp">Loading...</div></div>
-                        <div class="bg-white p-4 rounded-lg shadow border border-green-100"><div class="text-xs text-gray-500">Gross Profit (Cuan)</div><div class="text-2xl font-bold text-green-600" id="rep-profit">Loading...</div></div>
-                        <div class="bg-white p-4 rounded-lg shadow border border-purple-100"><div class="text-xs text-gray-500">Net Margin</div><div class="text-2xl font-bold text-purple-600" id="rep-margin">0%</div></div>
+                        <div class="bg-white p-5 rounded-2xl shadow-sm border border-slate-200/80 border-t-4 border-t-sky-500"><div class="text-xs font-bold text-slate-400 uppercase">Total Omzet Penjualan</div><div class="text-xl sm:text-2xl font-extrabold text-sky-600 mt-1" id="rep-omzet">Loading...</div></div>
+                        <div class="bg-white p-5 rounded-2xl shadow-sm border border-slate-200/80 border-t-4 border-t-rose-500"><div class="text-xs font-bold text-slate-400 uppercase">Total Modal (HPP)</div><div class="text-xl sm:text-2xl font-extrabold text-rose-500 mt-1" id="rep-hpp">Loading...</div></div>
+                        <div class="bg-white p-5 rounded-2xl shadow-sm border border-slate-200/80 border-t-4 border-t-emerald-500"><div class="text-xs font-bold text-slate-400 uppercase">Gross Profit (Cuan)</div><div class="text-xl sm:text-2xl font-extrabold text-emerald-600 mt-1" id="rep-profit">Loading...</div></div>
+                        <div class="bg-white p-5 rounded-2xl shadow-sm border border-slate-200/80 border-t-4 border-t-purple-500"><div class="text-xs font-bold text-slate-400 uppercase">Margin Keuntungan</div><div class="text-xl sm:text-2xl font-extrabold text-purple-600 mt-1" id="rep-margin">0%</div></div>
                     </div>
-                    <div class="bg-white p-6 rounded-xl shadow">
-                        <h4 class="font-bold mb-4 text-gray-700 flex items-center gap-2"><span>📈</span> Tren Keuangan (Omzet vs Profit)</h4>
+                    <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-200/80">
+                        <h4 class="font-bold text-slate-800 mb-4 flex items-center gap-2"><span>📈</span> Grafik Tren Keuangan (Omzet vs Profit)</h4>
                         <div class="h-72"><canvas id="financialChart"></canvas></div>
                     </div>
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                        <div class="bg-white rounded-xl shadow overflow-hidden h-96 flex flex-col border border-gray-100">
-                            <div class="p-4 border-b bg-gray-50 font-bold text-gray-700 shrink-0 flex justify-between"><span>🏆 Top Produk (By Profit)</span><span class="text-xs font-normal text-gray-500">Kontribusi Cuan</span></div>
-                            <div class="overflow-auto"><table class="w-full text-sm text-left"><thead class="bg-gray-100 sticky top-0 text-xs uppercase text-gray-500"><tr><th class="p-3">Produk</th><th class="p-3 text-right">Qty</th><th class="p-3 text-right">Total Profit</th></tr></thead><tbody id="topProductBody" class="divide-y"></tbody></table></div>
+                        <div class="bg-white rounded-2xl shadow-sm overflow-hidden h-96 flex flex-col border border-slate-200/80">
+                            <div class="p-4 border-b border-slate-100 bg-slate-50 font-bold text-slate-800 shrink-0 flex justify-between text-sm"><span>🏆 Top Produk (By Profit Cuan)</span><span class="text-xs font-semibold text-slate-400">Kontribusi Profit</span></div>
+                            <div class="overflow-x-auto"><table class="w-full text-sm text-left"><thead class="bg-slate-100 sticky top-0 text-xs uppercase text-slate-500"><tr><th class="p-3">Produk</th><th class="p-3 text-right">Qty</th><th class="p-3 text-right">Total Profit</th></tr></thead><tbody id="topProductBody" class="divide-y divide-slate-100"></tbody></table></div>
                         </div>
-                        <div class="bg-white rounded-xl shadow p-6 border border-gray-100">
-                            <h4 class="font-bold mb-4 text-gray-700">Filter & Download</h4>
+                        <div class="bg-white rounded-2xl shadow-sm p-6 border border-slate-200/80">
+                            <h4 class="font-bold text-slate-800 mb-4 text-base">Filter & Unduh Laporan Excel / CSV</h4>
                             <div class="space-y-4">
                                 <div>
-                                    <label class="text-xs font-bold text-gray-500">Periode Laporan</label>
-                                    <select id="reportPeriod" onchange="Pages.updateCharts()" class="w-full p-3 border rounded-lg bg-white mt-1">
+                                    <label class="text-xs font-bold text-slate-500 uppercase">Periode Laporan</label>
+                                    <select id="reportPeriod" onchange="Pages.updateCharts()" class="w-full p-3.5 border border-slate-300 rounded-xl bg-white mt-1 font-medium touch-target">
                                         <option value="monthly">Bulanan (Tahun Ini)</option>
                                         <option value="weekly">Mingguan (Bulan Ini)</option>
                                     </select>
                                 </div>
-                                <div class="grid grid-cols-2 gap-3 pt-4">
-                                    <button onclick="exportFinancialReportToCSV()" class="bg-blue-600 text-white px-4 py-3 rounded-lg hover:bg-blue-700 font-bold text-sm shadow-sm">📥 Laporan Keuangan</button>
-                                    <button onclick="exportProductPerformanceCSV()" class="bg-green-600 text-white px-4 py-3 rounded-lg hover:bg-green-700 font-bold text-sm shadow-sm">📦 Performa Produk</button>
+                                <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-4">
+                                    <button onclick="exportFinancialReportToCSV()" class="bg-sky-600 text-white p-3.5 rounded-xl hover:bg-sky-700 font-bold text-sm shadow-sm touch-target">📥 Laporan Keuangan</button>
+                                    <button onclick="exportProductPerformanceCSV()" class="bg-emerald-600 text-white p-3.5 rounded-xl hover:bg-emerald-700 font-bold text-sm shadow-sm touch-target">📦 Performa Produk</button>
                                 </div>
                             </div>
                         </div>
@@ -792,8 +1334,8 @@
                         data: {
                             labels: labels,
                             datasets: [
-                                { label: 'Profit (Cuan)', data: labels.map(l => financialData[l].profit), backgroundColor: '#10b981', borderRadius: 4 },
-                                { label: 'Omzet', data: labels.map(l => financialData[l].omzet), backgroundColor: '#3b82f6', borderRadius: 4, hidden: true }
+                                { label: 'Profit (Cuan)', data: labels.map(l => financialData[l].profit), backgroundColor: '#10b981', borderRadius: 6 },
+                                { label: 'Omzet Penjualan', data: labels.map(l => financialData[l].omzet), backgroundColor: '#0284c7', borderRadius: 6, hidden: true }
                             ]
                         },
                         options: { 
@@ -813,10 +1355,10 @@
                         .sort((a,b) => b[1].profit - a[1].profit)
                         .slice(0, 10)
                         .map(([n, d]) => `
-                            <tr class="border-b hover:bg-gray-50">
-                                <td class="p-3 font-medium text-gray-700">${n}</td>
-                                <td class="p-3 text-right text-gray-500">${d.qty}</td>
-                                <td class="p-3 text-right font-bold text-green-600">+${formatRp(d.profit)}</td>
+                            <tr class="border-b border-slate-100 hover:bg-slate-50">
+                                <td class="p-3 font-medium text-slate-800">${n}</td>
+                                <td class="p-3 text-right text-slate-500">${d.qty}</td>
+                                <td class="p-3 text-right font-bold text-emerald-600">+${formatRp(d.profit)}</td>
                             </tr>`)
                         .join('');
                 }
@@ -827,28 +1369,205 @@
             render: () => {
                 const container = document.getElementById('content-area');
                 if (EvoucherState.view === 'login') {
-                    container.innerHTML = `<div class="max-w-md mx-auto bg-white p-8 rounded-2xl shadow-xl border border-blue-100 text-center mt-10"><div class="bg-blue-100 w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4 text-4xl">🎫</div><h2 class="text-2xl font-bold text-gray-800">E-Voucher System</h2><p class="text-sm text-gray-500 mb-6">Pilih Periode & Role</p><select id="evPeriod" onchange="EvoucherState.selectedPeriod = this.value" class="w-full p-3 border rounded-lg mb-4 bg-gray-50">${EvoucherActions.getMonthOptions()}</select><div class="grid grid-cols-2 gap-4"><button onclick="EvoucherActions.switchView('admin')" class="p-4 border rounded-xl hover:bg-blue-50 transition text-left group"><div class="font-bold text-blue-800">Administrator</div><div class="text-xs text-gray-500">Rekap Gaji</div></button><button onclick="EvoucherActions.switchView('merchant')" class="p-4 border rounded-xl hover:bg-green-50 transition text-left group"><div class="font-bold text-green-800">Kasir / Toko</div><div class="text-xs text-gray-500">Input Belanja</div></button></div></div>`;
+                    container.innerHTML = `<div class="max-w-md mx-auto bg-white p-8 rounded-2xl shadow-xl border border-slate-200/80 text-center mt-6"><div class="bg-sky-100 w-16 h-16 rounded-2xl flex items-center justify-center mx-auto mb-4 text-4xl">🎫</div><h2 class="text-2xl font-bold text-slate-800">E-Voucher System</h2><p class="text-sm text-slate-500 mb-6">Koperasi Karyawan Adaro</p><select id="evPeriod" onchange="EvoucherState.selectedPeriod = this.value" class="w-full p-3.5 border border-slate-300 rounded-xl mb-4 bg-slate-50 font-medium touch-target">${EvoucherActions.getMonthOptions()}</select><div class="grid grid-cols-2 gap-4"><button onclick="EvoucherActions.switchView('admin')" class="p-4 border rounded-xl hover:bg-sky-50 transition text-left group touch-target"><div class="font-bold text-sky-800">Administrator</div><div class="text-xs text-slate-500">Rekap Gaji Kopkar</div></button><button onclick="EvoucherActions.switchView('merchant')" class="p-4 border rounded-xl hover:bg-emerald-50 transition text-left group touch-target"><div class="font-bold text-emerald-800">Kasir / Toko</div><div class="text-xs text-slate-500">Input Belanja POS</div></button></div></div>`;
                 } else if (EvoucherState.view === 'admin') {
                     const totalPrincipal = EvoucherState.users.reduce((acc, curr) => acc + (curr.used || 0), 0);
                     const totalFee = totalPrincipal * 0.05;
-                    container.innerHTML = `<div class="flex justify-between items-center mb-6"><h2 class="text-2xl font-bold text-gray-800">Dashboard Admin E-Voucher</h2><button onclick="EvoucherActions.switchView('login')" class="text-red-500 font-bold">Keluar</button></div><div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6"><div class="bg-white p-6 rounded-xl shadow border"><p class="text-gray-500 text-xs">Total Pokok</p><h3 class="text-2xl font-bold">${formatRp(totalPrincipal)}</h3></div><div class="bg-white p-6 rounded-xl shadow border"><p class="text-gray-500 text-xs">Fee Kopkar (5%)</p><h3 class="text-2xl font-bold text-green-600">${formatRp(totalFee)}</h3></div><div class="bg-blue-800 text-white p-6 rounded-xl shadow"><p class="text-blue-200 text-xs">Total Potong Gaji</p><h3 class="text-2xl font-bold">${formatRp(totalPrincipal + totalFee)}</h3></div></div><div class="bg-white rounded-xl shadow overflow-hidden"><div class="p-4 border-b flex justify-between"><h3 class="font-bold">Rincian Anggota</h3><button onclick="EvoucherActions.generateSummary()" class="bg-blue-600 text-white px-3 py-1 rounded text-sm font-bold">Download Rekap Excel</button></div><div class="overflow-auto h-[500px]"><table class="w-full text-sm text-left"><thead class="bg-gray-50 sticky top-0"><tr><th class="p-3">Nama</th><th class="p-3">NIK</th><th class="p-3 text-right">Limit</th><th class="p-3 text-right">Terpakai</th><th class="p-3 text-right">Tagihan</th></tr></thead><tbody class="divide-y">${EvoucherState.users.map(u => { const used = u.used || 0; const bill = used + (used * 0.05); return `<tr class="hover:bg-gray-50"><td class="p-3 font-bold">${u.name}</td><td class="p-3 text-gray-500">${u.nik}</td><td class="p-3 text-right">${formatRp(u.limit)}</td><td class="p-3 text-right">${formatRp(used)}</td><td class="p-3 text-right font-bold text-blue-600">${formatRp(bill)}</td></tr>`; }).join('')}</tbody></table></div></div>`;
+                    container.innerHTML = `<div class="flex justify-between items-center mb-6"><h2 class="text-2xl font-bold text-slate-800">Dashboard Admin E-Voucher</h2><button onclick="EvoucherActions.switchView('login')" class="text-rose-600 font-bold touch-target">&larr; Kembali</button></div><div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6"><div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-200/80"><p class="text-slate-500 text-xs font-bold uppercase">Total Pokok</p><h3 class="text-2xl font-extrabold text-slate-900 mt-1">${formatRp(totalPrincipal)}</h3></div><div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-200/80"><p class="text-slate-500 text-xs font-bold uppercase">Fee Kopkar (5%)</p><h3 class="text-2xl font-extrabold text-emerald-600 mt-1">${formatRp(totalFee)}</h3></div><div class="bg-slate-900 text-white p-6 rounded-2xl shadow-sm"><p class="text-slate-400 text-xs font-bold uppercase">Total Potong Gaji</p><h3 class="text-2xl font-extrabold text-sky-400 mt-1">${formatRp(totalPrincipal + totalFee)}</h3></div></div><div class="bg-white rounded-2xl shadow-sm overflow-hidden border border-slate-200/80"><div class="p-4 border-b border-slate-100 flex justify-between items-center"><h3 class="font-bold text-slate-800">Rincian Anggota Koperasi</h3><button onclick="EvoucherActions.generateSummary()" class="bg-sky-600 text-white px-4 py-2 rounded-xl text-xs font-bold hover:bg-sky-700 touch-target">Download Rekap Excel</button></div><div class="overflow-x-auto h-[500px]"><table class="w-full text-sm text-left"><thead class="bg-slate-50 sticky top-0 font-bold text-xs uppercase text-slate-600"><tr><th class="p-3">Nama</th><th class="p-3">NIK</th><th class="p-3 text-right">Limit</th><th class="p-3 text-right">Terpakai</th><th class="p-3 text-right">Tagihan</th></tr></thead><tbody class="divide-y divide-slate-100">${EvoucherState.users.map(u => { const used = u.used || 0; const bill = used + (used * 0.05); return `<tr class="hover:bg-slate-50"><td class="p-3 font-bold text-slate-800">${u.name}</td><td class="p-3 text-slate-500 font-mono text-xs">${u.nik}</td><td class="p-3 text-right font-medium">${formatRp(u.limit)}</td><td class="p-3 text-right font-medium">${formatRp(used)}</td><td class="p-3 text-right font-bold text-sky-600">${formatRp(bill)}</td></tr>`; }).join('')}</tbody></table></div></div>`;
                 } else if (EvoucherState.view === 'merchant') {
-                    container.innerHTML = `<div class="max-w-md mx-auto bg-white rounded-xl shadow-lg overflow-hidden"><div class="bg-green-700 p-4 text-white flex justify-between items-center"><h2 class="font-bold text-lg">Kasir E-Voucher</h2><button onclick="EvoucherActions.switchView('login')" class="text-white/80 hover:text-white">✕</button></div><div class="p-6 space-y-4">${!EvoucherState.foundUser ? `<div><label class="block text-xs font-bold text-gray-500 uppercase mb-1">Cari Anggota</label><div class="flex gap-2"><input id="evSearchId" placeholder="No Anggota / NIK" class="w-full p-3 border rounded-lg font-mono text-lg" onkeydown="if(event.key==='Enter') EvoucherActions.checkUser()"><button onclick="EvoucherActions.checkUser()" class="bg-green-600 text-white px-4 rounded-lg font-bold">Cek</button></div></div>` : `<div class="bg-green-50 p-4 rounded-lg border border-green-200"><div class="font-bold text-green-800 text-lg">${EvoucherState.foundUser.name}</div><div class="flex justify-between text-sm mt-1"><span>Sisa Limit:</span><span class="font-bold">${formatRp(EvoucherState.foundUser.limit - (EvoucherState.foundUser.used || 0))}</span></div></div><div><label class="block text-xs font-bold text-gray-500 uppercase mb-1">Total Belanja</label><input id="evAmount" type="number" placeholder="0" class="w-full p-3 border rounded-lg font-mono text-2xl font-bold text-gray-800"></div><div><label class="block text-xs font-bold text-gray-500 uppercase mb-1">Lokasi / Keterangan</label><input id="evNotes" type="text" placeholder="Contoh: Adamart 73" class="w-full p-3 border rounded-lg"></div><div class="flex gap-2 pt-2"><button onclick="EvoucherState.foundUser=null; EvoucherActions.render()" class="flex-1 py-3 border rounded-lg font-bold text-gray-600">Batal</button><button onclick="EvoucherActions.submitTx()" class="flex-[2] py-3 bg-green-600 text-white rounded-lg font-bold shadow-lg">BAYAR SEKARANG</button></div>`}</div></div>`;
+                    container.innerHTML = `<div class="max-w-md mx-auto bg-white rounded-2xl shadow-xl overflow-hidden border border-slate-200/80 mt-4"><div class="bg-emerald-700 p-4 text-white flex justify-between items-center"><h2 class="font-bold text-lg">Kasir E-Voucher</h2><button onclick="EvoucherActions.switchView('login')" class="text-white/80 hover:text-white touch-target">✕</button></div><div class="p-6 space-y-4">${!EvoucherState.foundUser ? `<div><label class="block text-xs font-bold text-slate-500 uppercase mb-1">Cari Anggota</label><div class="flex gap-2"><input id="evSearchId" placeholder="No Anggota / NIK" class="w-full p-3 border border-slate-300 rounded-xl font-mono text-lg touch-target" onkeydown="if(event.key==='Enter') EvoucherActions.checkUser()"><button onclick="EvoucherActions.checkUser()" class="bg-emerald-600 text-white px-5 rounded-xl font-bold touch-target">Cek</button></div></div>` : `<div class="bg-emerald-50 p-4 rounded-xl border border-emerald-200"><div class="font-bold text-emerald-900 text-lg">${EvoucherState.foundUser.name}</div><div class="flex justify-between text-sm mt-1"><span>Sisa Limit:</span><span class="font-bold text-emerald-800">${formatRp(EvoucherState.foundUser.limit - (EvoucherState.foundUser.used || 0))}</span></div></div><div><label class="block text-xs font-bold text-slate-500 uppercase mb-1">Total Belanja</label><input id="evAmount" type="number" placeholder="0" class="w-full p-3.5 border border-slate-300 rounded-xl font-mono text-2xl font-extrabold text-slate-900 touch-target"></div><div><label class="block text-xs font-bold text-slate-500 uppercase mb-1">Lokasi / Keterangan</label><input id="evNotes" type="text" placeholder="Contoh: Adamart 73" class="w-full p-3 border border-slate-300 rounded-xl touch-target"></div><div class="flex gap-2 pt-2"><button onclick="EvoucherState.foundUser=null; EvoucherActions.render()" class="flex-1 py-3.5 border border-slate-300 rounded-xl font-bold text-slate-600 touch-target">Batal</button><button onclick="EvoucherActions.submitTx()" class="flex-[2] py-3.5 bg-emerald-600 text-white rounded-xl font-bold shadow-lg touch-target">BAYAR SEKARANG</button></div>`}</div></div>`;
                 }
             },
-            switchView: async (viewName) => { EvoucherState.view = viewName; if (viewName !== 'login') { try { document.getElementById('loadingState').classList.remove('hidden'); document.getElementById('content-area').classList.add('hidden'); const res = await fetch(`${EVOUCHER_API_URL}?periode=${EvoucherState.selectedPeriod}`); const data = await res.json(); if (Array.isArray(data)) EvoucherState.users = data; EvoucherActions.render(); document.getElementById('loadingState').classList.add('hidden'); document.getElementById('content-area').classList.remove('hidden'); } catch(e) { alert("Gagal memuat data E-Voucher: " + e.message); EvoucherState.view = 'login'; EvoucherActions.render(); } } else { EvoucherActions.render(); } },
-            checkUser: () => { const id = document.getElementById('evSearchId').value.trim(); const u = EvoucherState.users.find(u => String(u.noAnggota) === id || String(u.nik) === id); if (u) { EvoucherState.foundUser = u; EvoucherActions.render(); } else alert("Anggota tidak ditemukan!"); },
-            submitTx: async () => { const amount = parseInt(document.getElementById('evAmount').value); const notes = document.getElementById('evNotes').value || "Adamart"; const user = EvoucherState.foundUser; if(!amount || amount <= 0) return alert("Masukkan nominal yang benar"); if(amount > (user.limit - (user.used||0))) return alert("Limit tidak mencukupi!"); if(!confirm("Proses transaksi E-Voucher?")) return; const payload = { idUser: user.noAnggota !== '-' ? user.noAnggota : user.nik, nama: user.name, merchant: "Adamart POS", nominal: amount, keterangan: notes, kodeVoucher: "KA" + Math.floor(Date.now()/1000), periode: EvoucherState.selectedPeriod, tanggal: new Date().toISOString().split('T')[0], id: "TX-" + Date.now() }; try { await fetch(EVOUCHER_API_URL, { method: 'POST', mode: 'no-cors', headers: { 'Content-Type': 'text/plain' }, body: JSON.stringify(payload) }); alert("✅ Transaksi E-Voucher Berhasil!"); EvoucherState.foundUser = null; EvoucherActions.switchView('merchant'); } catch(e) { alert("Gagal: " + e.message); } },
-            generateSummary: async () => { if(!confirm("Generate Rekap Gaji di Google Sheet?")) return; fetch(EVOUCHER_API_URL, { method: 'POST', mode: 'no-cors', headers: { 'Content-Type': 'text/plain' }, body: JSON.stringify({ action: "generate_summary", periode: EvoucherState.selectedPeriod }) }); alert("Perintah dikirim. Cek Google Sheet 'Summary_Gaji' dalam beberapa detik."); },
+            switchView: async (viewName) => { 
+                EvoucherState.view = viewName; 
+                if (viewName !== 'login') { 
+                    try { 
+                        document.getElementById('loadingState').classList.remove('hidden'); 
+                        document.getElementById('content-area').classList.add('hidden'); 
+                        const res = await fetch(`${EVOUCHER_API_URL}?periode=${EvoucherState.selectedPeriod}`); 
+                        const data = await res.json(); 
+                        if (Array.isArray(data)) EvoucherState.users = data; 
+                        EvoucherActions.render(); 
+                        document.getElementById('loadingState').classList.add('hidden'); 
+                        document.getElementById('content-area').classList.remove('hidden'); 
+                    } catch(e) { 
+                        window.showToast("Gagal memuat E-Voucher: " + e.message, "error"); 
+                        EvoucherState.view = 'login'; 
+                        EvoucherActions.render(); 
+                    } 
+                } else { EvoucherActions.render(); } 
+            },
+            checkUser: () => { const id = document.getElementById('evSearchId').value.trim(); const u = EvoucherState.users.find(u => String(u.noAnggota) === id || String(u.nik) === id); if (u) { EvoucherState.foundUser = u; EvoucherActions.render(); } else window.showToast("Anggota Kopkar tidak ditemukan!", "error"); },
+            submitTx: async () => { const amount = parseInt(document.getElementById('evAmount').value); const notes = document.getElementById('evNotes').value || "Adamart"; const user = EvoucherState.foundUser; if(!amount || amount <= 0) return window.showToast("Nominal belanja tidak valid!", "warning"); if(amount > (user.limit - (user.used||0))) return window.showToast("Limit E-Voucher tidak mencukupi!", "error"); const payload = { idUser: user.noAnggota !== '-' ? user.noAnggota : user.nik, nama: user.name, merchant: "Adamart POS", nominal: amount, keterangan: notes, kodeVoucher: "KA" + Math.floor(Date.now()/1000), periode: EvoucherState.selectedPeriod, tanggal: new Date().toISOString().split('T')[0], id: "TX-" + Date.now() }; try { await fetch(EVOUCHER_API_URL, { method: 'POST', mode: 'no-cors', headers: { 'Content-Type': 'text/plain' }, body: JSON.stringify(payload) }); window.showToast("✅ Transaksi E-Voucher Berhasil!", "success"); EvoucherState.foundUser = null; EvoucherActions.switchView('merchant'); } catch(e) { window.showToast("Gagal: " + e.message, "error"); } },
+            generateSummary: async () => { fetch(EVOUCHER_API_URL, { method: 'POST', mode: 'no-cors', headers: { 'Content-Type': 'text/plain' }, body: JSON.stringify({ action: "generate_summary", periode: EvoucherState.selectedPeriod }) }); window.showToast("Perintah dikirim. Cek Google Sheet 'Summary_Gaji'...", "info"); },
             getMonthOptions: () => { let opts = ''; const startYear = 2025; for (let y = startYear; y <= 2026; y++) { for (let m = 0; m < 12; m++) { const val = `${m+1}-${y}`; const isCur = new Date().getMonth() === m && new Date().getFullYear() === y; opts += `<option value="${val}" ${isCur ? 'selected' : ''}>${new Date(y, m, 1).toLocaleDateString('id-ID', {month:'long', year:'numeric'})}</option>`; } } return opts; }
         };
 
         const Actions = {
-            createBatchPO: async (e) => { e.preventDefault(); const form = e.target; const selectVal = document.getElementById('supplierSelect').value; let supplier = selectVal === 'custom' ? document.getElementById('customSupplier').value.trim() : selectVal; if(State.tempBatchItems.length === 0) return alert("Belum ada item!"); const batchId = 'BATCH-' + Date.now(); const promises = []; const orderDate = form.elements['orderDate'].value; BRANCHES.forEach(branch => { if(document.getElementById(`branch-${branch.replace(/\s+/g, '-')}`).checked) { const poData = { type: 'purchase', batchNumber: batchId, branch: branch, supplier: supplier, orderDate: orderDate, status: 'pending', items: JSON.stringify(State.tempBatchItems), createdAt: new Date().toISOString() }; promises.push(window.addDoc(window.collection(window.db, "purchases"), poData)); } }); await Promise.all(promises); closeModal(); alert("Sukses! PO Batch berhasil dibuat."); loadAllData(); },
+            openQuickStockModal: (barcode, productName, area, currentStock) => {
+                const areaLabel = area.replace('adamart ', '').toUpperCase();
+                const content = `
+                <div class="p-2 space-y-4">
+                    <div class="flex justify-between items-start border-b border-slate-100 pb-3">
+                        <div>
+                            <div class="flex items-center gap-2">
+                                <span class="px-2.5 py-1 bg-sky-100 text-sky-800 rounded-lg text-xs font-bold">Cabang: ${areaLabel}</span>
+                                <span class="text-xs text-slate-400 font-mono">${barcode}</span>
+                            </div>
+                            <h3 class="text-lg font-extrabold text-slate-900 mt-1">${productName}</h3>
+                        </div>
+                        <button onclick="closeModal()" class="text-slate-400 hover:text-slate-700 p-1 rounded-lg touch-target" aria-label="Close modal">✕</button>
+                    </div>
+
+                    <div class="bg-slate-50 p-4 rounded-xl flex justify-between items-center border border-slate-200/80">
+                        <span class="text-xs font-bold text-slate-500 uppercase">Stok Saat Ini (${areaLabel}):</span>
+                        <span class="text-2xl font-extrabold text-slate-900 font-mono">${currentStock} <span class="text-xs font-semibold text-slate-400">Unit</span></span>
+                    </div>
+
+                    <div>
+                        <label class="text-xs font-bold text-slate-500 uppercase block mb-2">⚡ Pilihan Tambah Qty Instan (1-Tap):</label>
+                        <div class="grid grid-cols-3 gap-2">
+                            <button type="button" onclick="Actions.submitQuickStockIncrement('${barcode}', '${productName.replace(/'/g, "\\'")}', '${area}', 1)" class="quick-stock-btn py-3 px-2 bg-emerald-50 hover:bg-emerald-100 border border-emerald-200 text-emerald-900 font-bold rounded-xl text-sm shadow-2xs touch-target flex flex-col items-center">
+                                <span class="text-lg">+1</span>
+                                <span class="text-[10px] text-emerald-600 font-normal">Satu</span>
+                            </button>
+                            <button type="button" onclick="Actions.submitQuickStockIncrement('${barcode}', '${productName.replace(/'/g, "\\'")}', '${area}', 5)" class="quick-stock-btn py-3 px-2 bg-emerald-50 hover:bg-emerald-100 border border-emerald-200 text-emerald-900 font-bold rounded-xl text-sm shadow-2xs touch-target flex flex-col items-center">
+                                <span class="text-lg">+5</span>
+                                <span class="text-[10px] text-emerald-600 font-normal">Lima</span>
+                            </button>
+                            <button type="button" onclick="Actions.submitQuickStockIncrement('${barcode}', '${productName.replace(/'/g, "\\'")}', '${area}', 10)" class="quick-stock-btn py-3 px-2 bg-sky-50 hover:bg-sky-100 border border-sky-200 text-sky-900 font-bold rounded-xl text-sm shadow-2xs touch-target flex flex-col items-center">
+                                <span class="text-lg">+10</span>
+                                <span class="text-[10px] text-sky-600 font-normal">Sepuluh</span>
+                            </button>
+                            <button type="button" onclick="Actions.submitQuickStockIncrement('${barcode}', '${productName.replace(/'/g, "\\'")}', '${area}', 24)" class="quick-stock-btn py-3 px-2 bg-indigo-50 hover:bg-indigo-100 border border-indigo-200 text-indigo-900 font-bold rounded-xl text-sm shadow-2xs touch-target flex flex-col items-center">
+                                <span class="text-lg">+24</span>
+                                <span class="text-[10px] text-indigo-600 font-bold">1 Dus / Crate</span>
+                            </button>
+                            <button type="button" onclick="Actions.submitQuickStockIncrement('${barcode}', '${productName.replace(/'/g, "\\'")}', '${area}', 50)" class="quick-stock-btn py-3 px-2 bg-purple-50 hover:bg-purple-100 border border-purple-200 text-purple-900 font-bold rounded-xl text-sm shadow-2xs touch-target flex flex-col items-center">
+                                <span class="text-lg">+50</span>
+                                <span class="text-[10px] text-purple-600 font-normal">Partai Besar</span>
+                            </button>
+                            <button type="button" onclick="Actions.submitQuickStockIncrement('${barcode}', '${productName.replace(/'/g, "\\'")}', '${area}', -1)" class="quick-stock-btn py-3 px-2 bg-rose-50 hover:bg-rose-100 border border-rose-200 text-rose-900 font-bold rounded-xl text-sm shadow-2xs touch-target flex flex-col items-center">
+                                <span class="text-lg">-1</span>
+                                <span class="text-[10px] text-rose-600 font-normal">Kurangi 1</span>
+                            </button>
+                        </div>
+                    </div>
+
+                    <form onsubmit="Actions.submitQuickStockCustom(event, '${barcode}', '${productName.replace(/'/g, "\\'")}', '${area}')" class="space-y-3 pt-2 border-t border-slate-100">
+                        <div class="grid grid-cols-2 gap-2">
+                            <div>
+                                <label class="text-[11px] font-bold text-slate-500 uppercase">Action Mode</label>
+                                <select id="qsMode" class="w-full p-2.5 border border-slate-300 rounded-xl text-xs font-bold bg-white touch-target">
+                                    <option value="add">Tambah Ke Stok (+ Qty)</option>
+                                    <option value="set">Set Total Stok Baru (= Qty)</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label class="text-[11px] font-bold text-slate-500 uppercase">Input Angka Qty</label>
+                                <input type="number" id="qsValue" class="w-full p-2.5 border-2 border-sky-400 rounded-xl font-extrabold text-base touch-target" placeholder="Contoh: 12" required>
+                            </div>
+                        </div>
+                        <button type="submit" class="w-full py-3 bg-sky-600 hover:bg-sky-700 text-white font-bold rounded-xl shadow-md transition touch-target text-sm">
+                            ⚡ SIMPAN STOK SEKARANG
+                        </button>
+                    </form>
+                </div>`;
+                showModal(content);
+            },
+
+            submitQuickStockIncrement: async (barcode, productName, area, qtyChange) => {
+                const stockKey = `Stok Area Kasir ${area.toLowerCase()}`;
+                const areaLabel = area.replace('adamart ', '').toUpperCase();
+                
+                try {
+                    const existingProduct = State.data.products.find(p => p.Barcode === barcode);
+                    if (!existingProduct) return window.showToast("Produk tidak ditemukan!", "error");
+                    
+                    const docRef = window.doc(window.db, "products", existingProduct.id);
+                    await window.updateDoc(docRef, { [stockKey]: window.increment(qtyChange) });
+
+                    fetch(APPS_SCRIPT_URL, { 
+                        method: 'POST', 
+                        body: JSON.stringify({ 
+                            action: 'update_stock', 
+                            data: { barcode, name: productName, area: area.toLowerCase(), quantity: qtyChange } 
+                        }) 
+                    });
+
+                    closeModal();
+                    const actionText = qtyChange > 0 ? `+${qtyChange}` : `${qtyChange}`;
+                    window.showToast(`✅ Stok ${productName} (${areaLabel}) diperbarui (${actionText} Unit)!`, "success");
+                    loadAllData();
+                } catch (err) {
+                    window.showToast("Gagal update stok: " + err.message, "error");
+                }
+            },
+
+            submitQuickStockCustom: async (e, barcode, productName, area) => {
+                e.preventDefault();
+                const mode = document.getElementById('qsMode').value;
+                const qtyVal = parseInt(document.getElementById('qsValue').value);
+                if (isNaN(qtyVal)) return window.showToast("Masukkan angka valid!", "warning");
+
+                const stockKey = `Stok Area Kasir ${area.toLowerCase()}`;
+                const areaLabel = area.replace('adamart ', '').toUpperCase();
+
+                try {
+                    const existingProduct = State.data.products.find(p => p.Barcode === barcode);
+                    if (!existingProduct) return window.showToast("Produk tidak ditemukan!", "error");
+
+                    const docRef = window.doc(window.db, "products", existingProduct.id);
+                    let updatePayload = {};
+
+                    if (mode === 'add') {
+                        updatePayload[stockKey] = window.increment(qtyVal);
+                    } else {
+                        updatePayload[stockKey] = qtyVal;
+                    }
+
+                    await window.updateDoc(docRef, updatePayload);
+
+                    fetch(APPS_SCRIPT_URL, { 
+                        method: 'POST', 
+                        body: JSON.stringify({ 
+                            action: 'update_stock', 
+                            data: { barcode, name: productName, area: area.toLowerCase(), quantity: mode === 'add' ? qtyVal : qtyVal } 
+                        }) 
+                    });
+
+                    closeModal();
+                    window.showToast(`✅ Stok ${productName} (${areaLabel}) berhasil disimpan!`, "success");
+                    loadAllData();
+                } catch (err) {
+                    window.showToast("Gagal update stok: " + err.message, "error");
+                }
+            },
+
+            createBatchPO: async (e) => { 
+                e.preventDefault(); 
+                const form = e.target; 
+                const selectVal = document.getElementById('supplierSelect').value; 
+                let supplier = selectVal === 'custom' ? document.getElementById('customSupplier').value.trim() : selectVal; 
+                if(State.tempBatchItems.length === 0) return window.showToast("Belum ada item ditambahkan ke PO!", "warning"); 
+                const batchId = 'BATCH-' + Date.now(); 
+                const promises = []; 
+                const orderDate = form.elements['orderDate'].value; 
+                BRANCHES.forEach(branch => { 
+                    if(document.getElementById(`branch-${branch.replace(/\s+/g, '-')}`).checked) { 
+                        const poData = { type: 'purchase', batchNumber: batchId, branch: branch, supplier: supplier, orderDate: orderDate, status: 'pending', items: JSON.stringify(State.tempBatchItems), createdAt: new Date().toISOString() }; 
+                        promises.push(window.addDoc(window.collection(window.db, "purchases"), poData)); 
+                    } 
+                }); 
+                await Promise.all(promises); 
+                closeModal(); 
+                window.showToast("Sukses! PO Batch berhasil dibuat.", "success"); 
+                loadAllData(); 
+            },
             
             printPO: (batchId) => {
                 const po = State.data.purchases.find(p => p.batchNumber === batchId);
-                if (!po) return alert("Data PO tidak ditemukan");
+                if (!po) return window.showToast("Data PO tidak ditemukan", "error");
                 const items = JSON.parse(po.items); let total = 0;
                 const tbody = items.map((i, idx) => {
                     const hpp = parseInt(i.hpp) || 0; const subtotal = i.qty * hpp; total += subtotal;
@@ -870,7 +1589,7 @@
 
             generateAutoPO: () => {
                 const checks = document.querySelectorAll('.restock-check:checked');
-                if(checks.length === 0) return alert("Pilih item dulu!");
+                if(checks.length === 0) return window.showToast("Pilih item restock dulu!", "warning");
                 
                 const getLastPurchaseInfo = (barcode) => {
                     for (let po of State.data.purchases) {
@@ -891,12 +1610,44 @@
                     
                     return { barcode: d.barcode, name: d.name, qty: parseInt(d.qty), unit: finalUnit, hpp: finalHpp, price: parseInt(d.price || 0) };
                 });
-                Modals.openBatchPO();
+                
+                const targetArea = State.restockAreaFilter || 'all';
+                Modals.openBatchPO(targetArea);
             },
 
-            updateStock: async (e) => { e.preventDefault(); const barcode = document.getElementById('barcode').value; const area = document.getElementById('targetArea').value; const qty = parseInt(document.getElementById('stockAmount').value); const hpp = parseInt(document.getElementById('hpp').value) || 0; const price = parseInt(document.getElementById('price').value) || 0; const name = document.getElementById('productName').value; const expiry = document.getElementById('expiryDate').value; const stockKey = `Stok Area Kasir ${area.toLowerCase()}`; try { const existingProduct = State.data.products.find(p => p.Barcode === barcode); if (existingProduct) { const docRef = window.doc(window.db, "products", existingProduct.id); const updateData = { "Nama Produk": name, "Harga": price, "HPP": hpp }; if (qty !== 0) updateData[stockKey] = window.increment(qty); if (expiry) updateData["Tanggal Kadaluarsa"] = new Date(expiry).toISOString(); await window.updateDoc(docRef, updateData); } else { const newData = { Barcode: barcode, "Nama Produk": name, "Harga": price, "HPP": hpp, [stockKey]: qty }; if (expiry) newData["Tanggal Kadaluarsa"] = new Date(expiry).toISOString(); await window.addDoc(window.collection(window.db, "products"), newData); } fetch(APPS_SCRIPT_URL, { method: 'POST', body: JSON.stringify({ action: 'update_stock', data: { barcode, name, price, hpp, area: area.toLowerCase(), quantity: qty, expiryDate: expiry } }) }); alert("Stok Updated!"); document.getElementById('stockForm').reset(); loadAllData(); } catch (err) { console.error(err); alert("Gagal update stok: " + err.message); } },
+            updateStock: async (e) => { 
+                e.preventDefault(); 
+                const barcode = document.getElementById('barcode').value; 
+                const area = document.getElementById('targetArea').value; 
+                const qty = parseInt(document.getElementById('stockAmount').value); 
+                const hpp = parseInt(document.getElementById('hpp').value) || 0; 
+                const price = parseInt(document.getElementById('price').value) || 0; 
+                const name = document.getElementById('productName').value; 
+                const expiry = document.getElementById('expiryDate').value; 
+                const stockKey = `Stok Area Kasir ${area.toLowerCase()}`; 
 
-            // FITUR BARU: Submit Retur & Barang Rusak
+                try { 
+                    const existingProduct = State.data.products.find(p => p.Barcode === barcode); 
+                    if (existingProduct) { 
+                        const docRef = window.doc(window.db, "products", existingProduct.id); 
+                        const updateData = { "Nama Produk": name, "Harga": price, "HPP": hpp }; 
+                        if (qty !== 0) updateData[stockKey] = window.increment(qty); 
+                        if (expiry) updateData["Tanggal Kadaluarsa"] = new Date(expiry).toISOString(); 
+                        await window.updateDoc(docRef, updateData); 
+                    } else { 
+                        const newData = { Barcode: barcode, "Nama Produk": name, "Harga": price, "HPP": hpp, [stockKey]: qty }; 
+                        if (expiry) newData["Tanggal Kadaluarsa"] = new Date(expiry).toISOString(); 
+                        await window.addDoc(window.collection(window.db, "products"), newData); 
+                    } 
+                    fetch(APPS_SCRIPT_URL, { method: 'POST', body: JSON.stringify({ action: 'update_stock', data: { barcode, name, price, hpp, area: area.toLowerCase(), quantity: qty, expiryDate: expiry } }) }); 
+                    window.showToast("Stok Berhasil Diperbarui!", "success"); 
+                    document.getElementById('stockForm').reset(); 
+                    loadAllData(); 
+                } catch (err) { 
+                    window.showToast("Gagal update stok: " + err.message, "error"); 
+                } 
+            },
+
             submitRetur: async (e) => {
                 e.preventDefault();
                 const barcode = document.getElementById('returBarcode').value;
@@ -906,13 +1657,13 @@
                 const reason = document.getElementById('returReason').value;
                 const notes = document.getElementById('returNotes').value;
 
-                if (!barcode) return alert("Pilih produk terlebih dahulu!");
+                if (!barcode) return window.showToast("Pilih produk terlebih dahulu!", "warning");
                 
                 try {
                     const stockKey = `Stok Area Kasir ${area.toLowerCase()}`;
                     const existingProduct = State.data.products.find(p => p.Barcode === barcode);
                     
-                    if (!existingProduct) return alert("Produk tidak ditemukan di database.");
+                    if (!existingProduct) return window.showToast("Produk tidak ditemukan di database.", "error");
                     
                     const docRef = window.doc(window.db, "products", existingProduct.id);
                     await window.updateDoc(docRef, { [stockKey]: window.increment(-qty) });
@@ -921,12 +1672,11 @@
                         barcode, name, area, qty, reason, notes, timestamp: new Date().toISOString()
                     });
                     
-                    alert("Barang berhasil dikeluarkan dari sistem.");
+                    window.showToast("Barang berhasil dikeluarkan dari stok.", "success");
                     loadAllData();
-                } catch (err) { alert("Error: " + err.message); }
+                } catch (err) { window.showToast("Error: " + err.message, "error"); }
             },
 
-            // FITUR BARU: Update Info Audit Form
             updateAuditSystemStock: () => {
                 const barcode = document.getElementById('auditBarcode').value;
                 if (!barcode) return;
@@ -938,7 +1688,6 @@
                 }
             },
 
-            // FITUR BARU: Submit Audit Stok Fisik
             submitAudit: async (e) => {
                 e.preventDefault();
                 const barcode = document.getElementById('auditBarcode').value;
@@ -947,56 +1696,167 @@
                 const physicalQty = parseInt(document.getElementById('auditPhysicalQty').value);
                 const systemQtyText = document.getElementById('auditSystemQty').innerText;
                 
-                if (!barcode || systemQtyText === '-') return alert("Pilih produk dengan benar!");
+                if (!barcode || systemQtyText === '-') return window.showToast("Pilih produk terlebih dahulu!", "warning");
                 const systemQty = parseInt(systemQtyText);
                 const variance = physicalQty - systemQty;
 
-                if (variance === 0 && !confirm("Stok sudah sesuai. Tetap simpan catatan audit?")) return;
-                
                 try {
                     const stockKey = `Stok Area Kasir ${area.toLowerCase()}`;
                     const existingProduct = State.data.products.find(p => p.Barcode === barcode);
                     
                     if (existingProduct) {
                         const docRef = window.doc(window.db, "products", existingProduct.id);
-                        await window.updateDoc(docRef, { [stockKey]: physicalQty }); // Timpa dengan angka fisik
+                        await window.updateDoc(docRef, { [stockKey]: physicalQty }); 
                         
                         await window.addDoc(window.collection(window.db, "audits"), {
                             barcode, name, area, systemQty, physicalQty, variance, timestamp: new Date().toISOString()
                         });
                         
-                        alert("Hasil audit berhasil disimpan!");
+                        window.showToast("Hasil audit stok berhasil disimpan!", "success");
                         loadAllData();
                     }
-                } catch (err) { alert("Error: " + err.message); }
+                } catch (err) { window.showToast("Error: " + err.message, "error"); }
             }
         };
 
         function setupInventoryListeners() { const form = document.getElementById('stockForm'); if(form) form.addEventListener('submit', Actions.updateStock); }
         
         const Modals = { 
-            openBatchPO: () => { 
+            openBatchPO: (targetArea = 'all') => { 
                 const items = State.tempBatchItems || []; 
                 let totalEstimasi = items.reduce((sum, i) => sum + (parseInt(i.qty) * parseInt(i.hpp)), 0);
-                const content = `<h3 class="text-xl font-bold mb-4">Buat Batch PO ${items.length > 0 ? '(Auto-Filled)' : ''}</h3><form onsubmit="Actions.createBatchPO(event)"><div class="grid grid-cols-2 gap-4 mb-4"><div><select id="supplierSelect" class="p-2 border rounded w-full bg-white text-sm" required onchange="toggleSupplierInput(this)"><option value="">Pilih Supplier</option>${SUPPLIERS.map(s => `<option value="${s}">${s}</option>`).join('')}<option value="custom" class="font-bold text-blue-600">+ Input Manual</option></select><input id="customSupplier" type="text" placeholder="Nama Supplier..." class="p-2 border rounded w-full mt-2 hidden text-sm" disabled></div><input type="date" name="orderDate" class="p-2 border rounded w-full h-[38px] text-sm" required value="${new Date().toISOString().split('T')[0]}"></div><div class="bg-blue-50 p-4 rounded-lg mb-4 border border-blue-100"><label class="text-xs font-bold text-gray-500 uppercase mb-1 block">Cari Barang / Barcode</label><div class="relative mb-2"><input id="item-name" placeholder="Ketik nama atau scan barcode disini..." class="w-full p-3 border-2 border-blue-400 rounded-lg font-bold focus:outline-none focus:ring-2 focus:ring-blue-600 bg-white" autocomplete="off" oninput="searchProductForForm(this.value, 'po')"><div id="po-search-results" class="absolute z-50 w-full bg-white shadow-xl rounded-b-lg border border-gray-200 max-h-60 overflow-y-auto hidden"></div></div><div class="flex items-center gap-2 mb-2"><div class="w-24 hidden md:block"><input id="item-barcode" placeholder="Barcode" class="w-full p-2 border rounded text-sm bg-gray-100" readonly></div><div class="w-20"><input id="item-qty" type="number" placeholder="Qty" class="w-full p-2 border rounded text-sm font-bold bg-white border-blue-300"></div><div class="w-32"><select id="item-unit" class="w-full p-2 border rounded text-sm bg-white border-blue-300"><option value="PCS">PCS</option><optgroup label="Kemasan"><option value="DUS">DUS</option><option value="PACK">PACK</option><option value="RENCENG">RENCENG</option></optgroup><optgroup label="Kuantitas"><option value="LUSIN">LUSIN</option><option value="KODI">KODI</option><option value="GROS">GROS</option></optgroup><optgroup label="Fisik"><option value="KG">KG</option><option value="GRAM">GRAM</option><option value="ONS">ONS</option><option value="LITER">LITER</option><option value="ML">ML</option><option value="GALON">GALON</option><option value="SET">SET</option><option value="PASANG">PASANG</option></optgroup></select></div><div class="flex-1"><input id="item-hpp" type="number" placeholder="Harga Beli (HPP)" class="w-full p-2 border rounded text-sm"></div><button type="button" onclick="addItemToTemp()" class="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 font-bold shadow">+</button></div><div id="temp-items-list" class="text-sm text-gray-600 max-h-40 overflow-y-auto space-y-1 mt-3"></div><div class="text-right font-bold text-xl text-blue-800 mt-3 pt-3 border-t border-blue-200" id="po-total-estimasi">Total Estimasi: ${formatRp(totalEstimasi)}</div></div><div class="mb-6"><label class="font-bold block mb-2 text-sm">Kirim ke:</label><div class="flex gap-4 flex-wrap">${BRANCHES.map(b => `<label class="flex items-center gap-2 text-sm"><input type="checkbox" id="branch-${b.replace(/\s+/g, '-')}" checked> ${b}</label>`).join('')}</div></div><button type="submit" class="w-full btn-primary py-3 rounded-lg bg-blue-600 text-white font-bold text-lg shadow-lg">Buat & Kirim PO</button></form>`; 
+                
+                const content = `
+                <div class="p-2">
+                    <div class="flex justify-between items-center mb-4">
+                        <div>
+                            <h3 class="text-xl font-extrabold text-slate-800">Buat Batch PO Supplier ${items.length > 0 ? '(Auto-Filled AI)' : ''}</h3>
+                            <p class="text-xs text-slate-500">Pemesanan stok baru ke supplier</p>
+                        </div>
+                        <button onclick="closeModal()" class="text-slate-400 hover:text-slate-700 touch-target" aria-label="Close modal">✕</button>
+                    </div>
+                    <form onsubmit="Actions.createBatchPO(event)" class="space-y-4">
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                            <div>
+                                <label class="text-xs font-bold text-slate-500 uppercase">Pilih Supplier</label>
+                                <select id="supplierSelect" class="p-3 border border-slate-300 rounded-xl w-full bg-white text-sm mt-1 touch-target" required onchange="toggleSupplierInput(this)">
+                                    <option value="">Pilih Supplier</option>
+                                    ${SUPPLIERS.map(s => `<option value="${s}">${s}</option>`).join('')}
+                                    <option value="custom" class="font-bold text-sky-600">+ Input Supplier Manual</option>
+                                </select>
+                                <input id="customSupplier" type="text" placeholder="Nama Supplier..." class="p-3 border border-slate-300 rounded-xl w-full mt-2 hidden text-sm touch-target" disabled>
+                            </div>
+                            <div>
+                                <label class="text-xs font-bold text-slate-500 uppercase">Tanggal Order</label>
+                                <input type="date" name="orderDate" class="p-3 border border-slate-300 rounded-xl w-full text-sm mt-1 touch-target" required value="${new Date().toISOString().split('T')[0]}">
+                            </div>
+                        </div>
+
+                        <div class="bg-sky-50/70 p-4 rounded-xl border border-sky-100 space-y-3">
+                            <label class="text-xs font-bold text-slate-500 uppercase block">Cari / Tambah Barang ke PO</label>
+                            <div class="relative">
+                                <input id="item-name" placeholder="Ketik nama atau scan barcode disini..." class="w-full p-3.5 border-2 border-sky-400 rounded-xl font-bold focus:outline-none focus:ring-2 focus:ring-sky-600 bg-white touch-target" autocomplete="off" oninput="searchProductForForm(this.value, 'po')">
+                                <div id="po-search-results" class="absolute z-50 w-full bg-white shadow-xl rounded-xl border border-slate-200 max-h-60 overflow-y-auto hidden mt-1"></div>
+                            </div>
+                            
+                            <div class="flex items-center gap-2 flex-wrap sm:flex-nowrap">
+                                <div class="w-full sm:w-28"><input id="item-barcode" placeholder="Barcode" class="w-full p-2.5 border border-slate-300 rounded-lg text-xs bg-slate-100 font-mono" readonly></div>
+                                <div class="w-1/2 sm:w-20"><input id="item-qty" type="number" placeholder="Qty" class="w-full p-2.5 border border-sky-300 rounded-lg text-sm font-bold bg-white"></div>
+                                <div class="w-1/2 sm:w-28">
+                                    <select id="item-unit" class="w-full p-2.5 border border-sky-300 rounded-lg text-sm bg-white font-medium">
+                                        <option value="PCS">PCS</option>
+                                        <optgroup label="Kemasan"><option value="DUS">DUS</option><option value="PACK">PACK</option><option value="RENCENG">RENCENG</option></optgroup>
+                                        <optgroup label="Kuantitas"><option value="LUSIN">LUSIN</option><option value="KODI">KODI</option></optgroup>
+                                    </select>
+                                </div>
+                                <div class="flex-1 min-w-[120px]"><input id="item-hpp" type="number" placeholder="Harga Beli (HPP)" class="w-full p-2.5 border border-slate-300 rounded-lg text-sm"></div>
+                                <button type="button" onclick="addItemToTemp()" class="bg-sky-600 text-white px-4 py-2.5 rounded-lg hover:bg-sky-700 font-bold shadow touch-target">+</button>
+                            </div>
+                            
+                            <div id="temp-items-list" class="text-sm text-slate-600 max-h-40 overflow-y-auto space-y-1.5 mt-3"></div>
+                            <div class="text-right font-extrabold text-xl text-sky-800 mt-3 pt-3 border-t border-sky-200" id="po-total-estimasi">Total Estimasi: ${formatRp(totalEstimasi)}</div>
+                        </div>
+
+                        <div>
+                            <label class="font-bold block mb-2 text-sm text-slate-700">Kirim Ke Cabang Tujuan:</label>
+                            <div class="flex gap-4 flex-wrap">
+                                ${BRANCHES.map(b => {
+                                    let isChecked = true;
+                                    if (targetArea !== 'all') {
+                                        const matchKeyword = targetArea.replace('adamart ', '').toLowerCase();
+                                        isChecked = b.toLowerCase().includes(matchKeyword);
+                                    }
+                                    return `<label class="flex items-center gap-2 text-sm font-medium p-2 bg-slate-50 rounded-xl border border-slate-200"><input type="checkbox" id="branch-${b.replace(/\s+/g, '-')}" ${isChecked ? 'checked' : ''} class="w-4 h-4 accent-sky-600"> ${b}</label>`;
+                                }).join('')}
+                            </div>
+                        </div>
+                        <button type="submit" class="w-full py-3.5 rounded-xl bg-sky-600 hover:bg-sky-700 text-white font-bold text-base shadow-lg touch-target transition">Buat & Kirim Batch PO</button>
+                    </form>
+                </div>`; 
                 showModal(content); 
-                if(items.length > 0) { document.getElementById('temp-items-list').innerHTML = items.map((i,x)=>`<div class="flex justify-between items-center bg-white p-2 rounded border"><div><span class="font-bold text-xs bg-gray-100 p-1 rounded mr-2">${i.barcode||'-'}</span><span class="font-bold">${i.name}</span> x${i.qty} ${i.unit||'PCS'} <span class="text-xs text-gray-500">B:${formatRp(i.hpp)}</span></div><button onclick="removeItemFromTemp(${x})" class="text-red-500 px-2 font-bold">✕</button></div>`).join('');
-                } else { document.getElementById('temp-items-list').innerHTML = '<p class="text-xs text-gray-400 italic p-2 bg-white rounded border border-dashed text-center">Belum ada item ditambahkan.</p>'; }
+                if(items.length > 0) { document.getElementById('temp-items-list').innerHTML = items.map((i,x)=>`<div class="flex justify-between items-center bg-white p-2.5 rounded-xl border border-slate-200"><div><span class="font-mono text-xs bg-slate-100 p-1 rounded mr-2">${i.barcode||'-'}</span><span class="font-bold text-slate-800">${i.name}</span> x${i.qty} ${i.unit||'PCS'} <span class="text-xs text-slate-400 ml-2">B:${formatRp(i.hpp)}</span></div><button onclick="removeItemFromTemp(${x})" class="text-rose-500 px-2 font-bold touch-target">✕</button></div>`).join('');
+                } else { document.getElementById('temp-items-list').innerHTML = '<p class="text-xs text-slate-400 italic p-3 bg-white rounded-xl border border-dashed text-center">Belum ada item ditambahkan.</p>'; }
             } 
         };
 
-        function showModal(c){ const d=document.createElement('div'); d.className='modal-overlay'; d.innerHTML=`<div class="modal-content p-6 relative shadow-2xl"><button onclick="closeModal()" class="absolute top-4 right-4">✕</button>${c}</div>`; document.body.appendChild(d); }
+        function showModal(c){ 
+            const d=document.createElement('div'); 
+            d.className='modal-overlay'; 
+            d.innerHTML=`<div class="modal-content p-6 relative shadow-2xl">${c}</div>`; 
+            document.body.appendChild(d); 
+        }
         function closeModal(){ document.querySelector('.modal-overlay')?.remove(); }
-        window.autoFill = () => { const bc = document.getElementById('barcode').value; const p = State.data.products.find(i => String(i.Barcode) === bc); if (p) { document.getElementById('productName').value = p['Nama Produk']; document.getElementById('price').value = p['Harga']; document.getElementById('hpp').value = p['HPP'] || 0; } };
+
+        window.selectRowForUpdate = (barcode) => {
+            const p = State.data.products.find(i => String(i.Barcode) === String(barcode));
+            if (!p) return;
+
+            document.getElementById('barcode').value = p.Barcode;
+            document.getElementById('productName').value = p['Nama Produk'];
+            document.getElementById('price').value = p['Harga'];
+            document.getElementById('hpp').value = p['HPP'] || 0;
+            if (p['Tanggal Kadaluarsa']) {
+                document.getElementById('expiryDate').value = new Date(p['Tanggal Kadaluarsa']).toISOString().split('T')[0];
+            }
+            
+            const qtyInput = document.getElementById('stockAmount');
+            qtyInput.value = '';
+            qtyInput.focus();
+
+            window.showToast(`Auto-filled: ${p['Nama Produk']}`, "info");
+        };
+
+        window.setPresetQty = (qty) => {
+            const el = document.getElementById('stockAmount');
+            if (el) {
+                const current = parseInt(el.value) || 0;
+                el.value = current + qty;
+            }
+        };
+
+        window.autoFill = () => { 
+            const bc = document.getElementById('barcode').value; 
+            const p = State.data.products.find(i => String(i.Barcode) === bc); 
+            if (p) { 
+                document.getElementById('productName').value = p['Nama Produk']; 
+                document.getElementById('price').value = p['Harga']; 
+                document.getElementById('hpp').value = p['HPP'] || 0; 
+            } 
+        };
         
-        // PENCARIAN TERPADU UNTUK PO, RETUR, DAN AUDIT
         window.searchProductForForm = (val, type) => { 
             const containerId = `${type}-search-results`;
             const container = document.getElementById(containerId); 
             if(val.length < 2) { container.classList.add('hidden'); return; } 
             const matches = State.data.products.filter(p => p['Nama Produk'].toLowerCase().includes(val.toLowerCase()) || String(p.Barcode).includes(val)).slice(0, 10); 
-            if(matches.length === 0) { container.innerHTML = '<div class="p-2 text-sm text-gray-500">Tidak ditemukan.</div>'; } 
-            else { container.innerHTML = matches.map(p => `<div class="p-2 hover:bg-blue-50 cursor-pointer border-b text-sm" onclick="selectProductForForm('${p.Barcode}', '${type}')"><div class="font-bold text-gray-800">${p['Nama Produk']}</div><div class="text-xs text-gray-500 flex justify-between"><span>${p.Barcode}</span><span>HPP: ${formatRp(p.HPP || 0)}</span></div></div>`).join(''); } 
+            if(matches.length === 0) { container.innerHTML = '<div class="p-3 text-sm text-slate-500">Tidak ditemukan.</div>'; } 
+            else { 
+                container.innerHTML = matches.map(p => `
+                    <div class="p-3 hover:bg-sky-50 cursor-pointer border-b border-slate-100 text-sm touch-target flex flex-col justify-center" onclick="selectProductForForm('${p.Barcode}', '${type}')">
+                        <div class="font-bold text-slate-800">${p['Nama Produk']}</div>
+                        <div class="text-xs text-slate-400 flex justify-between mt-0.5"><span class="font-mono">${p.Barcode}</span><span>HPP: ${formatRp(p.HPP || 0)}</span></div>
+                    </div>`).join(''); 
+            } 
             container.classList.remove('hidden'); 
         };
         
@@ -1007,27 +1867,145 @@
             document.getElementById(`${type}-search-results`).classList.add('hidden');
             
             if(type === 'po') {
-                document.getElementById('item-barcode').value = p.Barcode; document.getElementById('item-name').value = p['Nama Produk']; document.getElementById('item-hpp').value = p.HPP || 0; document.getElementById('item-qty').focus();
+                document.getElementById('item-barcode').value = p.Barcode; 
+                document.getElementById('item-name').value = p['Nama Produk']; 
+                document.getElementById('item-hpp').value = p.HPP || 0; 
+                document.getElementById('item-qty').focus();
             } else if (type === 'retur') {
-                document.getElementById('returSearch').value = ''; document.getElementById('returBarcode').value = p.Barcode; document.getElementById('returNameLabel').innerHTML = `<span class="text-orange-600 font-mono mr-2">${p.Barcode}</span>${p['Nama Produk']}`; document.getElementById('returQty').focus();
+                document.getElementById('returSearch').value = ''; 
+                document.getElementById('returBarcode').value = p.Barcode; 
+                document.getElementById('returNameLabel').innerHTML = `<span class="text-orange-600 font-mono mr-2">${p.Barcode}</span>${p['Nama Produk']}`; 
+                document.getElementById('returQty').focus();
             } else if (type === 'audit') {
-                document.getElementById('auditSearch').value = ''; document.getElementById('auditBarcode').value = p.Barcode; document.getElementById('auditNameLabel').innerHTML = `<span class="text-indigo-600 font-mono mr-2">${p.Barcode}</span>${p['Nama Produk']}`; Actions.updateAuditSystemStock(); document.getElementById('auditPhysicalQty').focus();
+                document.getElementById('auditSearch').value = ''; 
+                document.getElementById('auditBarcode').value = p.Barcode; 
+                document.getElementById('auditNameLabel').innerHTML = `<span class="text-indigo-600 font-mono mr-2">${p.Barcode}</span>${p['Nama Produk']}`; 
+                Actions.updateAuditSystemStock(); 
+                document.getElementById('auditPhysicalQty').focus();
             }
         };
 
-        window.updateTotalEstimasi = () => { const t = State.tempBatchItems.reduce((s, i) => s + (parseInt(i.qty) * parseInt(i.hpp)), 0); const el = document.getElementById('po-total-estimasi'); if (el) el.innerText = 'Total Estimasi: ' + formatRp(t); };
+        window.updateTotalEstimasi = () => { 
+            const t = State.tempBatchItems.reduce((s, i) => s + (parseInt(i.qty) * parseInt(i.hpp)), 0); 
+            const el = document.getElementById('po-total-estimasi'); 
+            if (el) el.innerText = 'Total Estimasi: ' + formatRp(t); 
+        };
 
-        window.addItemToTemp = () => { const barcode=document.getElementById('item-barcode').value; const name=document.getElementById('item-name').value; const qty=document.getElementById('item-qty').value; const unit=document.getElementById('item-unit').value; const hpp=document.getElementById('item-hpp').value; if(name && qty) { State.tempBatchItems.push({barcode, name, qty, unit, hpp, price: 0}); const list=State.tempBatchItems.map((i,x)=>`<div class="flex justify-between items-center bg-white p-2 rounded border"><div><span class="font-bold text-xs bg-gray-100 p-1 rounded mr-2">${i.barcode||'-'}</span><span class="font-bold">${i.name}</span> x${i.qty} ${i.unit||'PCS'} <span class="text-xs text-gray-500">B:${formatRp(i.hpp)}</span></div><button onclick="removeItemFromTemp(${x})" class="text-red-500 px-2 font-bold">✕</button></div>`).join(''); document.getElementById('temp-items-list').innerHTML=list; window.updateTotalEstimasi(); document.getElementById('item-barcode').value=''; document.getElementById('item-name').value=''; document.getElementById('item-qty').value=''; document.getElementById('item-hpp').value=''; document.getElementById('item-name').focus(); } };
-        window.removeItemFromTemp = (i) => { State.tempBatchItems.splice(i,1); document.getElementById('temp-items-list').innerHTML=State.tempBatchItems.length > 0 ? State.tempBatchItems.map((i,x)=>`<div class="flex justify-between items-center bg-white p-2 rounded border"><div><span class="font-bold">${i.name}</span> x${i.qty} ${i.unit||'PCS'} <span class="text-xs text-gray-500">B:${formatRp(i.hpp)}</span></div><button onclick="removeItemFromTemp(${x})" class="text-red-500 px-2 font-bold">✕</button></div>`).join('') : '<p class="text-xs text-gray-400 italic p-2 bg-white rounded border border-dashed text-center">Belum ada item ditambahkan.</p>'; window.updateTotalEstimasi(); };
-        window.toggleSupplierInput = (el) => { const i=document.getElementById('customSupplier'); if(el.value==='custom'){i.classList.remove('hidden');i.disabled=false;i.focus();}else{i.classList.add('hidden');i.disabled=true;} };
-        window.filterInventory = (v) => { document.querySelectorAll('.product-row').forEach(r => r.style.display = r.innerText.toLowerCase().includes(v.toLowerCase()) ? '' : 'none'); };
+        window.addItemToTemp = () => { 
+            const barcode=document.getElementById('item-barcode').value; 
+            const name=document.getElementById('item-name').value; 
+            const qty=document.getElementById('item-qty').value; 
+            const unit=document.getElementById('item-unit').value; 
+            const hpp=document.getElementById('item-hpp').value; 
+            if(name && qty) { 
+                State.tempBatchItems.push({barcode, name, qty, unit, hpp, price: 0}); 
+                const list=State.tempBatchItems.map((i,x)=>`<div class="flex justify-between items-center bg-white p-2.5 rounded-xl border border-slate-200"><div><span class="font-mono text-xs bg-slate-100 p-1 rounded mr-2">${i.barcode||'-'}</span><span class="font-bold text-slate-800">${i.name}</span> x${i.qty} ${i.unit||'PCS'} <span class="text-xs text-slate-400 ml-2">B:${formatRp(i.hpp)}</span></div><button onclick="removeItemFromTemp(${x})" class="text-rose-500 px-2 font-bold touch-target">✕</button></div>`).join(''); 
+                document.getElementById('temp-items-list').innerHTML=list; 
+                window.updateTotalEstimasi(); 
+                document.getElementById('item-barcode').value=''; 
+                document.getElementById('item-name').value=''; 
+                document.getElementById('item-qty').value=''; 
+                document.getElementById('item-hpp').value=''; 
+                document.getElementById('item-name').focus(); 
+            } 
+        };
         
-        window.exportFinancialReportToCSV = () => { const grouped={}; const period=document.getElementById('reportPeriod').value; State.data.sales.forEach(s=>{ const d=new Date(s.timestamp); const key=period==='monthly'?d.toLocaleDateString('id-ID',{month:'long',year:'numeric'}):`Minggu ${Math.ceil(d.getDate()/7)} ${d.toLocaleDateString('id-ID',{month:'short'})}`; if(!grouped[key])grouped[key]={rev:0,cost:0,count:0}; let saleCost=0; let itemsList=s.cart||[]; if(itemsList.length===0&&s.items){s.items.split(', ').forEach(str=>{const parts=str.split(' x');if(parts.length===2)itemsList.push({name:parts[0].trim(),quantity:parseInt(parts[1])});});} itemsList.forEach(i=>{const p=State.data.products.find(prod=>prod['Nama Produk'].trim().toLowerCase()===i.name.toLowerCase()); saleCost+=(p?(parseInt(p.HPP)||0):0)*i.quantity;}); grouped[key].rev+=s.total; grouped[key].cost+=saleCost; grouped[key].count++; }); const rows=[['Periode','Total Transaksi','Total Omzet','Total HPP','Laba Kotor']]; Object.keys(grouped).reverse().forEach(k=>{rows.push([k,grouped[k].count,grouped[k].rev,grouped[k].cost,grouped[k].rev-grouped[k].cost]);}); const csv="data:text/csv;charset=utf-8,"+rows.map(e=>e.join(",")).join("\n"); const link=document.createElement("a"); link.href=encodeURI(csv); link.download="Laporan_Keuangan.csv"; link.click(); };
-        window.exportProductPerformanceCSV = () => { const ps={}; State.data.sales.forEach(s=>{ let itemsList=s.cart||[]; if(itemsList.length===0&&s.items){s.items.split(', ').forEach(str=>{const parts=str.split(' x');if(parts.length===2)itemsList.push({name:parts[0].trim(),quantity:parseInt(parts[1])});});} itemsList.forEach(i=>{ const n=i.name; if(!ps[n])ps[n]={qty:0,rev:0}; ps[n].qty+=i.quantity; const p=State.data.products.find(prod=>prod['Nama Produk'].trim().toLowerCase()===n.toLowerCase()); const pr=i.price||(p?p.Harga:0); ps[n].rev+=(pr*i.quantity); }); }); const rows=[['Nama Barang','Terjual','Stok','HPP','Omzet','Laba']]; Object.keys(ps).forEach(n=>{ const s=ps[n]; const p=State.data.products.find(prod=>prod['Nama Produk'].trim().toLowerCase()===n.toLowerCase()); const st=p?(parseInt(p['Stok Area Kasir adamart 73']||0)+parseInt(p['Stok Area Kasir adamart induksi']||0)+parseInt(p['Stok Area Kasir adamart kelanis']||0)):0; const h=p?(parseInt(p.HPP)||0):0; rows.push([n,s.qty,st,h,s.rev,s.rev-(h*s.qty)]); }); const csv="data:text/csv;charset=utf-8,"+rows.map(e=>e.join(",")).join("\n"); const link=document.createElement("a"); link.href=encodeURI(csv); link.download="Laporan_Produk.csv"; link.click(); };
+        window.removeItemFromTemp = (i) => { 
+            State.tempBatchItems.splice(i,1); 
+            document.getElementById('temp-items-list').innerHTML=State.tempBatchItems.length > 0 ? State.tempBatchItems.map((i,x)=>`<div class="flex justify-between items-center bg-white p-2.5 rounded-xl border border-slate-200"><div><span class="font-bold text-slate-800">${i.name}</span> x${i.qty} ${i.unit||'PCS'} <span class="text-xs text-slate-400 ml-2">B:${formatRp(i.hpp)}</span></div><button onclick="removeItemFromTemp(${x})" class="text-rose-500 px-2 font-bold touch-target">✕</button></div>`).join('') : '<p class="text-xs text-slate-400 italic p-3 bg-white rounded-xl border border-dashed text-center">Belum ada item ditambahkan.</p>'; 
+            window.updateTotalEstimasi(); 
+        };
+
+        window.toggleSupplierInput = (el) => { 
+            const i=document.getElementById('customSupplier'); 
+            if(el.value==='custom'){i.classList.remove('hidden');i.disabled=false;i.focus();}
+            else{i.classList.add('hidden');i.disabled=true;} 
+        };
+
+        window.filterInventory = (v) => { 
+            document.querySelectorAll('.product-row').forEach(r => r.style.display = r.innerText.toLowerCase().includes(v.toLowerCase()) ? '' : 'none'); 
+        };
+        
+        window.exportAuditReportToCSV = () => {
+            const rows = [['Tanggal Audit', 'Barcode', 'Nama Produk', 'Cabang', 'Stok Sistem', 'Stok Fisik', 'Selisih Unit']];
+            State.data.audits.forEach(a => {
+                rows.push([new Date(a.timestamp).toLocaleDateString('id-ID'), a.barcode, `"${a.name}"`, a.area, a.systemQty, a.physicalQty, a.variance]);
+            });
+            downloadCSV(rows, "Laporan_Audit_Stok.csv");
+        };
+
+        window.exportReturnReportToCSV = () => {
+            const rows = [['Tanggal Retur', 'Barcode', 'Nama Produk', 'Cabang', 'Alasan', 'Qty Keluar', 'Catatan']];
+            State.data.returns.forEach(r => {
+                rows.push([new Date(r.timestamp).toLocaleDateString('id-ID'), r.barcode, `"${r.name}"`, r.area, r.reason, r.qty, `"${r.notes||''}"`]);
+            });
+            downloadCSV(rows, "Laporan_Retur_Kerusakan.csv");
+        };
+
+        window.exportShiftReportToCSV = () => {
+            const rows = [['Open Time', 'Nama Kasir', 'Cabang', 'Setoran Tunai Fisik', 'Total QRIS', 'Total Kasbon', 'Total Real', 'Selisih']];
+            State.data.shifts.forEach(s => {
+                const cashNet = s.actualCash - s.startCash;
+                const totalReal = cashNet + (s.totalQris||0) + (s.totalKasbon||0);
+                rows.push([new Date(s.openTime).toLocaleString('id-ID'), `"${s.cashierName}"`, s.area, s.actualCash, s.totalQris||0, s.totalKasbon||0, totalReal, s.difference]);
+            });
+            downloadCSV(rows, "Laporan_Shift_Kasir.csv");
+        };
+
+        window.exportFinancialReportToCSV = () => { 
+            const grouped={}; const period=document.getElementById('reportPeriod').value; 
+            State.data.sales.forEach(s=>{ 
+                const d=new Date(s.timestamp); 
+                const key=period==='monthly'?d.toLocaleDateString('id-ID',{month:'long',year:'numeric'}):`Minggu ${Math.ceil(d.getDate()/7)} ${d.toLocaleDateString('id-ID',{month:'short'})}`; 
+                if(!grouped[key])grouped[key]={rev:0,cost:0,count:0}; 
+                let saleCost=0; 
+                let itemsList=s.cart||[]; 
+                if(itemsList.length===0&&s.items){s.items.split(', ').forEach(str=>{const parts=str.split(' x');if(parts.length===2)itemsList.push({name:parts[0].trim(),quantity:parseInt(parts[1])});});} 
+                itemsList.forEach(i=>{const p=State.data.products.find(prod=>prod['Nama Produk'].trim().toLowerCase()===i.name.toLowerCase()); saleCost+=(p?(parseInt(p.HPP)||0):0)*i.quantity;}); 
+                grouped[key].rev+=s.total; grouped[key].cost+=saleCost; grouped[key].count++; 
+            }); 
+            const rows=[['Periode','Total Transaksi','Total Omzet','Total HPP','Laba Kotor']]; 
+            Object.keys(grouped).reverse().forEach(k=>{rows.push([k,grouped[k].count,grouped[k].rev,grouped[k].cost,grouped[k].rev-grouped[k].cost]);}); 
+            downloadCSV(rows, "Laporan_Keuangan_Adamart.csv");
+        };
+
+        window.exportProductPerformanceCSV = () => { 
+            const ps={}; 
+            State.data.sales.forEach(s=>{ 
+                let itemsList=s.cart||[]; 
+                if(itemsList.length===0&&s.items){s.items.split(', ').forEach(str=>{const parts=str.split(' x');if(parts.length===2)itemsList.push({name:parts[0].trim(),quantity:parseInt(parts[1])});});} 
+                itemsList.forEach(i=>{ 
+                    const n=i.name; 
+                    if(!ps[n])ps[n]={qty:0,rev:0}; 
+                    ps[n].qty+=i.quantity; 
+                    const p=State.data.products.find(prod=>prod['Nama Produk'].trim().toLowerCase()===n.toLowerCase()); 
+                    const pr=i.price||(p?p.Harga:0); 
+                    ps[n].rev+=(pr*i.quantity); 
+                }); 
+            }); 
+            const rows=[['Nama Barang','Kategori ABC','Terjual','Stok Current','HPP','Omzet','Profit Cuan']]; 
+            Object.keys(ps).forEach(n=>{ 
+                const s=ps[n]; 
+                const p=State.data.products.find(prod=>prod['Nama Produk'].trim().toLowerCase()===n.toLowerCase()); 
+                const st=p?(parseInt(p['Stok Area Kasir adamart 73']||0)+parseInt(p['Stok Area Kasir adamart induksi']||0)+parseInt(p['Stok Area Kasir adamart kelanis']||0)):0; 
+                const h=p?(parseInt(p.HPP)||0):0; 
+                const abc = p ? p.abcCategory || 'C' : 'C';
+                rows.push([`"${n}"`, abc, s.qty, st, h, s.rev, s.rev-(h*s.qty)]); 
+            }); 
+            downloadCSV(rows, "Laporan_Performa_Produk.csv");
+        };
+
+        function downloadCSV(rows, filename) {
+            const csv = "data:text/csv;charset=utf-8,\uFEFF" + rows.map(e => e.join(",")).join("\n");
+            const link = document.createElement("a");
+            link.href = encodeURI(csv);
+            link.download = filename;
+            link.click();
+        }
 
         function formatRp(n) { return "Rp " + (n || 0).toLocaleString('id-ID'); }
-        function checkStock(v) { return (v || 0) < 10 ? 'text-red-600' : 'text-gray-800'; }
-        function getStatusBadge(s) { return `<span class="px-2 py-1 rounded text-xs font-bold bg-gray-100">${s.toUpperCase()}</span>`; }
+        function checkStock(v) { return (v || 0) < 10 ? 'text-rose-600 font-bold' : 'text-slate-800'; }
+        function getStatusBadge(s) { return `<span class="px-2.5 py-1 rounded-full text-xs font-bold bg-slate-100 text-slate-700 border border-slate-200">${s.toUpperCase()}</span>`; }
 
         window.Actions = Actions; window.Modals = Modals; window.Pages = Pages; window.State = State; window.EvoucherState = EvoucherState; window.EvoucherActions = EvoucherActions;
     </script>
