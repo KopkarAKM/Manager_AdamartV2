@@ -440,7 +440,7 @@
                 case 'logistics': title.innerText = 'Logistik Toko (Barang Masuk)'; container.innerHTML = Pages.Logistics(); break;
                 case 'inventory': title.innerText = 'Inventory Master'; container.innerHTML = Pages.Inventory(); setupInventoryListeners(); break;
                 case 'purchase': title.innerText = 'Purchase Orders (Supplier)'; container.innerHTML = Pages.Purchase(); break;
-                case 'shifts': title.innerText = 'Laporan Shift Harian'; container.innerHTML = Pages.Shifts(); break;
+                case 'shifts': title.innerText = 'Laporan Shift & Rekap Metode Pembayaran'; container.innerHTML = Pages.Shifts(); break;
                 case 'kasir': title.innerText = 'Rapor Kinerja Kasir'; container.innerHTML = Pages.Kasir(); break;
                 case 'retur': title.innerText = 'Manajemen Retur & Barang Rusak'; container.innerHTML = Pages.Retur(); break;
                 case 'audit': title.innerText = 'Stock Opname & Audit'; container.innerHTML = Pages.Audit(); break;
@@ -575,16 +575,16 @@
                         </div>
                     </div>
 
-                    <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-200/80 border-l-4 border-l-purple-500 cursor-pointer hover:bg-purple-50/50 hover:shadow-md transition sm:col-span-2 lg:col-span-1 flex flex-col justify-between" onclick="navigate('logistics')">
+                    <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-200/80 border-l-4 border-l-purple-500 cursor-pointer hover:bg-purple-50/50 hover:shadow-md transition sm:col-span-2 lg:col-span-1 flex flex-col justify-between" onclick="navigate('shifts')">
                         <div>
                             <div class="text-purple-600 text-xs font-bold uppercase tracking-wider flex justify-between">
-                                Barang Masuk <span>🚛</span>
+                                Rekap Kas & Kasbon <span>🕒</span>
                             </div>
-                            <div class="text-2xl sm:text-3xl font-extrabold text-purple-900 mt-2">${filteredLogs.length} <span class="text-xs font-normal text-slate-400">Penerimaan</span></div>
+                            <div class="text-xs text-slate-500 mt-2">Cek rincian Kas Fisik, QRIS, & Kasbon (Piutang Gaji)</div>
                         </div>
-                        <div class="text-xs text-purple-700 font-medium bg-purple-50 p-3 rounded-xl border border-purple-100 mt-4 flex items-center justify-between">
-                            <span>Aktivitas Restock Logistik</span>
-                            <span class="font-bold">&rarr;</span>
+                        <div class="text-xs text-purple-700 font-bold bg-purple-50 p-3 rounded-xl border border-purple-100 mt-4 flex items-center justify-between">
+                            <span>Laporan Shift & Piutang</span>
+                            <span>&rarr;</span>
                         </div>
                     </div>
                 </div>
@@ -1022,39 +1022,93 @@
                 </div>
             </div>`,
 
-            Shifts: () => `
-            <div class="bg-white rounded-2xl shadow-sm overflow-hidden flex flex-col h-[calc(100vh-160px)] border border-slate-200/80">
-                <div class="p-5 border-b border-slate-100 bg-sky-50/50 shrink-0 flex justify-between items-center">
-                    <h3 class="font-bold text-slate-800 text-base">🕒 Laporan Keuangan Shift Harian Kasir</h3>
-                    <button onclick="exportShiftReportToCSV()" class="bg-white text-sky-700 border border-sky-200 px-3.5 py-2 rounded-xl text-xs font-bold hover:bg-sky-50 touch-target">📥 Export CSV</button>
-                </div>
-                <div class="overflow-x-auto flex-1">
-                    <table class="w-full text-left text-sm whitespace-nowrap">
-                        <thead class="bg-slate-100 sticky top-0 z-10 text-slate-600 uppercase text-xs font-bold">
-                            <tr><th class="p-4">Waktu & Kasir</th><th class="p-4 text-right">Tunai (Fisik)</th><th class="p-4 text-right">QRIS</th><th class="p-4 text-right">Kasbon</th><th class="p-4 text-right font-bold">Total Real</th><th class="p-4 text-right">Selisih</th></tr>
-                        </thead>
-                        <tbody class="divide-y divide-slate-100">
-                            ${State.data.shifts.map(s => { 
-                                const cashNet = s.actualCash - s.startCash; 
-                                const totalReal = cashNet + (s.totalQris||0) + (s.totalKasbon||0); 
-                                return `
-                                <tr class="hover:bg-slate-50">
-                                    <td class="p-4">
-                                        <div class="font-bold text-slate-800">${s.cashierName}</div>
-                                        <div class="text-xs text-slate-400">${new Date(s.openTime).toLocaleDateString()}</div>
-                                        <span class="bg-slate-100 text-slate-700 px-2.5 py-0.5 rounded text-xs font-semibold">${s.area}</span>
-                                    </td>
-                                    <td class="p-4 text-right font-bold text-slate-800">${formatRp(s.actualCash)}</td>
-                                    <td class="p-4 text-right text-sky-700 font-semibold">${formatRp(s.totalQris||0)}</td>
-                                    <td class="p-4 text-right text-amber-700 font-semibold">${formatRp(s.totalKasbon||0)}</td>
-                                    <td class="p-4 text-right font-extrabold text-slate-900">${formatRp(totalReal)}</td>
-                                    <td class="p-4 text-right font-bold ${s.difference < 0 ? 'text-rose-600' : 'text-emerald-600'}">${s.difference === 0 ? '✅ Pas' : formatRp(s.difference)}</td>
-                                </tr>`; 
-                            }).join('')}
-                        </tbody>
-                    </table>
-                </div>
-            </div>`,
+            Shifts: () => {
+                let totalCashFisik = 0;
+                let totalQris = 0;
+                let totalKasbon = 0;
+
+                State.data.shifts.forEach(s => {
+                    totalCashFisik += (s.actualCash || 0);
+                    totalQris += (s.totalQris || 0);
+                    totalKasbon += (s.totalKasbon || 0);
+                });
+
+                return `
+                <div class="space-y-6">
+                    <!-- SUMMARY CARDS: UANG KAS FISIK, QRIS, KASBON PIUTANG -->
+                    <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                        <div class="bg-white p-5 rounded-2xl shadow-sm border border-slate-200/80 border-l-4 border-l-emerald-500">
+                            <div class="text-xs font-bold text-slate-500 uppercase tracking-wider flex justify-between items-center">
+                                <span>💵 Uang Kas Fisik (Tunai)</span>
+                                <span class="text-[10px] bg-emerald-100 text-emerald-800 px-2 py-0.5 rounded font-bold">Setoran Laci</span>
+                            </div>
+                            <div class="text-2xl font-extrabold text-slate-900 mt-2">${formatRp(totalCashFisik)}</div>
+                            <div class="text-xs text-slate-400 mt-1">Uang fisik yang disetorkan kasir</div>
+                        </div>
+
+                        <div class="bg-white p-5 rounded-2xl shadow-sm border border-slate-200/80 border-l-4 border-l-sky-500">
+                            <div class="text-xs font-bold text-slate-500 uppercase tracking-wider flex justify-between items-center">
+                                <span>📱 Total Pembayaran QRIS</span>
+                                <span class="text-[10px] bg-sky-100 text-sky-800 px-2 py-0.5 rounded font-bold">Masuk Bank</span>
+                            </div>
+                            <div class="text-2xl font-extrabold text-sky-600 mt-2">${formatRp(totalQris)}</div>
+                            <div class="text-xs text-slate-400 mt-1">Nett digital langsung masuk ke rekening</div>
+                        </div>
+
+                        <div class="bg-white p-5 rounded-2xl shadow-sm border border-slate-200/80 border-l-4 border-l-amber-500">
+                            <div class="text-xs font-bold text-slate-500 uppercase tracking-wider flex justify-between items-center">
+                                <span>📝 Kasbon / Potong Gaji (Piutang)</span>
+                                <span class="text-[10px] bg-amber-100 text-amber-800 px-2 py-0.5 rounded font-bold">Piutang Akhir Bulan</span>
+                            </div>
+                            <div class="text-2xl font-extrabold text-amber-600 mt-2">${formatRp(totalKasbon)}</div>
+                            <div class="text-xs text-slate-400 mt-1">Piutang yang akan dipotong dari gaji karyawan</div>
+                        </div>
+                    </div>
+
+                    <div class="bg-white rounded-2xl shadow-sm overflow-hidden flex flex-col h-[calc(100vh-280px)] border border-slate-200/80">
+                        <div class="p-5 border-b border-slate-100 bg-sky-50/50 shrink-0 flex justify-between items-center flex-wrap gap-2">
+                            <div>
+                                <h3 class="font-bold text-slate-800 text-base">🕒 Laporan Keuangan Shift Harian Kasir</h3>
+                                <p class="text-xs text-slate-500">Rincian setoran tunai, QRIS, kasbon piutang, & selisih per shift</p>
+                            </div>
+                            <button onclick="exportShiftReportToCSV()" class="bg-white text-sky-700 border border-sky-200 px-3.5 py-2 rounded-xl text-xs font-bold hover:bg-sky-50 touch-target">📥 Export CSV</button>
+                        </div>
+                        <div class="overflow-x-auto flex-1">
+                            <table class="w-full text-left text-sm whitespace-nowrap">
+                                <thead class="bg-slate-100 sticky top-0 z-10 text-slate-600 uppercase text-xs font-bold">
+                                    <tr>
+                                        <th class="p-4">Waktu & Kasir</th>
+                                        <th class="p-4 text-right">Tunai (Kas Fisik)</th>
+                                        <th class="p-4 text-right">QRIS</th>
+                                        <th class="p-4 text-right">Kasbon (Piutang)</th>
+                                        <th class="p-4 text-right font-bold">Total Real</th>
+                                        <th class="p-4 text-right">Selisih</th>
+                                    </tr>
+                                </thead>
+                                <tbody class="divide-y divide-slate-100">
+                                    ${State.data.shifts.map(s => { 
+                                        const cashNet = s.actualCash - s.startCash; 
+                                        const totalReal = cashNet + (s.totalQris||0) + (s.totalKasbon||0); 
+                                        return `
+                                        <tr class="hover:bg-slate-50">
+                                            <td class="p-4">
+                                                <div class="font-bold text-slate-800">${s.cashierName}</div>
+                                                <div class="text-xs text-slate-400">${new Date(s.openTime).toLocaleDateString()}</div>
+                                                <span class="bg-slate-100 text-slate-700 px-2.5 py-0.5 rounded text-xs font-semibold">${s.area}</span>
+                                            </td>
+                                            <td class="p-4 text-right font-bold text-emerald-600">${formatRp(s.actualCash)}</td>
+                                            <td class="p-4 text-right text-sky-700 font-semibold">${formatRp(s.totalQris||0)}</td>
+                                            <td class="p-4 text-right text-amber-700 font-semibold">${formatRp(s.totalKasbon||0)}</td>
+                                            <td class="p-4 text-right font-extrabold text-slate-900">${formatRp(totalReal)}</td>
+                                            <td class="p-4 text-right font-bold ${s.difference < 0 ? 'text-rose-600' : 'text-emerald-600'}">${s.difference === 0 ? '✅ Pas' : formatRp(s.difference)}</td>
+                                        </tr>`; 
+                                    }).join('')}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>`;
+            },
             
             Kasir: () => {
                 const stats = {};
@@ -1943,7 +1997,7 @@
         };
 
         window.exportShiftReportToCSV = () => {
-            const rows = [['Open Time', 'Nama Kasir', 'Cabang', 'Setoran Tunai Fisik', 'Total QRIS', 'Total Kasbon', 'Total Real', 'Selisih']];
+            const rows = [['Open Time', 'Nama Kasir', 'Cabang', 'Setoran Tunai Fisik', 'Total QRIS', 'Total Kasbon (Piutang)', 'Total Real', 'Selisih']];
             State.data.shifts.forEach(s => {
                 const cashNet = s.actualCash - s.startCash;
                 const totalReal = cashNet + (s.totalQris||0) + (s.totalKasbon||0);
