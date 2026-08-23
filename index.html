@@ -248,8 +248,9 @@
         
         const State = { 
             currentPage: 'dashboard', 
-            dashboardFilter: 'today',
+            dashboardFilter: { preset: 'today', startDate: '', endDate: '' },
             restockAreaFilter: 'all',
+            shiftFilter: { preset: 'all_time', startDate: '', endDate: '' },
             data: { products: [], sales: [], purchases: [], shifts: [], logs: [], returns: [], audits: [] }, 
             tempBatchItems: [], 
             charts: { line: null, doughnut: null } 
@@ -293,8 +294,51 @@
             }
         };
 
-        window.updateDashFilter = (val) => { State.dashboardFilter = val; renderPage(); };
+        window.updateDashFilter = (val) => { 
+            if (typeof State.dashboardFilter !== 'object') State.dashboardFilter = {};
+            State.dashboardFilter.preset = val; 
+            renderPage(); 
+        };
+
+        window.updateDashPresetFilter = (presetVal) => {
+            if (typeof State.dashboardFilter !== 'object') {
+                State.dashboardFilter = { preset: presetVal, startDate: '', endDate: '' };
+            } else {
+                State.dashboardFilter.preset = presetVal;
+                if (presetVal !== 'custom') {
+                    State.dashboardFilter.startDate = '';
+                    State.dashboardFilter.endDate = '';
+                }
+            }
+            renderPage();
+        };
+
+        window.updateDashCustomDates = (start, end) => {
+            State.dashboardFilter = {
+                preset: 'custom',
+                startDate: start,
+                endDate: end
+            };
+            renderPage();
+        };
+
         window.updateRestockAreaFilter = (area) => { State.restockAreaFilter = area; renderPage(); };
+        
+        window.updateShiftPresetFilter = (presetVal) => {
+            State.shiftFilter.preset = presetVal;
+            if (presetVal !== 'custom') {
+                State.shiftFilter.startDate = '';
+                State.shiftFilter.endDate = '';
+            }
+            renderPage();
+        };
+
+        window.updateShiftCustomDates = (start, end) => {
+            State.shiftFilter.preset = 'custom';
+            State.shiftFilter.startDate = start;
+            State.shiftFilter.endDate = end;
+            renderPage();
+        };
 
         document.addEventListener('firebase-ready', () => { loadAllData(); });
 
@@ -479,32 +523,43 @@
                         return `<div class="flex justify-between items-center border-b border-slate-100 py-3 last:border-0"><div><div class="font-bold text-sm text-slate-800">${p['Nama Produk']}</div><div class="text-xs text-slate-400 font-medium">Exp: ${expDate.toLocaleDateString('id-ID')}</div></div><span class="bg-amber-100 text-amber-800 text-xs font-bold px-3 py-1 rounded-full border border-amber-200">${diffDays} Hari Lagi</span></div>`;
                     }).join('');
 
-                let filteredSales = State.data.sales;
-                let filteredLogs = State.data.logs;
-                
-                if (State.dashboardFilter === 'today') {
-                    filteredSales = State.data.sales.filter(s => {
-                        if(!s.timestamp) return false;
-                        const d = new Date(s.timestamp);
-                        return d.getDate() === today.getDate() && d.getMonth() === today.getMonth() && d.getFullYear() === today.getFullYear();
-                    });
-                    filteredLogs = State.data.logs.filter(l => {
-                        if(!l.timestamp) return false;
-                        const d = new Date(l.timestamp);
-                        return d.getDate() === today.getDate() && d.getMonth() === today.getMonth() && d.getFullYear() === today.getFullYear();
-                    });
-                } else if (State.dashboardFilter === 'this_month') {
-                    filteredSales = State.data.sales.filter(s => {
-                        if(!s.timestamp) return false;
-                        const d = new Date(s.timestamp);
-                        return d.getMonth() === today.getMonth() && d.getFullYear() === today.getFullYear();
-                    });
-                    filteredLogs = State.data.logs.filter(l => {
-                        if(!l.timestamp) return false;
-                        const d = new Date(l.timestamp);
-                        return d.getMonth() === today.getMonth() && d.getFullYear() === today.getFullYear();
-                    });
-                }
+                const now = new Date();
+                const dashPreset = (typeof State.dashboardFilter === 'object' ? State.dashboardFilter.preset : State.dashboardFilter) || 'today';
+
+                const filterByDashDate = (timestamp) => {
+                    if (!timestamp) return false;
+                    const d = new Date(timestamp);
+                    if (dashPreset === 'today') {
+                        return d.getDate() === now.getDate() && d.getMonth() === now.getMonth() && d.getFullYear() === now.getFullYear();
+                    } else if (dashPreset === 'yesterday') {
+                        const yest = new Date();
+                        yest.setDate(now.getDate() - 1);
+                        return d.getDate() === yest.getDate() && d.getMonth() === yest.getMonth() && d.getFullYear() === yest.getFullYear();
+                    } else if (dashPreset === '7days') {
+                        const sevenDaysAgo = new Date();
+                        sevenDaysAgo.setDate(now.getDate() - 7);
+                        return d >= sevenDaysAgo;
+                    } else if (dashPreset === 'this_month') {
+                        return d.getMonth() === now.getMonth() && d.getFullYear() === now.getFullYear();
+                    } else if (dashPreset === 'last_month') {
+                        const lastM = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+                        return d.getMonth() === lastM.getMonth() && d.getFullYear() === lastM.getFullYear();
+                    } else if (dashPreset === 'custom') {
+                        if (State.dashboardFilter.startDate) {
+                            const start = new Date(State.dashboardFilter.startDate + 'T00:00:00');
+                            if (d < start) return false;
+                        }
+                        if (State.dashboardFilter.endDate) {
+                            const end = new Date(State.dashboardFilter.endDate + 'T23:59:59');
+                            if (d > end) return false;
+                        }
+                        return true;
+                    }
+                    return true; // 'all_time'
+                };
+
+                const filteredSales = State.data.sales.filter(s => filterByDashDate(s.timestamp));
+                const filteredLogs = State.data.logs.filter(l => filterByDashDate(l.timestamp));
 
                 const totalRev = filteredSales.reduce((s, i) => s + (i.total || 0), 0);
                 const rev73 = filteredSales.filter(s => s.area && s.area.toLowerCase().includes('73')).reduce((s, i) => s + (i.total || 0), 0);
@@ -517,16 +572,33 @@
                 const trxKelanis = filteredSales.filter(s => s.area && s.area.toLowerCase().includes('kelanis')).length;
 
                 return `
-                <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 bg-white p-5 rounded-2xl shadow-sm border border-slate-200/80">
-                    <div>
-                        <h2 class="text-lg font-bold text-slate-800">Ringkasan Performa Adamart</h2>
-                        <p class="text-xs text-slate-500 mt-0.5">Pantau omzet, transaksi, dan stok secara real-time</p>
+                <div class="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4 bg-white p-5 rounded-2xl shadow-sm border border-slate-200/80">
+                    <div class="flex items-center gap-2.5">
+                        <div class="w-10 h-10 rounded-xl bg-emerald-100 text-emerald-700 flex items-center justify-center font-bold text-lg">📊</div>
+                        <div>
+                            <h2 class="text-lg font-bold text-slate-800">Ringkasan Performa Adamart</h2>
+                            <p class="text-xs text-slate-500 mt-0.5">Pantau omzet, transaksi, dan stok secara real-time berdasarkan periode</p>
+                        </div>
                     </div>
-                    <select onchange="updateDashFilter(this.value)" class="p-3 border-2 border-sky-100 rounded-xl text-sm bg-sky-50 text-sky-800 font-bold focus:outline-none focus:border-sky-400 cursor-pointer touch-target w-full sm:w-auto">
-                        <option value="today" ${State.dashboardFilter === 'today' ? 'selected' : ''}>Hari Ini</option>
-                        <option value="this_month" ${State.dashboardFilter === 'this_month' ? 'selected' : ''}>Bulan Ini</option>
-                        <option value="all_time" ${State.dashboardFilter === 'all_time' ? 'selected' : ''}>Semua Waktu</option>
-                    </select>
+
+                    <div class="flex flex-wrap items-center gap-2.5 w-full lg:w-auto">
+                        <select onchange="updateDashPresetFilter(this.value)" class="p-3 border-2 border-emerald-200 rounded-xl text-sm bg-white font-bold text-slate-800 focus:outline-none focus:border-emerald-500 cursor-pointer touch-target shadow-2xs">
+                            <option value="all_time" ${dashPreset === 'all_time' ? 'selected' : ''}>🌐 Semua Waktu (All Time)</option>
+                            <option value="today" ${dashPreset === 'today' ? 'selected' : ''}>📅 Hari Ini</option>
+                            <option value="yesterday" ${dashPreset === 'yesterday' ? 'selected' : ''}>⏮️ Kemarin</option>
+                            <option value="7days" ${dashPreset === '7days' ? 'selected' : ''}>📆 7 Hari Terakhir</option>
+                            <option value="this_month" ${dashPreset === 'this_month' ? 'selected' : ''}>🗓️ Bulan Ini</option>
+                            <option value="last_month" ${dashPreset === 'last_month' ? 'selected' : ''}>⏮️ Bulan Lalu</option>
+                            <option value="custom" ${dashPreset === 'custom' ? 'selected' : ''}>⚙️ Rentang Tanggal Custom...</option>
+                        </select>
+
+                        <div class="flex items-center gap-2 ${dashPreset === 'custom' ? 'flex' : 'hidden'} w-full sm:w-auto mt-2 sm:mt-0">
+                            <input type="date" id="dash-start-date" value="${State.dashboardFilter.startDate || ''}" class="p-2.5 border border-slate-300 rounded-xl text-xs font-semibold bg-white touch-target">
+                            <span class="text-xs font-bold text-slate-400">s/d</span>
+                            <input type="date" id="dash-end-date" value="${State.dashboardFilter.endDate || ''}" class="p-2.5 border border-slate-300 rounded-xl text-xs font-semibold bg-white touch-target">
+                            <button type="button" onclick="updateDashCustomDates(document.getElementById('dash-start-date').value, document.getElementById('dash-end-date').value)" class="px-3 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl font-bold text-xs shadow-sm touch-target">Terapkan</button>
+                        </div>
+                    </div>
                 </div>
 
                 <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
@@ -1023,11 +1095,47 @@
             </div>`,
 
             Shifts: () => {
+                const now = new Date();
+                const preset = State.shiftFilter.preset || 'all_time';
+
+                const filteredShifts = State.data.shifts.filter(s => {
+                    if (!s.openTime) return false;
+                    const d = new Date(s.openTime);
+                    
+                    if (preset === 'today') {
+                        return d.getDate() === now.getDate() && d.getMonth() === now.getMonth() && d.getFullYear() === now.getFullYear();
+                    } else if (preset === 'yesterday') {
+                        const yest = new Date();
+                        yest.setDate(now.getDate() - 1);
+                        return d.getDate() === yest.getDate() && d.getMonth() === yest.getMonth() && d.getFullYear() === yest.getFullYear();
+                    } else if (preset === '7days') {
+                        const sevenDaysAgo = new Date();
+                        sevenDaysAgo.setDate(now.getDate() - 7);
+                        return d >= sevenDaysAgo;
+                    } else if (preset === 'this_month') {
+                        return d.getMonth() === now.getMonth() && d.getFullYear() === now.getFullYear();
+                    } else if (preset === 'last_month') {
+                        const lastM = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+                        return d.getMonth() === lastM.getMonth() && d.getFullYear() === lastM.getFullYear();
+                    } else if (preset === 'custom') {
+                        if (State.shiftFilter.startDate) {
+                            const start = new Date(State.shiftFilter.startDate + 'T00:00:00');
+                            if (d < start) return false;
+                        }
+                        if (State.shiftFilter.endDate) {
+                            const end = new Date(State.shiftFilter.endDate + 'T23:59:59');
+                            if (d > end) return false;
+                        }
+                        return true;
+                    }
+                    return true;
+                });
+
                 let totalCashFisik = 0;
                 let totalQris = 0;
                 let totalKasbon = 0;
 
-                State.data.shifts.forEach(s => {
+                filteredShifts.forEach(s => {
                     totalCashFisik += (s.actualCash || 0);
                     totalQris += (s.totalQris || 0);
                     totalKasbon += (s.totalKasbon || 0);
@@ -1035,7 +1143,39 @@
 
                 return `
                 <div class="space-y-6">
-                    <!-- SUMMARY CARDS: UANG KAS FISIK, QRIS, KASBON PIUTANG -->
+                    <!-- BAR FILTER TANGGAL BERGAYA MODERN -->
+                    <div class="bg-white p-4 sm:p-5 rounded-2xl shadow-sm border border-slate-200/80 flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4">
+                        <div class="flex items-center gap-2.5">
+                            <div class="w-10 h-10 rounded-xl bg-sky-100 text-sky-700 flex items-center justify-center font-bold text-lg">📅</div>
+                            <div>
+                                <h3 class="font-bold text-slate-800 text-base">Filter Periode Laporan Shift</h3>
+                                <p class="text-xs text-slate-500">Pilih rentang tanggal untuk menghitung otomatis total Kas Fisik, QRIS, & Kasbon Piutang</p>
+                            </div>
+                        </div>
+
+                        <div class="flex flex-wrap items-center gap-2.5 w-full lg:w-auto">
+                            <!-- PRESET SELECTOR -->
+                            <select onchange="updateShiftPresetFilter(this.value)" class="p-3 border-2 border-sky-200 rounded-xl text-sm bg-white font-bold text-slate-800 focus:outline-none focus:border-sky-500 cursor-pointer touch-target shadow-2xs">
+                                <option value="all_time" ${preset === 'all_time' ? 'selected' : ''}>🌐 Semua Waktu (All Time)</option>
+                                <option value="today" ${preset === 'today' ? 'selected' : ''}>📅 Hari Ini</option>
+                                <option value="yesterday" ${preset === 'yesterday' ? 'selected' : ''}>⏮️ Kemarin</option>
+                                <option value="7days" ${preset === '7days' ? 'selected' : ''}>📆 7 Hari Terakhir</option>
+                                <option value="this_month" ${preset === 'this_month' ? 'selected' : ''}>🗓️ Bulan Ini</option>
+                                <option value="last_month" ${preset === 'last_month' ? 'selected' : ''}>⏮️ Bulan Lalu</option>
+                                <option value="custom" ${preset === 'custom' ? 'selected' : ''}>⚙️ Rentang Tanggal Custom...</option>
+                            </select>
+
+                            <!-- CUSTOM RENTANG TANGGAL INPUTS -->
+                            <div class="flex items-center gap-2 ${preset === 'custom' ? 'flex' : 'hidden'} w-full sm:w-auto mt-2 sm:mt-0">
+                                <input type="date" id="shift-start-date" value="${State.shiftFilter.startDate || ''}" class="p-2.5 border border-slate-300 rounded-xl text-xs font-semibold bg-white touch-target">
+                                <span class="text-xs font-bold text-slate-400">s/d</span>
+                                <input type="date" id="shift-end-date" value="${State.shiftFilter.endDate || ''}" class="p-2.5 border border-slate-300 rounded-xl text-xs font-semibold bg-white touch-target">
+                                <button type="button" onclick="updateShiftCustomDates(document.getElementById('shift-start-date').value, document.getElementById('shift-end-date').value)" class="px-3 py-2.5 bg-sky-600 hover:bg-sky-700 text-white rounded-xl font-bold text-xs shadow-sm touch-target">Terapkan</button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- SUMMARY CARDS: UANG KAS FISIK, QRIS, KASBON PIUTANG (RESPONSIVE FOR FILTERED DATE) -->
                     <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
                         <div class="bg-white p-5 rounded-2xl shadow-sm border border-slate-200/80 border-l-4 border-l-emerald-500">
                             <div class="text-xs font-bold text-slate-500 uppercase tracking-wider flex justify-between items-center">
@@ -1065,13 +1205,13 @@
                         </div>
                     </div>
 
-                    <div class="bg-white rounded-2xl shadow-sm overflow-hidden flex flex-col h-[calc(100vh-280px)] border border-slate-200/80">
+                    <div class="bg-white rounded-2xl shadow-sm overflow-hidden flex flex-col h-[calc(100vh-340px)] border border-slate-200/80">
                         <div class="p-5 border-b border-slate-100 bg-sky-50/50 shrink-0 flex justify-between items-center flex-wrap gap-2">
                             <div>
                                 <h3 class="font-bold text-slate-800 text-base">🕒 Laporan Keuangan Shift Harian Kasir</h3>
-                                <p class="text-xs text-slate-500">Rincian setoran tunai, QRIS, kasbon piutang, & selisih per shift</p>
+                                <p class="text-xs text-slate-500">Menampilkan ${filteredShifts.length} shift berdasarkan filter periode yang dipilih</p>
                             </div>
-                            <button onclick="exportShiftReportToCSV()" class="bg-white text-sky-700 border border-sky-200 px-3.5 py-2 rounded-xl text-xs font-bold hover:bg-sky-50 touch-target">📥 Export CSV</button>
+                            <button onclick="exportShiftReportToCSV()" class="bg-white text-sky-700 border border-sky-200 px-3.5 py-2 rounded-xl text-xs font-bold hover:bg-sky-50 touch-target">📥 Export CSV Terfilter</button>
                         </div>
                         <div class="overflow-x-auto flex-1">
                             <table class="w-full text-left text-sm whitespace-nowrap">
@@ -1086,7 +1226,7 @@
                                     </tr>
                                 </thead>
                                 <tbody class="divide-y divide-slate-100">
-                                    ${State.data.shifts.map(s => { 
+                                    ${filteredShifts.length === 0 ? '<tr><td colspan="6" class="p-8 text-center text-slate-400">Tidak ada data shift untuk periode yang dipilih.</td></tr>' : filteredShifts.map(s => { 
                                         const cashNet = s.actualCash - s.startCash; 
                                         const totalReal = cashNet + (s.totalQris||0) + (s.totalKasbon||0); 
                                         return `
@@ -1523,545 +1663,4 @@
                             </div>
                         </div>
                         <button type="submit" class="w-full py-3 bg-sky-600 hover:bg-sky-700 text-white font-bold rounded-xl shadow-md transition touch-target text-sm">
-                            ⚡ SIMPAN STOK SEKARANG
-                        </button>
-                    </form>
-                </div>`;
-                showModal(content);
-            },
-
-            submitQuickStockIncrement: async (barcode, productName, area, qtyChange) => {
-                const stockKey = `Stok Area Kasir ${area.toLowerCase()}`;
-                const areaLabel = area.replace('adamart ', '').toUpperCase();
-                
-                try {
-                    const existingProduct = State.data.products.find(p => p.Barcode === barcode);
-                    if (!existingProduct) return window.showToast("Produk tidak ditemukan!", "error");
-                    
-                    const docRef = window.doc(window.db, "products", existingProduct.id);
-                    await window.updateDoc(docRef, { [stockKey]: window.increment(qtyChange) });
-
-                    fetch(APPS_SCRIPT_URL, { 
-                        method: 'POST', 
-                        body: JSON.stringify({ 
-                            action: 'update_stock', 
-                            data: { barcode, name: productName, area: area.toLowerCase(), quantity: qtyChange } 
-                        }) 
-                    });
-
-                    closeModal();
-                    const actionText = qtyChange > 0 ? `+${qtyChange}` : `${qtyChange}`;
-                    window.showToast(`✅ Stok ${productName} (${areaLabel}) diperbarui (${actionText} Unit)!`, "success");
-                    loadAllData();
-                } catch (err) {
-                    window.showToast("Gagal update stok: " + err.message, "error");
-                }
-            },
-
-            submitQuickStockCustom: async (e, barcode, productName, area) => {
-                e.preventDefault();
-                const mode = document.getElementById('qsMode').value;
-                const qtyVal = parseInt(document.getElementById('qsValue').value);
-                if (isNaN(qtyVal)) return window.showToast("Masukkan angka valid!", "warning");
-
-                const stockKey = `Stok Area Kasir ${area.toLowerCase()}`;
-                const areaLabel = area.replace('adamart ', '').toUpperCase();
-
-                try {
-                    const existingProduct = State.data.products.find(p => p.Barcode === barcode);
-                    if (!existingProduct) return window.showToast("Produk tidak ditemukan!", "error");
-
-                    const docRef = window.doc(window.db, "products", existingProduct.id);
-                    let updatePayload = {};
-
-                    if (mode === 'add') {
-                        updatePayload[stockKey] = window.increment(qtyVal);
-                    } else {
-                        updatePayload[stockKey] = qtyVal;
-                    }
-
-                    await window.updateDoc(docRef, updatePayload);
-
-                    fetch(APPS_SCRIPT_URL, { 
-                        method: 'POST', 
-                        body: JSON.stringify({ 
-                            action: 'update_stock', 
-                            data: { barcode, name: productName, area: area.toLowerCase(), quantity: mode === 'add' ? qtyVal : qtyVal } 
-                        }) 
-                    });
-
-                    closeModal();
-                    window.showToast(`✅ Stok ${productName} (${areaLabel}) berhasil disimpan!`, "success");
-                    loadAllData();
-                } catch (err) {
-                    window.showToast("Gagal update stok: " + err.message, "error");
-                }
-            },
-
-            createBatchPO: async (e) => { 
-                e.preventDefault(); 
-                const form = e.target; 
-                const selectVal = document.getElementById('supplierSelect').value; 
-                let supplier = selectVal === 'custom' ? document.getElementById('customSupplier').value.trim() : selectVal; 
-                if(State.tempBatchItems.length === 0) return window.showToast("Belum ada item ditambahkan ke PO!", "warning"); 
-                const batchId = 'BATCH-' + Date.now(); 
-                const promises = []; 
-                const orderDate = form.elements['orderDate'].value; 
-                BRANCHES.forEach(branch => { 
-                    if(document.getElementById(`branch-${branch.replace(/\s+/g, '-')}`).checked) { 
-                        const poData = { type: 'purchase', batchNumber: batchId, branch: branch, supplier: supplier, orderDate: orderDate, status: 'pending', items: JSON.stringify(State.tempBatchItems), createdAt: new Date().toISOString() }; 
-                        promises.push(window.addDoc(window.collection(window.db, "purchases"), poData)); 
-                    } 
-                }); 
-                await Promise.all(promises); 
-                closeModal(); 
-                window.showToast("Sukses! PO Batch berhasil dibuat.", "success"); 
-                loadAllData(); 
-            },
-            
-            printPO: (batchId) => {
-                const po = State.data.purchases.find(p => p.batchNumber === batchId);
-                if (!po) return window.showToast("Data PO tidak ditemukan", "error");
-                const items = JSON.parse(po.items); let total = 0;
-                const tbody = items.map((i, idx) => {
-                    const hpp = parseInt(i.hpp) || 0; const subtotal = i.qty * hpp; total += subtotal;
-                    return `<tr><td style="border:1px solid #000;padding:8px;text-align:center;">${idx+1}</td><td style="border:1px solid #000;padding:8px;">${i.barcode}<br><b>${i.name}</b></td><td style="border:1px solid #000;padding:8px;text-align:center;">${i.qty} ${i.unit || 'PCS'}</td><td style="border:1px solid #000;padding:8px;text-align:right;">${formatRp(hpp)}</td><td style="border:1px solid #000;padding:8px;text-align:right;">${formatRp(subtotal)}</td></tr>`;
-                }).join('');
-                const printWindow = window.open('', '_blank');
-                printWindow.document.write(`
-                <html><head><title>Cetak PO - ${po.batchNumber}</title>
-                    <style>body{font-family:'Times New Roman',serif;padding:20px;color:#000;font-size:14px;} .header{display:flex;align-items:center;border-bottom:4px double #000;padding-bottom:15px;margin-bottom:20px;} .logo{width:110px;height:auto;margin-right:20px;} .kop{text-align:center;flex:1;} .kop h1{margin:0 0 5px 0;font-size:20px;font-weight:bold;text-transform:uppercase;} .kop p{margin:2px 0;font-size:13px;line-height:1.4;} .title{text-align:center;font-size:18px;font-weight:bold;text-decoration:underline;margin-bottom:25px;} .info{display:flex;justify-content:space-between;margin-bottom:20px;} .info table{font-size:14px;} .info table td{padding:3px 8px;vertical-align:top;} .content-table{width:100%;border-collapse:collapse;margin-bottom:40px;} .content-table th{border:1px solid #000;padding:10px;background:#f0f0f0;font-weight:bold;} .footer{display:flex;justify-content:space-between;margin-top:50px;padding:0 30px;} .sign{text-align:center;width:250px;} .sign-space{height:100px;} @media print{body{padding:0;}}</style>
-                </head><body onload="setTimeout(()=>{window.print();window.close();},500)">
-                    <div class="header"><img src="https://i.ibb.co.com/WvTwLMn5/image-1.png" class="logo" alt="Logo Kopkar"><div class="kop"><h1>Koperasi Karyawan Adaro Karya Mandiri</h1><p>Badan Hukum Nomor : 2128/BH/IX Tanggal 31 Juli 1995</p><p>Office : Jl. Jend. A. Yani Komp. Swadharma Jalur II Blok Mawar RT IV<br>Kel. Mabuun Kec. Murung Pudak Kab. Tabalong Prov. Kalimantan Selatan</p><p>Kode Pos 71571 | Telp/Fax : 0526 – 2023593 | Email : kopkar.adaro@gmail.com</p></div></div>
-                    <div class="title">SURAT PEMESANAN BARANG (PURCHASE ORDER)</div>
-                    <div class="info"><div><table><tr><td>Nomor PO</td><td>:</td><td><b>${po.batchNumber}</b></td></tr><tr><td>Tanggal</td><td>:</td><td>${new Date(po.orderDate).toLocaleDateString('id-ID',{day:'numeric',month:'long',year:'numeric'})}</td></tr><tr><td>Pengiriman</td><td>:</td><td>${po.branch}</td></tr></table></div><div><table><tr><td>Kepada Yth.</td><td>:</td><td><b>${po.supplier}</b></td></tr></table></div></div>
-                    <table class="content-table"><thead><tr><th>No</th><th>Kode & Nama Barang</th><th>Qty</th><th>Harga Satuan (Beli)</th><th>Total Harga</th></tr></thead><tbody>${tbody}</tbody><tfoot><tr><td colspan="4" style="border:1px solid #000;padding:10px;text-align:right;font-weight:bold;">TOTAL NILAI PO</td><td style="border:1px solid #000;padding:10px;text-align:right;font-weight:bold;font-size:16px;">${formatRp(total)}</td></tr></tfoot></table>
-                    <div class="footer"><div class="sign"><p>Mengetahui & Menyetujui,</p><div class="sign-space"></div><p><b>( Manager Adamart )</b></p></div><div class="sign"><p>Diterima Oleh,</p><div class="sign-space"></div><p><b>( Pihak Supplier )</b></p></div></div>
-                </body></html>`);
-                printWindow.document.close();
-            },
-
-            generateAutoPO: () => {
-                const checks = document.querySelectorAll('.restock-check:checked');
-                if(checks.length === 0) return window.showToast("Pilih item restock dulu!", "warning");
-                
-                const getLastPurchaseInfo = (barcode) => {
-                    for (let po of State.data.purchases) {
-                        try {
-                            const items = JSON.parse(po.items);
-                            const found = items.find(i => i.barcode === barcode);
-                            if (found && found.hpp > 0) return { hpp: parseInt(found.hpp), unit: found.unit || 'PCS' };
-                        } catch(e){}
-                    }
-                    return null;
-                };
-
-                State.tempBatchItems = Array.from(checks).map(c => {
-                    const d = JSON.parse(c.dataset.json);
-                    const lastPo = getLastPurchaseInfo(d.barcode);
-                    const finalHpp = lastPo ? lastPo.hpp : parseInt(d.hpp || 0);
-                    const finalUnit = lastPo ? lastPo.unit : 'PCS';
-                    
-                    return { barcode: d.barcode, name: d.name, qty: parseInt(d.qty), unit: finalUnit, hpp: finalHpp, price: parseInt(d.price || 0) };
-                });
-                
-                const targetArea = State.restockAreaFilter || 'all';
-                Modals.openBatchPO(targetArea);
-            },
-
-            updateStock: async (e) => { 
-                e.preventDefault(); 
-                const barcode = document.getElementById('barcode').value; 
-                const area = document.getElementById('targetArea').value; 
-                const qty = parseInt(document.getElementById('stockAmount').value); 
-                const hpp = parseInt(document.getElementById('hpp').value) || 0; 
-                const price = parseInt(document.getElementById('price').value) || 0; 
-                const name = document.getElementById('productName').value; 
-                const expiry = document.getElementById('expiryDate').value; 
-                const stockKey = `Stok Area Kasir ${area.toLowerCase()}`; 
-
-                try { 
-                    const existingProduct = State.data.products.find(p => p.Barcode === barcode); 
-                    if (existingProduct) { 
-                        const docRef = window.doc(window.db, "products", existingProduct.id); 
-                        const updateData = { "Nama Produk": name, "Harga": price, "HPP": hpp }; 
-                        if (qty !== 0) updateData[stockKey] = window.increment(qty); 
-                        if (expiry) updateData["Tanggal Kadaluarsa"] = new Date(expiry).toISOString(); 
-                        await window.updateDoc(docRef, updateData); 
-                    } else { 
-                        const newData = { Barcode: barcode, "Nama Produk": name, "Harga": price, "HPP": hpp, [stockKey]: qty }; 
-                        if (expiry) newData["Tanggal Kadaluarsa"] = new Date(expiry).toISOString(); 
-                        await window.addDoc(window.collection(window.db, "products"), newData); 
-                    } 
-                    fetch(APPS_SCRIPT_URL, { method: 'POST', body: JSON.stringify({ action: 'update_stock', data: { barcode, name, price, hpp, area: area.toLowerCase(), quantity: qty, expiryDate: expiry } }) }); 
-                    window.showToast("Stok Berhasil Diperbarui!", "success"); 
-                    document.getElementById('stockForm').reset(); 
-                    loadAllData(); 
-                } catch (err) { 
-                    window.showToast("Gagal update stok: " + err.message, "error"); 
-                } 
-            },
-
-            submitRetur: async (e) => {
-                e.preventDefault();
-                const barcode = document.getElementById('returBarcode').value;
-                const name = document.getElementById('returNameLabel').innerText;
-                const area = document.getElementById('returArea').value;
-                const qty = parseInt(document.getElementById('returQty').value);
-                const reason = document.getElementById('returReason').value;
-                const notes = document.getElementById('returNotes').value;
-
-                if (!barcode) return window.showToast("Pilih produk terlebih dahulu!", "warning");
-                
-                try {
-                    const stockKey = `Stok Area Kasir ${area.toLowerCase()}`;
-                    const existingProduct = State.data.products.find(p => p.Barcode === barcode);
-                    
-                    if (!existingProduct) return window.showToast("Produk tidak ditemukan di database.", "error");
-                    
-                    const docRef = window.doc(window.db, "products", existingProduct.id);
-                    await window.updateDoc(docRef, { [stockKey]: window.increment(-qty) });
-                    
-                    await window.addDoc(window.collection(window.db, "returns"), {
-                        barcode, name, area, qty, reason, notes, timestamp: new Date().toISOString()
-                    });
-                    
-                    window.showToast("Barang berhasil dikeluarkan dari stok.", "success");
-                    loadAllData();
-                } catch (err) { window.showToast("Error: " + err.message, "error"); }
-            },
-
-            updateAuditSystemStock: () => {
-                const barcode = document.getElementById('auditBarcode').value;
-                if (!barcode) return;
-                const area = document.getElementById('auditArea').value;
-                const product = State.data.products.find(p => p.Barcode === barcode);
-                if (product) {
-                    const stockKey = `Stok Area Kasir ${area.toLowerCase()}`;
-                    document.getElementById('auditSystemQty').innerText = product[stockKey] || 0;
-                }
-            },
-
-            submitAudit: async (e) => {
-                e.preventDefault();
-                const barcode = document.getElementById('auditBarcode').value;
-                const name = document.getElementById('auditNameLabel').innerText;
-                const area = document.getElementById('auditArea').value;
-                const physicalQty = parseInt(document.getElementById('auditPhysicalQty').value);
-                const systemQtyText = document.getElementById('auditSystemQty').innerText;
-                
-                if (!barcode || systemQtyText === '-') return window.showToast("Pilih produk terlebih dahulu!", "warning");
-                const systemQty = parseInt(systemQtyText);
-                const variance = physicalQty - systemQty;
-
-                try {
-                    const stockKey = `Stok Area Kasir ${area.toLowerCase()}`;
-                    const existingProduct = State.data.products.find(p => p.Barcode === barcode);
-                    
-                    if (existingProduct) {
-                        const docRef = window.doc(window.db, "products", existingProduct.id);
-                        await window.updateDoc(docRef, { [stockKey]: physicalQty }); 
-                        
-                        await window.addDoc(window.collection(window.db, "audits"), {
-                            barcode, name, area, systemQty, physicalQty, variance, timestamp: new Date().toISOString()
-                        });
-                        
-                        window.showToast("Hasil audit stok berhasil disimpan!", "success");
-                        loadAllData();
-                    }
-                } catch (err) { window.showToast("Error: " + err.message, "error"); }
-            }
-        };
-
-        function setupInventoryListeners() { const form = document.getElementById('stockForm'); if(form) form.addEventListener('submit', Actions.updateStock); }
-        
-        const Modals = { 
-            openBatchPO: (targetArea = 'all') => { 
-                const items = State.tempBatchItems || []; 
-                let totalEstimasi = items.reduce((sum, i) => sum + (parseInt(i.qty) * parseInt(i.hpp)), 0);
-                
-                const content = `
-                <div class="p-2">
-                    <div class="flex justify-between items-center mb-4">
-                        <div>
-                            <h3 class="text-xl font-extrabold text-slate-800">Buat Batch PO Supplier ${items.length > 0 ? '(Auto-Filled AI)' : ''}</h3>
-                            <p class="text-xs text-slate-500">Pemesanan stok baru ke supplier</p>
-                        </div>
-                        <button onclick="closeModal()" class="text-slate-400 hover:text-slate-700 touch-target" aria-label="Close modal">✕</button>
-                    </div>
-                    <form onsubmit="Actions.createBatchPO(event)" class="space-y-4">
-                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                            <div>
-                                <label class="text-xs font-bold text-slate-500 uppercase">Pilih Supplier</label>
-                                <select id="supplierSelect" class="p-3 border border-slate-300 rounded-xl w-full bg-white text-sm mt-1 touch-target" required onchange="toggleSupplierInput(this)">
-                                    <option value="">Pilih Supplier</option>
-                                    ${SUPPLIERS.map(s => `<option value="${s}">${s}</option>`).join('')}
-                                    <option value="custom" class="font-bold text-sky-600">+ Input Supplier Manual</option>
-                                </select>
-                                <input id="customSupplier" type="text" placeholder="Nama Supplier..." class="p-3 border border-slate-300 rounded-xl w-full mt-2 hidden text-sm touch-target" disabled>
-                            </div>
-                            <div>
-                                <label class="text-xs font-bold text-slate-500 uppercase">Tanggal Order</label>
-                                <input type="date" name="orderDate" class="p-3 border border-slate-300 rounded-xl w-full text-sm mt-1 touch-target" required value="${new Date().toISOString().split('T')[0]}">
-                            </div>
-                        </div>
-
-                        <div class="bg-sky-50/70 p-4 rounded-xl border border-sky-100 space-y-3">
-                            <label class="text-xs font-bold text-slate-500 uppercase block">Cari / Tambah Barang ke PO</label>
-                            <div class="relative">
-                                <input id="item-name" placeholder="Ketik nama atau scan barcode disini..." class="w-full p-3.5 border-2 border-sky-400 rounded-xl font-bold focus:outline-none focus:ring-2 focus:ring-sky-600 bg-white touch-target" autocomplete="off" oninput="searchProductForForm(this.value, 'po')">
-                                <div id="po-search-results" class="absolute z-50 w-full bg-white shadow-xl rounded-xl border border-slate-200 max-h-60 overflow-y-auto hidden mt-1"></div>
-                            </div>
-                            
-                            <div class="flex items-center gap-2 flex-wrap sm:flex-nowrap">
-                                <div class="w-full sm:w-28"><input id="item-barcode" placeholder="Barcode" class="w-full p-2.5 border border-slate-300 rounded-lg text-xs bg-slate-100 font-mono" readonly></div>
-                                <div class="w-1/2 sm:w-20"><input id="item-qty" type="number" placeholder="Qty" class="w-full p-2.5 border border-sky-300 rounded-lg text-sm font-bold bg-white"></div>
-                                <div class="w-1/2 sm:w-28">
-                                    <select id="item-unit" class="w-full p-2.5 border border-sky-300 rounded-lg text-sm bg-white font-medium">
-                                        <option value="PCS">PCS</option>
-                                        <optgroup label="Kemasan"><option value="DUS">DUS</option><option value="PACK">PACK</option><option value="RENCENG">RENCENG</option></optgroup>
-                                        <optgroup label="Kuantitas"><option value="LUSIN">LUSIN</option><option value="KODI">KODI</option></optgroup>
-                                    </select>
-                                </div>
-                                <div class="flex-1 min-w-[120px]"><input id="item-hpp" type="number" placeholder="Harga Beli (HPP)" class="w-full p-2.5 border border-slate-300 rounded-lg text-sm"></div>
-                                <button type="button" onclick="addItemToTemp()" class="bg-sky-600 text-white px-4 py-2.5 rounded-lg hover:bg-sky-700 font-bold shadow touch-target">+</button>
-                            </div>
-                            
-                            <div id="temp-items-list" class="text-sm text-slate-600 max-h-40 overflow-y-auto space-y-1.5 mt-3"></div>
-                            <div class="text-right font-extrabold text-xl text-sky-800 mt-3 pt-3 border-t border-sky-200" id="po-total-estimasi">Total Estimasi: ${formatRp(totalEstimasi)}</div>
-                        </div>
-
-                        <div>
-                            <label class="font-bold block mb-2 text-sm text-slate-700">Kirim Ke Cabang Tujuan:</label>
-                            <div class="flex gap-4 flex-wrap">
-                                ${BRANCHES.map(b => {
-                                    let isChecked = true;
-                                    if (targetArea !== 'all') {
-                                        const matchKeyword = targetArea.replace('adamart ', '').toLowerCase();
-                                        isChecked = b.toLowerCase().includes(matchKeyword);
-                                    }
-                                    return `<label class="flex items-center gap-2 text-sm font-medium p-2 bg-slate-50 rounded-xl border border-slate-200"><input type="checkbox" id="branch-${b.replace(/\s+/g, '-')}" ${isChecked ? 'checked' : ''} class="w-4 h-4 accent-sky-600"> ${b}</label>`;
-                                }).join('')}
-                            </div>
-                        </div>
-                        <button type="submit" class="w-full py-3.5 rounded-xl bg-sky-600 hover:bg-sky-700 text-white font-bold text-base shadow-lg touch-target transition">Buat & Kirim Batch PO</button>
-                    </form>
-                </div>`; 
-                showModal(content); 
-                if(items.length > 0) { document.getElementById('temp-items-list').innerHTML = items.map((i,x)=>`<div class="flex justify-between items-center bg-white p-2.5 rounded-xl border border-slate-200"><div><span class="font-mono text-xs bg-slate-100 p-1 rounded mr-2">${i.barcode||'-'}</span><span class="font-bold text-slate-800">${i.name}</span> x${i.qty} ${i.unit||'PCS'} <span class="text-xs text-slate-400 ml-2">B:${formatRp(i.hpp)}</span></div><button onclick="removeItemFromTemp(${x})" class="text-rose-500 px-2 font-bold touch-target">✕</button></div>`).join('');
-                } else { document.getElementById('temp-items-list').innerHTML = '<p class="text-xs text-slate-400 italic p-3 bg-white rounded-xl border border-dashed text-center">Belum ada item ditambahkan.</p>'; }
-            } 
-        };
-
-        function showModal(c){ 
-            const d=document.createElement('div'); 
-            d.className='modal-overlay'; 
-            d.innerHTML=`<div class="modal-content p-6 relative shadow-2xl">${c}</div>`; 
-            document.body.appendChild(d); 
-        }
-        function closeModal(){ document.querySelector('.modal-overlay')?.remove(); }
-
-        window.selectRowForUpdate = (barcode) => {
-            const p = State.data.products.find(i => String(i.Barcode) === String(barcode));
-            if (!p) return;
-
-            document.getElementById('barcode').value = p.Barcode;
-            document.getElementById('productName').value = p['Nama Produk'];
-            document.getElementById('price').value = p['Harga'];
-            document.getElementById('hpp').value = p['HPP'] || 0;
-            if (p['Tanggal Kadaluarsa']) {
-                document.getElementById('expiryDate').value = new Date(p['Tanggal Kadaluarsa']).toISOString().split('T')[0];
-            }
-            
-            const qtyInput = document.getElementById('stockAmount');
-            qtyInput.value = '';
-            qtyInput.focus();
-
-            window.showToast(`Auto-filled: ${p['Nama Produk']}`, "info");
-        };
-
-        window.setPresetQty = (qty) => {
-            const el = document.getElementById('stockAmount');
-            if (el) {
-                const current = parseInt(el.value) || 0;
-                el.value = current + qty;
-            }
-        };
-
-        window.autoFill = () => { 
-            const bc = document.getElementById('barcode').value; 
-            const p = State.data.products.find(i => String(i.Barcode) === bc); 
-            if (p) { 
-                document.getElementById('productName').value = p['Nama Produk']; 
-                document.getElementById('price').value = p['Harga']; 
-                document.getElementById('hpp').value = p['HPP'] || 0; 
-            } 
-        };
-        
-        window.searchProductForForm = (val, type) => { 
-            const containerId = `${type}-search-results`;
-            const container = document.getElementById(containerId); 
-            if(val.length < 2) { container.classList.add('hidden'); return; } 
-            const matches = State.data.products.filter(p => p['Nama Produk'].toLowerCase().includes(val.toLowerCase()) || String(p.Barcode).includes(val)).slice(0, 10); 
-            if(matches.length === 0) { container.innerHTML = '<div class="p-3 text-sm text-slate-500">Tidak ditemukan.</div>'; } 
-            else { 
-                container.innerHTML = matches.map(p => `
-                    <div class="p-3 hover:bg-sky-50 cursor-pointer border-b border-slate-100 text-sm touch-target flex flex-col justify-center" onclick="selectProductForForm('${p.Barcode}', '${type}')">
-                        <div class="font-bold text-slate-800">${p['Nama Produk']}</div>
-                        <div class="text-xs text-slate-400 flex justify-between mt-0.5"><span class="font-mono">${p.Barcode}</span><span>HPP: ${formatRp(p.HPP || 0)}</span></div>
-                    </div>`).join(''); 
-            } 
-            container.classList.remove('hidden'); 
-        };
-        
-        window.selectProductForForm = (barcode, type) => { 
-            const p = State.data.products.find(i => String(i.Barcode) === barcode); 
-            if(!p) return;
-            
-            document.getElementById(`${type}-search-results`).classList.add('hidden');
-            
-            if(type === 'po') {
-                document.getElementById('item-barcode').value = p.Barcode; 
-                document.getElementById('item-name').value = p['Nama Produk']; 
-                document.getElementById('item-hpp').value = p.HPP || 0; 
-                document.getElementById('item-qty').focus();
-            } else if (type === 'retur') {
-                document.getElementById('returSearch').value = ''; 
-                document.getElementById('returBarcode').value = p.Barcode; 
-                document.getElementById('returNameLabel').innerHTML = `<span class="text-orange-600 font-mono mr-2">${p.Barcode}</span>${p['Nama Produk']}`; 
-                document.getElementById('returQty').focus();
-            } else if (type === 'audit') {
-                document.getElementById('auditSearch').value = ''; 
-                document.getElementById('auditBarcode').value = p.Barcode; 
-                document.getElementById('auditNameLabel').innerHTML = `<span class="text-indigo-600 font-mono mr-2">${p.Barcode}</span>${p['Nama Produk']}`; 
-                Actions.updateAuditSystemStock(); 
-                document.getElementById('auditPhysicalQty').focus();
-            }
-        };
-
-        window.updateTotalEstimasi = () => { 
-            const t = State.tempBatchItems.reduce((s, i) => s + (parseInt(i.qty) * parseInt(i.hpp)), 0); 
-            const el = document.getElementById('po-total-estimasi'); 
-            if (el) el.innerText = 'Total Estimasi: ' + formatRp(t); 
-        };
-
-        window.addItemToTemp = () => { 
-            const barcode=document.getElementById('item-barcode').value; 
-            const name=document.getElementById('item-name').value; 
-            const qty=document.getElementById('item-qty').value; 
-            const unit=document.getElementById('item-unit').value; 
-            const hpp=document.getElementById('item-hpp').value; 
-            if(name && qty) { 
-                State.tempBatchItems.push({barcode, name, qty, unit, hpp, price: 0}); 
-                const list=State.tempBatchItems.map((i,x)=>`<div class="flex justify-between items-center bg-white p-2.5 rounded-xl border border-slate-200"><div><span class="font-mono text-xs bg-slate-100 p-1 rounded mr-2">${i.barcode||'-'}</span><span class="font-bold text-slate-800">${i.name}</span> x${i.qty} ${i.unit||'PCS'} <span class="text-xs text-slate-400 ml-2">B:${formatRp(i.hpp)}</span></div><button onclick="removeItemFromTemp(${x})" class="text-rose-500 px-2 font-bold touch-target">✕</button></div>`).join(''); 
-                document.getElementById('temp-items-list').innerHTML=list; 
-                window.updateTotalEstimasi(); 
-                document.getElementById('item-barcode').value=''; 
-                document.getElementById('item-name').value=''; 
-                document.getElementById('item-qty').value=''; 
-                document.getElementById('item-hpp').value=''; 
-                document.getElementById('item-name').focus(); 
-            } 
-        };
-        
-        window.removeItemFromTemp = (i) => { 
-            State.tempBatchItems.splice(i,1); 
-            document.getElementById('temp-items-list').innerHTML=State.tempBatchItems.length > 0 ? State.tempBatchItems.map((i,x)=>`<div class="flex justify-between items-center bg-white p-2.5 rounded-xl border border-slate-200"><div><span class="font-bold text-slate-800">${i.name}</span> x${i.qty} ${i.unit||'PCS'} <span class="text-xs text-slate-400 ml-2">B:${formatRp(i.hpp)}</span></div><button onclick="removeItemFromTemp(${x})" class="text-rose-500 px-2 font-bold touch-target">✕</button></div>`).join('') : '<p class="text-xs text-slate-400 italic p-3 bg-white rounded-xl border border-dashed text-center">Belum ada item ditambahkan.</p>'; 
-            window.updateTotalEstimasi(); 
-        };
-
-        window.toggleSupplierInput = (el) => { 
-            const i=document.getElementById('customSupplier'); 
-            if(el.value==='custom'){i.classList.remove('hidden');i.disabled=false;i.focus();}
-            else{i.classList.add('hidden');i.disabled=true;} 
-        };
-
-        window.filterInventory = (v) => { 
-            document.querySelectorAll('.product-row').forEach(r => r.style.display = r.innerText.toLowerCase().includes(v.toLowerCase()) ? '' : 'none'); 
-        };
-        
-        window.exportAuditReportToCSV = () => {
-            const rows = [['Tanggal Audit', 'Barcode', 'Nama Produk', 'Cabang', 'Stok Sistem', 'Stok Fisik', 'Selisih Unit']];
-            State.data.audits.forEach(a => {
-                rows.push([new Date(a.timestamp).toLocaleDateString('id-ID'), a.barcode, `"${a.name}"`, a.area, a.systemQty, a.physicalQty, a.variance]);
-            });
-            downloadCSV(rows, "Laporan_Audit_Stok.csv");
-        };
-
-        window.exportReturnReportToCSV = () => {
-            const rows = [['Tanggal Retur', 'Barcode', 'Nama Produk', 'Cabang', 'Alasan', 'Qty Keluar', 'Catatan']];
-            State.data.returns.forEach(r => {
-                rows.push([new Date(r.timestamp).toLocaleDateString('id-ID'), r.barcode, `"${r.name}"`, r.area, r.reason, r.qty, `"${r.notes||''}"`]);
-            });
-            downloadCSV(rows, "Laporan_Retur_Kerusakan.csv");
-        };
-
-        window.exportShiftReportToCSV = () => {
-            const rows = [['Open Time', 'Nama Kasir', 'Cabang', 'Setoran Tunai Fisik', 'Total QRIS', 'Total Kasbon (Piutang)', 'Total Real', 'Selisih']];
-            State.data.shifts.forEach(s => {
-                const cashNet = s.actualCash - s.startCash;
-                const totalReal = cashNet + (s.totalQris||0) + (s.totalKasbon||0);
-                rows.push([new Date(s.openTime).toLocaleString('id-ID'), `"${s.cashierName}"`, s.area, s.actualCash, s.totalQris||0, s.totalKasbon||0, totalReal, s.difference]);
-            });
-            downloadCSV(rows, "Laporan_Shift_Kasir.csv");
-        };
-
-        window.exportFinancialReportToCSV = () => { 
-            const grouped={}; const period=document.getElementById('reportPeriod').value; 
-            State.data.sales.forEach(s=>{ 
-                const d=new Date(s.timestamp); 
-                const key=period==='monthly'?d.toLocaleDateString('id-ID',{month:'long',year:'numeric'}):`Minggu ${Math.ceil(d.getDate()/7)} ${d.toLocaleDateString('id-ID',{month:'short'})}`; 
-                if(!grouped[key])grouped[key]={rev:0,cost:0,count:0}; 
-                let saleCost=0; 
-                let itemsList=s.cart||[]; 
-                if(itemsList.length===0&&s.items){s.items.split(', ').forEach(str=>{const parts=str.split(' x');if(parts.length===2)itemsList.push({name:parts[0].trim(),quantity:parseInt(parts[1])});});} 
-                itemsList.forEach(i=>{const p=State.data.products.find(prod=>prod['Nama Produk'].trim().toLowerCase()===i.name.toLowerCase()); saleCost+=(p?(parseInt(p.HPP)||0):0)*i.quantity;}); 
-                grouped[key].rev+=s.total; grouped[key].cost+=saleCost; grouped[key].count++; 
-            }); 
-            const rows=[['Periode','Total Transaksi','Total Omzet','Total HPP','Laba Kotor']]; 
-            Object.keys(grouped).reverse().forEach(k=>{rows.push([k,grouped[k].count,grouped[k].rev,grouped[k].cost,grouped[k].rev-grouped[k].cost]);}); 
-            downloadCSV(rows, "Laporan_Keuangan_Adamart.csv");
-        };
-
-        window.exportProductPerformanceCSV = () => { 
-            const ps={}; 
-            State.data.sales.forEach(s=>{ 
-                let itemsList=s.cart||[]; 
-                if(itemsList.length===0&&s.items){s.items.split(', ').forEach(str=>{const parts=str.split(' x');if(parts.length===2)itemsList.push({name:parts[0].trim(),quantity:parseInt(parts[1])});});} 
-                itemsList.forEach(i=>{ 
-                    const n=i.name; 
-                    if(!ps[n])ps[n]={qty:0,rev:0}; 
-                    ps[n].qty+=i.quantity; 
-                    const p=State.data.products.find(prod=>prod['Nama Produk'].trim().toLowerCase()===n.toLowerCase()); 
-                    const pr=i.price||(p?p.Harga:0); 
-                    ps[n].rev+=(pr*i.quantity); 
-                }); 
-            }); 
-            const rows=[['Nama Barang','Kategori ABC','Terjual','Stok Current','HPP','Omzet','Profit Cuan']]; 
-            Object.keys(ps).forEach(n=>{ 
-                const s=ps[n]; 
-                const p=State.data.products.find(prod=>prod['Nama Produk'].trim().toLowerCase()===n.toLowerCase()); 
-                const st=p?(parseInt(p['Stok Area Kasir adamart 73']||0)+parseInt(p['Stok Area Kasir adamart induksi']||0)+parseInt(p['Stok Area Kasir adamart kelanis']||0)):0; 
-                const h=p?(parseInt(p.HPP)||0):0; 
-                const abc = p ? p.abcCategory || 'C' : 'C';
-                rows.push([`"${n}"`, abc, s.qty, st, h, s.rev, s.rev-(h*s.qty)]); 
-            }); 
-            downloadCSV(rows, "Laporan_Performa_Produk.csv");
-        };
-
-        function downloadCSV(rows, filename) {
-            const csv = "data:text/csv;charset=utf-8,\uFEFF" + rows.map(e => e.join(",")).join("\n");
-            const link = document.createElement("a");
-            link.href = encodeURI(csv);
-            link.download = filename;
-            link.click();
-        }
-
-        function formatRp(n) { return "Rp " + (n || 0).toLocaleString('id-ID'); }
-        function checkStock(v) { return (v || 0) < 10 ? 'text-rose-600 font-bold' : 'text-slate-800'; }
-        function getStatusBadge(s) { return `<span class="px-2.5 py-1 rounded-full text-xs font-bold bg-slate-100 text-slate-700 border border-slate-200">${s.toUpperCase()}</span>`; }
-
-        window.Actions = Actions; window.Modals = Modals; window.Pages = Pages; window.State = State; window.EvoucherState = EvoucherState; window.EvoucherActions = EvoucherActions;
-    </script>
-</body>
-</html>
+ 
