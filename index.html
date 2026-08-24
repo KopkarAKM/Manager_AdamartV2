@@ -239,7 +239,14 @@
         const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbwkZVsoGXdgxck4xwOXk2fW4Oawn6diXu2bUX0sAIRFCfGeS1jTr6QjEH6Fr6-RFbnDAw/exec';
         const EVOUCHER_API_URL = "https://script.google.com/macros/s/AKfycbyQFkZW0QuBXi082jgXTsVBIy1OfVfhaQYVogvr7uBJBrCuGtkM73tTGqA1dl9ThlfL/exec";
 
-        const BRANCHES = ["Adamart 73", "Adamart Kelanis", "Adamart Induksi"];
+                const BRANCH_CONFIG = [
+            { id: '73', name: 'Adamart 73', code: 'PO-73', active: true },
+            { id: 'kelanis', name: 'Adamart Kelanis', code: 'PO-KELANIS', active: true },
+            { id: 'induksi', name: 'Adamart Induksi', code: 'PO-INDUKSI', active: false }
+        ];
+        const ACTIVE_BRANCHES = BRANCH_CONFIG.filter(b => b.active).map(b => b.name);
+        const ALL_BRANCHES = BRANCH_CONFIG.map(b => b.name);
+        const BRANCHES = ACTIVE_BRANCHES;
         const SUPPLIERS = ["PT Sumber Makmur", "CV Mitra Jaya", "Toko Grosir Berkah", "PT Indo Supplier"];
         
         const State = { 
@@ -253,6 +260,8 @@
             },
             data: { products: [], sales: [], purchases: [], shifts: [], logs: [], returns: [], audits: [], transfers: [] }, 
             tempBatchItems: [], 
+            editPoItems: [],
+            editPoId: null,
             charts: { line: null, doughnut: null } 
         };
 
@@ -1053,17 +1062,24 @@
                         <div class="overflow-x-auto flex-1">
                             <table class="w-full text-sm text-left whitespace-nowrap">
                                 <thead class="bg-slate-100 sticky top-0 z-10 text-slate-600 uppercase text-xs font-bold">
-                                    <tr><th class="p-4">Batch ID</th><th class="p-4">Supplier</th><th class="p-4">Cabang</th><th class="p-4">Status</th><th class="p-4">Total Item</th><th class="p-4 text-center">Aksi</th></tr>
+                                    <tr><th class="p-4">Tanggal Order</th><th class="p-4">Batch ID</th><th class="p-4">Supplier</th><th class="p-4">Cabang</th><th class="p-4">Status</th><th class="p-4">Total Item</th><th class="p-4 text-center">Aksi</th></tr>
                                 </thead>
                                 <tbody class="divide-y divide-slate-100">
-                                    ${filteredPOs.length === 0 ? '<tr><td colspan="6" class="p-8 text-center text-slate-400">Belum ada dokumen PO untuk area ini.</td></tr>' : filteredPOs.map(p=>`
+                                    ${filteredPOs.length === 0 ? '<tr><td colspan="7" class="p-8 text-center text-slate-400">Belum ada dokumen PO untuk area ini.</td></tr>' : filteredPOs.map(p=>`
                                         <tr class="hover:bg-slate-50">
+                                            <td class="p-4 text-slate-500 text-xs font-semibold">${p.orderDate ? new Date(p.orderDate).toLocaleDateString('id-ID') : new Date(p.createdAt || p.timestamp).toLocaleDateString('id-ID')}</td>
                                             <td class="p-4 text-sky-600 font-mono font-bold">${p.batchNumber}</td>
                                             <td class="p-4 font-semibold text-slate-800">${p.supplier}</td>
                                             <td class="p-4"><span class="px-2.5 py-1 bg-purple-100 text-purple-800 rounded-lg text-xs font-bold border border-purple-200">${p.branch}</span></td>
                                             <td class="p-4">${getStatusBadge(p.status)}</td>
                                             <td class="p-4 font-medium text-slate-500">${JSON.parse(p.items || '[]').length} items</td>
-                                            <td class="p-4 text-center"><button onclick="Actions.printPO('${p.batchNumber}')" class="bg-sky-50 text-sky-700 border border-sky-200 px-3 py-1.5 rounded-lg font-bold text-xs hover:bg-sky-100 touch-target">🖨️ Cetak PO Kopkar</button></td>
+                                            <td class="p-4 text-center">
+                                                <button onclick="Actions.printPO('${p.batchNumber}')" class="bg-sky-50 text-sky-700 border border-sky-200 px-3 py-1.5 rounded-lg font-bold text-xs hover:bg-sky-100 touch-target mb-1">🖨️ Cetak PO</button>
+                                                <br>
+                                                <button onclick="Actions.editPO('${p.id}')" class="bg-amber-50 text-amber-700 border border-amber-200 px-3 py-1.5 rounded-lg font-bold text-xs hover:bg-amber-100 touch-target mb-1">✏️ Edit PO</button>
+                                                <br>
+                                                <button onclick="Actions.deletePO('${p.id}')" class="bg-rose-50 text-rose-700 border border-rose-200 px-3 py-1.5 rounded-lg font-bold text-xs hover:bg-rose-100 touch-target">🗑️ Hapus</button>
+                                            </td>
                                         </tr>`).join('')}
                                 </tbody>
                             </table>
@@ -1102,9 +1118,7 @@
                         <div>
                             <label class="text-xs font-bold text-slate-500 uppercase">Target Cabang</label>
                             <select id="targetArea" class="w-full p-3 border border-slate-300 rounded-xl bg-white mt-1 touch-target">
-                                <option value="adamart 73">Adamart 73</option>
-                                <option value="adamart induksi">Adamart Induksi</option>
-                                <option value="adamart kelanis">Adamart Kelanis</option>
+                                ${ACTIVE_BRANCHES.map(b => `<option value="${"adamart " + b.replace("Adamart ", "").toLowerCase()}">${b}</option>`).join("")}
                             </select>
                         </div>
                         <div class="grid grid-cols-2 gap-2.5">
@@ -1376,9 +1390,7 @@
                                 <div>
                                     <label class="text-xs font-bold text-slate-500 uppercase">Cabang Asal</label>
                                     <select id="returArea" class="w-full p-3 border border-slate-300 rounded-xl bg-white mt-1 touch-target">
-                                        <option value="adamart 73">Adamart 73</option>
-                                        <option value="adamart induksi">Adamart Induksi</option>
-                                        <option value="adamart kelanis">Adamart Kelanis</option>
+                                        ${ACTIVE_BRANCHES.map(b => `<option value="${"adamart " + b.replace("Adamart ", "").toLowerCase()}">${b}</option>`).join("")}
                                     </select>
                                 </div>
                                 <div class="grid grid-cols-2 gap-3">
@@ -1507,9 +1519,7 @@
                                 <div>
                                     <label class="text-xs font-bold text-slate-500 uppercase">Cabang</label>
                                     <select id="auditArea" class="w-full p-3 border border-slate-300 rounded-xl bg-white mt-1 touch-target" onchange="Actions.updateAuditSystemStock()">
-                                        <option value="adamart 73">Adamart 73</option>
-                                        <option value="adamart induksi">Adamart Induksi</option>
-                                        <option value="adamart kelanis">Adamart Kelanis</option>
+                                        ${ACTIVE_BRANCHES.map(b => `<option value="${"adamart " + b.replace("Adamart ", "").toLowerCase()}">${b}</option>`).join("")}
                                     </select>
                                 </div>
                                 <div class="grid grid-cols-2 gap-4 items-end bg-slate-50 p-4 rounded-xl border border-slate-200">
@@ -2129,6 +2139,53 @@
                 printWindow.document.close();
             },
 
+            editPO: (poId) => {
+                const po = State.data.purchases.find(p => p.id === poId);
+                if (!po) return window.showToast("Data PO tidak ditemukan", "error");
+                
+                try { State.editPoItems = JSON.parse(po.items); } 
+                catch(e) { State.editPoItems = []; }
+                
+                State.editPoId = poId;
+                Modals.openEditPO(po);
+            },
+
+            updatePO: async (e, poId) => {
+                e.preventDefault();
+                const form = e.target;
+                const selectVal = document.getElementById('editSupplierSelect').value;
+                const supplier = selectVal === 'custom' ? document.getElementById('editCustomSupplier').value.trim() : selectVal;
+                
+                if (State.editPoItems.length === 0) return window.showToast("PO harus memiliki setidaknya satu item!", "warning");
+                
+                try {
+                    const docRef = window.doc(window.db, "purchases", poId);
+                    await window.updateDoc(docRef, {
+                        supplier: supplier,
+                        orderDate: form.elements['orderDate'].value,
+                        items: JSON.stringify(State.editPoItems)
+                    });
+                    
+                    closeModal();
+                    window.showToast("PO Berhasil Diperbarui!", "success");
+                    loadAllData();
+                } catch (err) {
+                    window.showToast("Gagal update PO: " + err.message, "error");
+                }
+            },
+
+            deletePO: async (poId) => {
+                if(!confirm("Yakin ingin menghapus PO ini secara permanen?")) return;
+                try {
+                    const docRef = window.doc(window.db, "purchases", poId);
+                    await window.deleteDoc(docRef);
+                    window.showToast("PO Berhasil Dihapus!", "success");
+                    loadAllData();
+                } catch (err) {
+                    window.showToast("Gagal menghapus PO: " + err.message, "error");
+                }
+            },
+
             generateAutoPO: () => {
                 const checks = document.querySelectorAll('.restock-check:checked');
                 if(checks.length === 0) return window.showToast("Pilih item restock dulu!", "warning");
@@ -2174,11 +2231,9 @@
 
                 if (checkedItems.length === 0) return window.showToast("Tidak ada produk yang perlu restock saat ini!", "warning");
 
-                const areaConfigs = [
-                    { id: 'adamart 73', name: 'Adamart 73', code: 'PO-73' },
-                    { id: 'adamart induksi', name: 'Adamart Induksi', code: 'PO-INDUKSI' },
-                    { id: 'adamart kelanis', name: 'Adamart Kelanis', code: 'PO-KELANIS' }
-                ];
+                const areaConfigs = BRANCH_CONFIG.filter(b => b.active).map(b => ({
+                    id: 'adamart ' + b.id, name: b.name, code: b.code
+                }));
 
                 const getLastPurchaseInfo = (barcode) => {
                     for (let po of State.data.purchases) {
@@ -2436,6 +2491,69 @@
         function setupInventoryListeners() { const form = document.getElementById('stockForm'); if(form) form.addEventListener('submit', Actions.updateStock); }
         
         const Modals = { 
+            openEditPO: (po) => {
+                const items = State.editPoItems || [];
+                let totalEstimasi = items.reduce((sum, i) => sum + (parseInt(i.qty) * parseInt(i.hpp)), 0);
+                const isCustomSupplier = !SUPPLIERS.includes(po.supplier);
+                
+                const content = `
+                <div class="p-2">
+                    <div class="flex justify-between items-center mb-4">
+                        <h3 class="text-xl font-extrabold text-slate-800">Edit PO: ${po.batchNumber}</h3>
+                        <button onclick="closeModal()" class="text-slate-400 hover:text-slate-700 touch-target" aria-label="Close modal">✕</button>
+                    </div>
+                    <form onsubmit="Actions.updatePO(event, '${po.id}')" class="space-y-4">
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                            <div>
+                                <label class="text-xs font-bold text-slate-500 uppercase">Pilih Supplier</label>
+                                <select id="editSupplierSelect" class="p-3 border border-slate-300 rounded-xl w-full bg-white text-sm mt-1 touch-target" required onchange="window.toggleEditSupplierInput(this)">
+                                    ${SUPPLIERS.map(s => `<option value="${s}" ${!isCustomSupplier && s === po.supplier ? 'selected' : ''}>${s}</option>`).join('')}
+                                    <option value="custom" class="font-bold text-sky-600" ${isCustomSupplier ? 'selected' : ''}>+ Input Supplier Manual</option>
+                                </select>
+                                <input id="editCustomSupplier" type="text" placeholder="Nama Supplier..." value="${isCustomSupplier ? po.supplier : ''}" class="p-3 border border-slate-300 rounded-xl w-full mt-2 ${isCustomSupplier ? '' : 'hidden'} text-sm touch-target" ${isCustomSupplier ? '' : 'disabled'}>
+                            </div>
+                            <div>
+                                <label class="text-xs font-bold text-slate-500 uppercase">Tanggal Order</label>
+                                <input type="date" name="orderDate" class="p-3 border border-slate-300 rounded-xl w-full text-sm mt-1 touch-target" required value="${po.orderDate}">
+                            </div>
+                        </div>
+
+                        <div class="bg-amber-50/70 p-4 rounded-xl border border-amber-100 space-y-3">
+                            <label class="text-xs font-bold text-slate-500 uppercase block">Cari / Tambah Barang ke PO</label>
+                            <div class="relative">
+                                <input id="edit-item-name" placeholder="Ketik nama atau scan barcode disini..." class="w-full p-3.5 border-2 border-amber-400 rounded-xl font-bold focus:outline-none focus:ring-2 focus:ring-amber-600 bg-white touch-target" autocomplete="off" oninput="searchProductForForm(this.value, 'edit-po')">
+                                <div id="edit-po-search-results" class="absolute z-50 w-full bg-white shadow-xl rounded-xl border border-slate-200 max-h-60 overflow-y-auto hidden mt-1"></div>
+                            </div>
+                            
+                            <div class="flex items-center gap-2 flex-wrap sm:flex-nowrap">
+                                <div class="w-full sm:w-28"><input id="edit-item-barcode" placeholder="Barcode" class="w-full p-2.5 border border-slate-300 rounded-lg text-xs bg-slate-100 font-mono" readonly></div>
+                                <div class="w-1/2 sm:w-20"><input id="edit-item-qty" type="number" placeholder="Qty" class="w-full p-2.5 border border-amber-300 rounded-lg text-sm font-bold bg-white"></div>
+                                <div class="w-1/2 sm:w-28">
+                                    <select id="edit-item-unit" class="w-full p-2.5 border border-amber-300 rounded-lg text-sm bg-white font-medium">
+                                        <option value="PCS">PCS</option>
+                                        <optgroup label="Kemasan"><option value="DUS">DUS</option><option value="PACK">PACK</option><option value="RENCENG">RENCENG</option></optgroup>
+                                        <optgroup label="Kuantitas"><option value="LUSIN">LUSIN</option><option value="KODI">KODI</option></optgroup>
+                                    </select>
+                                </div>
+                                <div class="flex-1 min-w-[120px]"><input id="edit-item-hpp" type="number" placeholder="Harga Beli (HPP)" class="w-full p-2.5 border border-slate-300 rounded-lg text-sm"></div>
+                                <button type="button" onclick="window.addItemToEditPO()" class="bg-amber-600 text-white px-4 py-2.5 rounded-lg hover:bg-amber-700 font-bold shadow touch-target">+</button>
+                            </div>
+                            
+                            <div id="edit-po-items-list" class="text-sm text-slate-600 max-h-40 overflow-y-auto space-y-1.5 mt-3"></div>
+                            <div class="text-right font-extrabold text-xl text-amber-800 mt-3 pt-3 border-t border-amber-200" id="edit-po-total-estimasi">Total Estimasi: ${formatRp(totalEstimasi)}</div>
+                        </div>
+
+                        <div>
+                            <label class="font-bold block mb-2 text-sm text-slate-700">Kirim Ke Cabang:</label>
+                            <div class="p-3 border border-slate-200 bg-slate-50 rounded-xl text-sm font-bold text-slate-700">${po.branch}</div>
+                        </div>
+                        <button type="submit" class="w-full py-3.5 rounded-xl bg-amber-600 hover:bg-amber-700 text-white font-bold text-base shadow-lg touch-target transition">Simpan Perubahan PO</button>
+                    </form>
+                </div>`; 
+                showModal(content); 
+                window.renderEditPoItemsList();
+            },
+
             openBatchPO: () => { 
                 const items = State.tempBatchItems || []; 
                 let totalEstimasi = items.reduce((sum, i) => sum + (parseInt(i.qty) * parseInt(i.hpp)), 0);
@@ -2574,6 +2692,11 @@
                 document.getElementById('item-name').value = p['Nama Produk']; 
                 document.getElementById('item-hpp').value = p.HPP || 0; 
                 document.getElementById('item-qty').focus();
+            } else if (type === 'edit-po') {
+                document.getElementById('edit-item-barcode').value = p.Barcode; 
+                document.getElementById('edit-item-name').value = p['Nama Produk']; 
+                document.getElementById('edit-item-hpp').value = p.HPP || 0; 
+                document.getElementById('edit-item-qty').focus();
             } else if (type === 'retur') {
                 document.getElementById('returSearch').value = ''; 
                 document.getElementById('returBarcode').value = p.Barcode; 
@@ -2624,6 +2747,47 @@
             State.tempBatchItems.splice(i,1); 
             document.getElementById('temp-items-list').innerHTML=State.tempBatchItems.length > 0 ? State.tempBatchItems.map((i,x)=>`<div class="flex justify-between items-center bg-white p-2.5 rounded-xl border border-slate-200"><div><span class="font-bold text-slate-800">${i.name}</span> x${i.qty} ${i.unit||'PCS'} <span class="text-xs text-slate-400 ml-2">B:${formatRp(i.hpp)}</span></div><button onclick="removeItemFromTemp(${x})" class="text-rose-500 px-2 font-bold touch-target">✕</button></div>`).join('') : '<p class="text-xs text-slate-400 italic p-3 bg-white rounded-xl border border-dashed text-center">Belum ada item ditambahkan.</p>'; 
             window.updateTotalEstimasi(); 
+        };
+
+        window.updateEditTotalEstimasi = () => { 
+            const t = State.editPoItems.reduce((s, i) => s + (parseInt(i.qty) * parseInt(i.hpp)), 0); 
+            const el = document.getElementById('edit-po-total-estimasi'); 
+            if (el) el.innerText = 'Total Estimasi: ' + formatRp(t); 
+        };
+
+        window.renderEditPoItemsList = () => {
+            const list = State.editPoItems.length > 0 ? State.editPoItems.map((i,x)=>`<div class="flex justify-between items-center bg-white p-2.5 rounded-xl border border-slate-200"><div><span class="font-mono text-xs bg-slate-100 p-1 rounded mr-2">${i.barcode||'-'}</span><span class="font-bold text-slate-800">${i.name}</span> x${i.qty} ${i.unit||'PCS'} <span class="text-xs text-slate-400 ml-2">B:${formatRp(i.hpp)}</span></div><button onclick="window.removeItemFromEditPO(${x})" class="text-rose-500 px-2 font-bold touch-target">✕</button></div>`).join('') : '<p class="text-xs text-slate-400 italic p-3 bg-white rounded-xl border border-dashed text-center">Belum ada item ditambahkan.</p>';
+            document.getElementById('edit-po-items-list').innerHTML = list;
+        };
+
+        window.addItemToEditPO = () => { 
+            const barcode=document.getElementById('edit-item-barcode').value; 
+            const name=document.getElementById('edit-item-name').value; 
+            const qty=document.getElementById('edit-item-qty').value; 
+            const unit=document.getElementById('edit-item-unit').value; 
+            const hpp=document.getElementById('edit-item-hpp').value; 
+            if(name && qty) { 
+                State.editPoItems.push({barcode, name, qty, unit, hpp, price: 0}); 
+                window.renderEditPoItemsList();
+                window.updateEditTotalEstimasi(); 
+                document.getElementById('edit-item-barcode').value=''; 
+                document.getElementById('edit-item-name').value=''; 
+                document.getElementById('edit-item-qty').value=''; 
+                document.getElementById('edit-item-hpp').value=''; 
+                document.getElementById('edit-item-name').focus(); 
+            } 
+        };
+
+        window.removeItemFromEditPO = (i) => { 
+            State.editPoItems.splice(i,1); 
+            window.renderEditPoItemsList();
+            window.updateEditTotalEstimasi(); 
+        };
+
+        window.toggleEditSupplierInput = (el) => { 
+            const i = document.getElementById('editCustomSupplier'); 
+            if(el.value==='custom'){i.classList.remove('hidden');i.disabled=false;i.focus();}
+            else{i.classList.add('hidden');i.disabled=true;} 
         };
 
         window.toggleSupplierInput = (el) => { 
