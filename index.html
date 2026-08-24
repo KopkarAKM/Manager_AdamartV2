@@ -1088,6 +1088,59 @@
                 </div>`;
             },
             
+            Logistics: () => {
+                const poAreaFilter = State.poAreaFilter || 'all';
+                let filteredPOs = State.data.purchases;
+                if (poAreaFilter !== 'all') {
+                    filteredPOs = filteredPOs.filter(p => (p.branch || '').toLowerCase().includes(poAreaFilter.toLowerCase()));
+                }
+                
+                // Menampilkan semua pesanan agar pengguna bisa memproses PO yang statusnya masih 'pending' namun sudah OK secara verbal
+                const incomingGoods = filteredPOs;
+
+                return `
+                <div class="space-y-4">
+                    <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 bg-white p-4 rounded-2xl shadow-sm border border-slate-200/80">
+                        <div>
+                            <h3 class="text-lg font-bold text-slate-800">Logistik Toko (Barang Masuk)</h3>
+                            <p class="text-xs text-slate-500 mt-0.5">Penerimaan barang dari Purchase Order yang disetujui</p>
+                        </div>
+                        <div class="flex flex-wrap items-center gap-3 w-full sm:w-auto">
+                            <select onchange="State.poAreaFilter = this.value; renderPage();" class="p-2.5 border border-slate-300 rounded-xl text-xs bg-slate-50 font-bold focus:outline-none focus:border-sky-400 cursor-pointer touch-target">
+                                <option value="all" ${poAreaFilter === 'all' ? 'selected' : ''}>Semua Area Cabang</option>
+                                <option value="73" ${poAreaFilter === '73' ? 'selected' : ''}>Adamart 73</option>
+                                <option value="induksi" ${poAreaFilter === 'induksi' ? 'selected' : ''}>Adamart Induksi</option>
+                                <option value="kelanis" ${poAreaFilter === 'kelanis' ? 'selected' : ''}>Adamart Kelanis</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="bg-white rounded-2xl shadow-sm overflow-hidden h-[calc(100vh-220px)] flex flex-col border border-slate-200/80">
+                        <div class="overflow-x-auto flex-1">
+                            <table class="w-full text-sm text-left whitespace-nowrap">
+                                <thead class="bg-slate-100 sticky top-0 z-10 text-slate-600 uppercase text-xs font-bold">
+                                    <tr><th class="p-4">Tanggal Order</th><th class="p-4">Batch ID</th><th class="p-4">Supplier</th><th class="p-4">Cabang</th><th class="p-4">Status</th><th class="p-4">Total Item</th><th class="p-4 text-center">Aksi</th></tr>
+                                </thead>
+                                <tbody class="divide-y divide-slate-100">
+                                    ${incomingGoods.length === 0 ? '<tr><td colspan="7" class="p-8 text-center text-slate-400">Belum ada barang masuk yang menunggu penerimaan.</td></tr>' : incomingGoods.map(p=>`
+                                        <tr class="hover:bg-slate-50">
+                                            <td class="p-4 text-slate-500 text-xs font-semibold">${p.orderDate ? new Date(p.orderDate).toLocaleDateString('id-ID') : new Date(p.createdAt || p.timestamp).toLocaleDateString('id-ID')}</td>
+                                            <td class="p-4 text-sky-600 font-mono font-bold">${p.batchNumber}</td>
+                                            <td class="p-4 font-semibold text-slate-800">${p.supplier}</td>
+                                            <td class="p-4"><span class="px-2.5 py-1 bg-purple-100 text-purple-800 rounded-lg text-xs font-bold border border-purple-200">${p.branch}</span></td>
+                                            <td class="p-4">${getStatusBadge(p.status)}</td>
+                                            <td class="p-4 font-medium text-slate-500">${JSON.parse(p.items || '[]').length} items</td>
+                                            <td class="p-4 text-center">
+                                                <button onclick="Actions.editPO('${p.id}')" class="bg-emerald-50 text-emerald-700 border border-emerald-200 px-3 py-1.5 rounded-lg font-bold text-xs hover:bg-emerald-100 touch-target mb-1">📦 Proses Penerimaan</button>
+                                            </td>
+                                        </tr>`).join('')}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>`;
+            },
+            
             Inventory: () => `
             <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
                 <!-- FORM INPUT / UPDATE STOK (FORM KIRI) -->
