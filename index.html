@@ -356,7 +356,7 @@
                     if (qris > 0) { totalQris += qris; countQris++; }
                     if (kasbon > 0) { totalKasbon += kasbon; countKasbon++; }
                 } else {
-                    const method = String(s.paymentMethod || s.payment_method || s.metode || s.payment || s.jenisPembayaran || s.type || s.mode || '').toLowerCase();
+                    const method = String(s.paymentMethod || s.payment_method || s.metode || s.payment || s.method || s.jenisPembayaran || s.type || s.mode || '').toLowerCase();
                     if (method.includes('qris')) {
                         totalQris += total;
                         countQris++;
