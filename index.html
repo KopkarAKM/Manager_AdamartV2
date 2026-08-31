@@ -1145,13 +1145,29 @@
             <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
                 <!-- FORM INPUT / UPDATE STOK (FORM KIRI) -->
                 <div class="bg-white rounded-2xl shadow-sm p-6 lg:col-span-4 h-fit border border-slate-200/80">
-                    <div class="flex justify-between items-center mb-4">
-                        <h3 class="font-bold text-slate-800 text-base">📦 Master Form</h3>
+                    <div class="flex justify-between items-center mb-3">
+                        <h3 class="font-bold text-slate-800 text-base" id="formHeaderTitle">📦 Master Form</h3>
                         <span class="text-[11px] font-semibold text-sky-600 bg-sky-50 px-2.5 py-1 rounded-lg border border-sky-100">Click Row Auto-Fill</span>
                     </div>
+
+                    <!-- BANNER STATUS EDIT PRODUK -->
+                    <div id="editModeNotice" class="hidden bg-amber-50 border border-amber-200 p-2.5 rounded-xl text-xs flex justify-between items-center mb-3">
+                        <div class="truncate mr-2">
+                            <span class="font-extrabold text-amber-800">Mode Edit:</span>
+                            <span id="editModeDocName" class="text-slate-700 font-semibold ml-1"></span>
+                        </div>
+                        <button type="button" onclick="cancelEditMode()" class="text-rose-600 font-bold hover:underline shrink-0 text-[11px]">Batal / Baru ✕</button>
+                    </div>
+
                     <form id="stockForm" class="space-y-3.5">
+                        <input type="hidden" id="selectedDocId" value="">
+                        <input type="hidden" id="originalBarcode" value="">
+
                         <div>
-                            <label class="text-xs font-bold text-slate-500 uppercase">Barcode Produk</label>
+                            <label class="text-xs font-bold text-slate-500 uppercase flex justify-between items-center">
+                                <span>Barcode Produk</span>
+                                <span class="text-[10px] text-sky-600 font-normal">*Bisa diubah/diedit</span>
+                            </label>
                             <input type="text" id="barcode" class="w-full p-3 border border-slate-300 rounded-xl bg-slate-50 mt-1 touch-target font-mono" placeholder="Scan atau ketik barcode..." required oninput="autoFill()">
                         </div>
                         <div>
@@ -1197,7 +1213,7 @@
                             </div>
                         </div>
 
-                        <button type="submit" class="w-full bg-sky-600 text-white py-3.5 rounded-xl font-bold hover:bg-sky-700 shadow-md transition mt-4 touch-target text-base">Simpan Stok Produk</button>
+                        <button type="submit" id="btnSubmitStockForm" class="w-full bg-sky-600 text-white py-3.5 rounded-xl font-bold hover:bg-sky-700 shadow-md transition mt-4 touch-target text-base">Simpan Stok Produk</button>
                     </form>
                 </div>
 
@@ -1219,6 +1235,7 @@
                                     <th class="p-4 text-center">Stok 73</th>
                                     <th class="p-4 text-center">Stok Induksi</th>
                                     <th class="p-4 text-center">Stok Kelanis</th>
+                                    <th class="p-4 text-center">Aksi</th>
                                 </tr>
                             </thead>
                             <tbody class="divide-y divide-slate-100 product-row-container">
@@ -1236,14 +1253,14 @@
                                     return `
                                     <tr class="hover:bg-slate-50 product-row">
                                         <!-- TAP PRODUCT NAME TO AUTO-FILL FORM KIRI -->
-                                        <td class="p-4 cursor-pointer hover:bg-sky-50/50 transition rounded-l-xl" onclick="selectRowForUpdate('${p.Barcode}')" title="Klik untuk auto-fill form kiri">
+                                        <td class="p-4 cursor-pointer hover:bg-sky-50/50 transition rounded-l-xl" onclick="selectRowForUpdate('${p.Barcode}')" title="Klik untuk edit data produk di form kiri">
                                             <div class="font-bold text-slate-800 flex items-center gap-2">
                                                 ${p['Nama Produk']}
                                                 <span class="px-2 py-0.5 rounded text-[10px] font-extrabold border ${abcBadge}">Cat ${p.abcCategory || 'C'}</span>
                                             </div>
                                             <div class="text-xs text-slate-400 font-mono flex items-center gap-2">
                                                 <span>${p.Barcode}</span>
-                                                <span class="text-[10px] text-sky-600 font-semibold">&larr; auto-fill</span>
+                                                <span class="text-[10px] text-sky-600 font-semibold">&larr; klik edit</span>
                                             </div>
                                         </td>
                                         <td class="p-4">
@@ -1269,6 +1286,18 @@
                                                 <span>${sKel}</span>
                                                 <span class="text-[11px] text-slate-300 group-hover:text-sky-600 font-normal">✏️</span>
                                             </button>
+                                        </td>
+
+                                        <!-- AKSI: GANTI BARCODE & HAPUS PRODUK -->
+                                        <td class="p-4 text-center">
+                                            <div class="flex items-center justify-center gap-1.5">
+                                                <button type="button" onclick="Actions.openChangeBarcodeModal('${p.id}', '${p.Barcode}', '${cleanName}')" class="px-2.5 py-1.5 bg-sky-50 hover:bg-sky-100 text-sky-700 rounded-lg border border-sky-200 text-xs font-bold transition touch-target flex items-center gap-1" title="Ganti Barcode Sementara ke Barcode Baru">
+                                                    <span>🏷️</span> <span class="hidden sm:inline">Ganti Barcode</span>
+                                                </button>
+                                                <button type="button" onclick="Actions.deleteProduct('${p.id}', '${p.Barcode}', '${cleanName}')" class="p-1.5 bg-rose-50 hover:bg-rose-100 text-rose-600 rounded-lg border border-rose-200 text-xs font-bold transition touch-target" title="Hapus Produk Ini (Permanen)">
+                                                    🗑️
+                                                </button>
+                                            </div>
                                         </td>
                                     </tr>`; 
                                 }).join('')}
@@ -2361,35 +2390,138 @@
 
             updateStock: async (e) => { 
                 e.preventDefault(); 
-                const barcode = document.getElementById('barcode').value; 
+                const selectedDocId = document.getElementById('selectedDocId')?.value || '';
+                const originalBarcode = document.getElementById('originalBarcode')?.value || '';
+                const barcode = document.getElementById('barcode').value.trim(); 
                 const area = document.getElementById('targetArea').value; 
-                const qty = parseInt(document.getElementById('stockAmount').value); 
+                const qty = parseInt(document.getElementById('stockAmount').value) || 0; 
                 const hpp = parseInt(document.getElementById('hpp').value) || 0; 
                 const price = parseInt(document.getElementById('price').value) || 0; 
-                const name = document.getElementById('productName').value; 
+                const name = document.getElementById('productName').value.trim(); 
                 const expiry = document.getElementById('expiryDate').value; 
                 const stockKey = `Stok Area Kasir ${area.toLowerCase()}`; 
 
+                if (!barcode) return window.showToast("Barcode produk wajib diisi!", "warning");
+                if (!name) return window.showToast("Nama produk wajib diisi!", "warning");
+
                 try { 
-                    const existingProduct = State.data.products.find(p => p.Barcode === barcode); 
-                    if (existingProduct) { 
-                        const docRef = window.doc(window.db, "products", existingProduct.id); 
-                        const updateData = { "Nama Produk": name, "Harga": price, "HPP": hpp }; 
+                    if (selectedDocId) {
+                        // MODE EDIT PRODUK YANG SUDAH ADA
+                        if (barcode !== originalBarcode) {
+                            const duplicate = State.data.products.find(p => String(p.Barcode) === barcode && p.id !== selectedDocId);
+                            if (duplicate) {
+                                return window.showToast(`Barcode "${barcode}" sudah dipakai oleh produk "${duplicate['Nama Produk']}"!`, "error");
+                            }
+                        }
+
+                        const docRef = window.doc(window.db, "products", selectedDocId);
+                        const updateData = { Barcode: barcode, "Nama Produk": name, "Harga": price, "HPP": hpp }; 
                         if (qty !== 0) updateData[stockKey] = window.increment(qty); 
                         if (expiry) updateData["Tanggal Kadaluarsa"] = new Date(expiry).toISOString(); 
                         await window.updateDoc(docRef, updateData); 
+                        
+                        fetch(APPS_SCRIPT_URL, { method: 'POST', body: JSON.stringify({ action: 'update_stock', data: { barcode, oldBarcode: originalBarcode, name, price, hpp, area: area.toLowerCase(), quantity: qty, expiryDate: expiry } }) }); 
+                        window.showToast("✅ Data & Barcode Produk Berhasil Diperbarui!", "success"); 
                     } else { 
-                        const newData = { Barcode: barcode, "Nama Produk": name, "Harga": price, "HPP": hpp, [stockKey]: qty }; 
-                        if (expiry) newData["Tanggal Kadaluarsa"] = new Date(expiry).toISOString(); 
-                        await window.addDoc(window.collection(window.db, "products"), newData); 
-                    } 
-                    fetch(APPS_SCRIPT_URL, { method: 'POST', body: JSON.stringify({ action: 'update_stock', data: { barcode, name, price, hpp, area: area.toLowerCase(), quantity: qty, expiryDate: expiry } }) }); 
-                    window.showToast("Stok Berhasil Diperbarui!", "success"); 
-                    document.getElementById('stockForm').reset(); 
+                        // MODE TAMBAH / UPDATE BERDASARKAN BARCODE
+                        const existingProduct = State.data.products.find(p => String(p.Barcode) === barcode); 
+                        if (existingProduct) { 
+                            const docRef = window.doc(window.db, "products", existingProduct.id); 
+                            const updateData = { "Nama Produk": name, "Harga": price, "HPP": hpp }; 
+                            if (qty !== 0) updateData[stockKey] = window.increment(qty); 
+                            if (expiry) updateData["Tanggal Kadaluarsa"] = new Date(expiry).toISOString(); 
+                            await window.updateDoc(docRef, updateData); 
+                        } else { 
+                            const newData = { Barcode: barcode, "Nama Produk": name, "Harga": price, "HPP": hpp, [stockKey]: qty }; 
+                            if (expiry) newData["Tanggal Kadaluarsa"] = new Date(expiry).toISOString(); 
+                            await window.addDoc(window.collection(window.db, "products"), newData); 
+                        } 
+                        fetch(APPS_SCRIPT_URL, { method: 'POST', body: JSON.stringify({ action: 'update_stock', data: { barcode, name, price, hpp, area: area.toLowerCase(), quantity: qty, expiryDate: expiry } }) }); 
+                        window.showToast("✅ Stok Produk Berhasil Disimpan!", "success"); 
+                    }
+
+                    if (window.cancelEditMode) window.cancelEditMode();
+                    else document.getElementById('stockForm').reset();
                     loadAllData(); 
                 } catch (err) { 
                     window.showToast("Gagal update stok: " + err.message, "error"); 
                 } 
+            },
+
+            openChangeBarcodeModal: (docId, currentBarcode, productName) => {
+                const content = `
+                <div class="p-2">
+                    <div class="flex justify-between items-center mb-4">
+                        <h3 class="text-lg font-black text-slate-800">🏷️ Ganti Nomor Barcode</h3>
+                        <button onclick="closeModal()" class="text-slate-400 hover:text-slate-700 touch-target" aria-label="Close modal">✕</button>
+                    </div>
+                    <div class="bg-sky-50 border border-sky-200 rounded-xl p-3 mb-4 text-xs text-sky-900 leading-relaxed">
+                        Fitur ini mengubah barcode sementara menjadi barcode baru / resmi. <b>Seluruh data stok cabang (73, Induksi, Kelanis) dan histori akan tetap utuh.</b>
+                    </div>
+                    <form onsubmit="Actions.submitChangeBarcode(event, '${docId}', '${currentBarcode}')" class="space-y-4">
+                        <div>
+                            <label class="text-xs font-bold text-slate-500 uppercase block mb-1">Nama Produk</label>
+                            <div class="p-3 bg-slate-100 rounded-xl font-bold text-slate-800 text-sm">${productName}</div>
+                        </div>
+                        <div>
+                            <label class="text-xs font-bold text-slate-500 uppercase block mb-1">Barcode Saat Ini (Sementara)</label>
+                            <input type="text" value="${currentBarcode}" class="w-full p-3 bg-slate-100 border border-slate-300 rounded-xl font-mono text-xs text-slate-600" readonly disabled>
+                        </div>
+                        <div>
+                            <label class="text-xs font-bold text-sky-800 uppercase block mb-1">Nomor Barcode Baru / Resmi</label>
+                            <input type="text" id="newBarcodeInput" placeholder="Scan atau ketik barcode baru..." class="w-full p-3 border-2 border-sky-500 rounded-xl font-mono font-bold text-sm bg-white touch-target shadow-inner" required autofocus>
+                        </div>
+                        <div class="flex gap-2 pt-2">
+                            <button type="button" onclick="closeModal()" class="w-1/3 py-3 border border-slate-300 rounded-xl font-bold text-slate-600 hover:bg-slate-50 touch-target">Batal</button>
+                            <button type="submit" class="flex-1 py-3 bg-sky-600 hover:bg-sky-700 text-white font-bold rounded-xl shadow-md transition touch-target">Simpan Barcode Baru</button>
+                        </div>
+                    </form>
+                </div>`;
+                showModal(content);
+                setTimeout(() => {
+                    const input = document.getElementById('newBarcodeInput');
+                    if (input) input.focus();
+                }, 100);
+            },
+
+            submitChangeBarcode: async (e, docId, oldBarcode) => {
+                e.preventDefault();
+                const newBarcode = document.getElementById('newBarcodeInput').value.trim();
+                if (!newBarcode) return window.showToast("Nomor barcode baru tidak boleh kosong!", "warning");
+                if (newBarcode === oldBarcode) return window.showToast("Nomor barcode baru sama dengan barcode lama!", "warning");
+
+                const duplicate = State.data.products.find(p => String(p.Barcode) === newBarcode && p.id !== docId);
+                if (duplicate) {
+                    return window.showToast(`Barcode "${newBarcode}" sudah digunakan oleh produk "${duplicate['Nama Produk']}"!`, "error");
+                }
+
+                try {
+                    const docRef = window.doc(window.db, "products", docId);
+                    await window.updateDoc(docRef, { Barcode: newBarcode });
+                    fetch(APPS_SCRIPT_URL, { method: 'POST', body: JSON.stringify({ action: 'rename_barcode', data: { oldBarcode, newBarcode } }) });
+                    closeModal();
+                    window.showToast(`✅ Barcode berhasil diubah menjadi: ${newBarcode}`, "success");
+                    loadAllData();
+                } catch (err) {
+                    window.showToast("Gagal mengubah barcode: " + err.message, "error");
+                }
+            },
+
+            deleteProduct: async (docId, barcode, productName) => {
+                if (!confirm(`⚠️ HAPUS PRODUK?\n\nApakah Anda yakin ingin menghapus produk:\n"${productName}" (Barcode: ${barcode})\n\nProduk akan dihapus permanen dari sistem.`)) return;
+
+                try {
+                    const docRef = window.doc(window.db, "products", docId);
+                    await window.deleteDoc(docRef);
+                    fetch(APPS_SCRIPT_URL, { method: 'POST', body: JSON.stringify({ action: 'delete_product', data: { barcode } }) });
+                    window.showToast(`🗑️ Produk "${productName}" berhasil dihapus!`, "success");
+                    if (document.getElementById('selectedDocId')?.value === docId) {
+                        if (window.cancelEditMode) window.cancelEditMode();
+                    }
+                    loadAllData();
+                } catch (err) {
+                    window.showToast("Gagal menghapus produk: " + err.message, "error");
+                }
             },
 
             submitRetur: async (e) => {
@@ -2685,19 +2817,52 @@
             const p = State.data.products.find(i => String(i.Barcode) === String(barcode));
             if (!p) return;
 
+            const selectedDocIdEl = document.getElementById('selectedDocId');
+            if (selectedDocIdEl) selectedDocIdEl.value = p.id || '';
+            const origBcEl = document.getElementById('originalBarcode');
+            if (origBcEl) origBcEl.value = p.Barcode || '';
+
             document.getElementById('barcode').value = p.Barcode;
             document.getElementById('productName').value = p['Nama Produk'];
             document.getElementById('price').value = p['Harga'];
             document.getElementById('hpp').value = p['HPP'] || 0;
             if (p['Tanggal Kadaluarsa']) {
                 document.getElementById('expiryDate').value = new Date(p['Tanggal Kadaluarsa']).toISOString().split('T')[0];
+            } else {
+                document.getElementById('expiryDate').value = '';
             }
             
+            const editNotice = document.getElementById('editModeNotice');
+            if (editNotice) {
+                document.getElementById('editModeDocName').innerText = `${p['Nama Produk']} (${p.Barcode})`;
+                editNotice.classList.remove('hidden');
+            }
+            const submitBtn = document.getElementById('btnSubmitStockForm');
+            if (submitBtn) {
+                submitBtn.innerText = "Simpan Perubahan / Update Stok";
+            }
+
             const qtyInput = document.getElementById('stockAmount');
-            qtyInput.value = '';
+            qtyInput.value = '0';
             qtyInput.focus();
 
-            window.showToast(`Auto-filled: ${p['Nama Produk']}`, "info");
+            window.showToast(`Mode Edit: ${p['Nama Produk']}`, "info");
+        };
+
+        window.cancelEditMode = () => {
+            const selectedDocIdEl = document.getElementById('selectedDocId');
+            if (selectedDocIdEl) selectedDocIdEl.value = '';
+            const origBcEl = document.getElementById('originalBarcode');
+            if (origBcEl) origBcEl.value = '';
+            
+            const stockForm = document.getElementById('stockForm');
+            if (stockForm) stockForm.reset();
+
+            const editNotice = document.getElementById('editModeNotice');
+            if (editNotice) editNotice.classList.add('hidden');
+
+            const submitBtn = document.getElementById('btnSubmitStockForm');
+            if (submitBtn) submitBtn.innerText = "Simpan Stok Produk";
         };
 
         window.setPresetQty = (qty) => {

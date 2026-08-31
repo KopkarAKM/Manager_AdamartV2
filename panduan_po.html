@@ -1,0 +1,695 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Buku Panduan Visual Pembuatan PO - Adamart</title>
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @page {
+            size: A4 portrait;
+            margin: 10mm 10mm 12mm 10mm;
+        }
+        body {
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            color: #1e293b;
+            background-color: #f8fafc;
+            -webkit-print-color-adjust: exact !important;
+            print-color-adjust: exact !important;
+        }
+        .page-break {
+            page-break-after: always;
+            break-after: page;
+        }
+        .avoid-break {
+            break-inside: avoid;
+            page-break-inside: avoid;
+        }
+        .font-mono {
+            font-family: 'JetBrains Mono', monospace;
+        }
+        .step-bubble {
+            width: 38px;
+            height: 38px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 9999px;
+            font-weight: 800;
+            font-size: 16px;
+            flex-shrink: 0;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+        }
+        .custom-card {
+            border: 1px solid #e2e8f0;
+            border-radius: 16px;
+            background: white;
+            box-shadow: 0 4px 12px -2px rgba(15, 23, 42, 0.05);
+        }
+        .ui-window {
+            border-radius: 14px;
+            overflow: hidden;
+            border: 1.5px solid #cbd5e1;
+            background: white;
+            box-shadow: 0 10px 25px -5px rgba(15, 23, 42, 0.08);
+        }
+        .ui-header {
+            background: #0f172a;
+            color: white;
+            padding: 8px 14px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            font-size: 11px;
+            font-weight: 700;
+            letter-spacing: 0.5px;
+        }
+        .pulse-dot {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            display: inline-block;
+        }
+    </style>
+</head>
+<body class="p-2 sm:p-6 max-w-[210mm] mx-auto text-slate-800 text-[13px] leading-relaxed">
+
+    <!-- ========================================================================= -->
+    <!-- HALAMAN 1: COVER & FLOWCHART PROSES PO                                     -->
+    <!-- ========================================================================= -->
+    <div class="page-break flex flex-col justify-between min-h-[275mm] py-2">
+        
+        <!-- HEADER KOP KOPERASI -->
+        <div class="border-b-4 border-double border-slate-900 pb-4 mb-4">
+            <div class="flex items-center justify-between gap-4">
+                <div class="flex items-center gap-3">
+                    <div class="w-14 h-14 rounded-2xl bg-gradient-to-tr from-sky-600 via-blue-600 to-indigo-700 flex items-center justify-center text-white font-extrabold text-2xl shadow-lg shadow-sky-500/30">
+                        A
+                    </div>
+                    <div>
+                        <h1 class="text-xl font-black tracking-tight text-slate-900 uppercase">KOPERASI KARYAWAN ADARO KARYA MANDIRI</h1>
+                        <p class="text-[11px] font-semibold text-slate-600">Unit Usaha Minimarket ADAMART • Badan Hukum No. 2128/BH/IX</p>
+                        <p class="text-[10px] text-slate-500">Jl. Jend. A. Yani Komp. Swadharma Jalur II Blok Mawar RT IV, Tabalong, Kalsel</p>
+                    </div>
+                </div>
+                <div class="text-right bg-sky-50 border border-sky-200 px-3 py-2 rounded-xl">
+                    <span class="text-[10px] font-bold text-sky-700 uppercase tracking-wider block">Buku Petunjuk Resmi</span>
+                    <span class="text-sm font-extrabold text-slate-900">Edisi Manager v7.0</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- JUDUL BUKU PANDUAN -->
+        <div class="bg-gradient-to-r from-slate-900 via-sky-950 to-blue-900 text-white p-6 rounded-2xl shadow-xl my-2 relative overflow-hidden">
+            <div class="absolute -right-8 -bottom-8 w-40 h-40 bg-sky-500/10 rounded-full blur-2xl"></div>
+            <div class="relative z-10">
+                <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-sky-500/20 text-sky-300 border border-sky-400/30 text-[11px] font-bold uppercase tracking-wider mb-2">
+                    <span>📘</span> Panduan Visual Langkah Demi Langkah
+                </div>
+                <h2 class="text-2xl font-black tracking-tight text-white mb-2 leading-tight">
+                    TUTORIAL PEMBUATAN PURCHASE ORDER (PO)
+                </h2>
+                <p class="text-slate-300 text-xs leading-relaxed max-w-xl">
+                    Panduan bergambar yang dirancang sangat mudah, jelas, dan ramah untuk Bapak/Ibu Manager dalam mengelola pemesanan barang ke supplier hingga mencetak surat jalan resmi.
+                </p>
+            </div>
+        </div>
+
+        <!-- BAGIAN FLOWCHART ALUR KERJA PO -->
+        <div class="custom-card p-5 my-2">
+            <div class="flex items-center justify-between mb-4 border-b border-slate-100 pb-3">
+                <div class="flex items-center gap-2.5">
+                    <div class="w-8 h-8 rounded-xl bg-purple-100 text-purple-700 flex items-center justify-center font-bold text-base">📊</div>
+                    <div>
+                        <h3 class="font-extrabold text-slate-900 text-sm">FLOWCHART / ALUR PEMBUATAN PO</h3>
+                        <p class="text-[11px] text-slate-500">Peta jalan proses pemesanan barang dari awal sampai barang tiba</p>
+                    </div>
+                </div>
+                <span class="text-[10px] font-bold px-2.5 py-1 bg-purple-50 text-purple-700 border border-purple-200 rounded-lg">Alur Standar Toko</span>
+            </div>
+
+            <!-- VISUAL FLOW DIAGRAM BOXES -->
+            <div class="grid grid-cols-1 gap-2.5">
+                
+                <!-- TAHAP 1 -->
+                <div class="flex items-center gap-3 bg-slate-50 p-3 rounded-xl border border-slate-200">
+                    <div class="step-bubble bg-sky-600 text-white">1</div>
+                    <div class="flex-1">
+                        <div class="flex items-center justify-between">
+                            <span class="font-bold text-slate-900 text-xs">Cek Kebutuhan Stok Toko</span>
+                            <span class="text-[10px] font-bold text-sky-700 bg-sky-100 px-2 py-0.5 rounded">Menu Restock / Catatan</span>
+                        </div>
+                        <p class="text-[11px] text-slate-600 mt-0.5">Manager memeriksa barang apa saja yang habis, baik melalui data catatan sendiri atau rekomendasi otomatis sistem AI.</p>
+                    </div>
+                </div>
+
+                <div class="flex justify-center -my-1 text-slate-400 font-bold text-sm">▼</div>
+
+                <!-- TAHAP 2 -->
+                <div class="flex items-center gap-3 bg-slate-50 p-3 rounded-xl border border-slate-200">
+                    <div class="step-bubble bg-blue-600 text-white">2</div>
+                    <div class="flex-1">
+                        <div class="flex items-center justify-between">
+                            <span class="font-bold text-slate-900 text-xs">Buka Formulir Pembuatan PO</span>
+                            <span class="text-[10px] font-bold text-blue-700 bg-blue-100 px-2 py-0.5 rounded">Tombol + Buat PO Manual</span>
+                        </div>
+                        <p class="text-[11px] text-slate-600 mt-0.5">Masuk ke menu <b>🛒 Purchase Order</b> lalu klik tombol biru <b>+ Buat PO Manual</b> untuk membuka layar pengisian.</p>
+                    </div>
+                </div>
+
+                <div class="flex justify-center -my-1 text-slate-400 font-bold text-sm">▼</div>
+
+                <!-- TAHAP 3 -->
+                <div class="flex items-center gap-3 bg-slate-50 p-3 rounded-xl border border-slate-200">
+                    <div class="step-bubble bg-amber-500 text-white">3</div>
+                    <div class="flex-1">
+                        <div class="flex items-center justify-between">
+                            <span class="font-bold text-slate-900 text-xs">Isi Rincian Pesanan Barang</span>
+                            <span class="text-[10px] font-bold text-amber-800 bg-amber-100 px-2 py-0.5 rounded">Pilih Supplier & Barang</span>
+                        </div>
+                        <p class="text-[11px] text-slate-600 mt-0.5">Pilih Supplier, tentukan tanggal, cari produk, ketik Jumlah (Qty), pilih Satuan (DUS/PCS), lalu klik tombol <b>(+) Tambah</b>.</p>
+                    </div>
+                </div>
+
+                <div class="flex justify-center -my-1 text-slate-400 font-bold text-sm">▼</div>
+
+                <!-- TAHAP 4 -->
+                <div class="flex items-center gap-3 bg-slate-50 p-3 rounded-xl border border-slate-200">
+                    <div class="step-bubble bg-indigo-600 text-white">4</div>
+                    <div class="flex-1">
+                        <div class="flex items-center justify-between">
+                            <span class="font-bold text-slate-900 text-xs">Pilih Cabang & Simpan PO</span>
+                            <span class="text-[10px] font-bold text-indigo-700 bg-indigo-100 px-2 py-0.5 rounded">Centang Cabang</span>
+                        </div>
+                        <p class="text-[11px] text-slate-600 mt-0.5">Centang cabang tujuan (Adamart 73 / Kelanis), lalu klik tombol biru besar <b>Buat & Kirim Batch PO</b>.</p>
+                    </div>
+                </div>
+
+                <div class="flex justify-center -my-1 text-slate-400 font-bold text-sm">▼</div>
+
+                <!-- TAHAP 5 -->
+                <div class="flex items-center gap-3 bg-emerald-50 p-3 rounded-xl border border-emerald-200">
+                    <div class="step-bubble bg-emerald-600 text-white">5</div>
+                    <div class="flex-1">
+                        <div class="flex items-center justify-between">
+                            <span class="font-bold text-emerald-950 text-xs">Cetak Surat Resmi & Kirim ke Supplier</span>
+                            <span class="text-[10px] font-bold text-emerald-800 bg-emerald-100 px-2 py-0.5 rounded">Tombol 🖨️ Cetak PO</span>
+                        </div>
+                        <p class="text-[11px] text-emerald-800 mt-0.5">Klik tombol <b>🖨️ Cetak PO</b> untuk menghasilkan surat resmi ber-kop Koperasi yang siap ditandatangani dan dikirim.</p>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+
+        <!-- FOOTER HALAMAN -->
+        <div class="flex items-center justify-between pt-3 border-t border-slate-200 text-[10px] text-slate-400">
+            <span>Adamart Manager System • PT Adaro Karya Mandiri</span>
+            <span class="font-bold bg-slate-100 px-2 py-0.5 rounded text-slate-600">Halaman 1 dari 4</span>
+        </div>
+    </div>
+
+
+    <!-- ========================================================================= -->
+    <!-- HALAMAN 2: CARA MEMBUAT PO MANUAL (LANGKAH 1 s/d 4)                       -->
+    <!-- ========================================================================= -->
+    <div class="page-break flex flex-col justify-between min-h-[275mm] py-2">
+        
+        <!-- HEADER KECIL -->
+        <div class="flex items-center justify-between border-b border-slate-200 pb-2 mb-3">
+            <div class="flex items-center gap-2">
+                <span class="font-extrabold text-sky-600 text-base">ADAMART</span>
+                <span class="text-slate-300">|</span>
+                <span class="text-xs font-bold text-slate-700 uppercase">Metode 1: Pembuatan PO Manual</span>
+            </div>
+            <span class="text-[10px] font-bold text-slate-500 bg-slate-100 px-2 py-0.5 rounded">Langkah Detail</span>
+        </div>
+
+        <!-- LANGKAH 1 & 2 DENGAN GAMBAR UI -->
+        <div class="custom-card p-4 mb-3">
+            <div class="flex items-start gap-3">
+                <div class="step-bubble bg-sky-600 text-white">1</div>
+                <div class="flex-1">
+                    <h4 class="font-black text-slate-900 text-xs uppercase tracking-wide">LANGKAH 1: Klik Menu "Purchase Order" di Sidebar Kiri</h4>
+                    <p class="text-[11px] text-slate-600 mt-1">Pada menu hitam sebelah kiri layar komputer, cari dan klik menu bertuliskan <b>🛒 Purchase Order</b>.</p>
+                    
+                    <!-- MOCKUP SIDEBAR -->
+                    <div class="mt-2.5 bg-slate-900 p-2.5 rounded-xl text-white text-[11px] max-w-md border border-slate-800">
+                        <div class="text-[9px] font-bold text-slate-400 uppercase tracking-wider mb-1 px-2">Operasional & Stok</div>
+                        <div class="bg-gradient-to-r from-sky-600 to-blue-600 text-white font-bold px-3 py-1.5 rounded-lg flex items-center justify-between border border-sky-400/40 shadow-sm">
+                            <span class="flex items-center gap-2"><span>🛒</span> <b>Purchase Order</b></span>
+                            <span class="text-[9px] bg-white text-sky-700 font-extrabold px-1.5 py-0.5 rounded">KLIK DISINI 👈</span>
+                        </div>
+                        <div class="text-slate-400 px-3 py-1 opacity-70 flex items-center gap-2 mt-1"><span>📦</span> Master Produk</div>
+                        <div class="text-slate-400 px-3 py-1 opacity-70 flex items-center gap-2"><span>🚛</span> Barang Masuk</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- LANGKAH 2: KLIK TOMBOL BIRU -->
+        <div class="custom-card p-4 mb-3">
+            <div class="flex items-start gap-3">
+                <div class="step-bubble bg-blue-600 text-white">2</div>
+                <div class="flex-1">
+                    <h4 class="font-black text-slate-900 text-xs uppercase tracking-wide">LANGKAH 2: Klik Tombol Biru "+ Buat PO Manual"</h4>
+                    <p class="text-[11px] text-slate-600 mt-1">Lihat ke pojok kanan atas halaman, lalu klik tombol berwarna biru terang bertuliskan <b>+ Buat PO Manual</b>.</p>
+                    
+                    <!-- MOCKUP TOMBOL HEADER -->
+                    <div class="mt-2.5 bg-slate-100 p-2.5 rounded-xl border border-slate-200 flex items-center justify-between flex-wrap gap-2">
+                        <div>
+                            <div class="font-extrabold text-slate-800 text-xs">Daftar Purchase Orders (PO)</div>
+                            <div class="text-[10px] text-slate-500">Kelola dan cetak pesanan barang per area</div>
+                        </div>
+                        <div class="flex items-center gap-2">
+                            <span class="bg-purple-600 text-white px-2.5 py-1.5 rounded-lg font-bold text-[10px] opacity-80">⚡ Auto PO Per Area</span>
+                            <span class="bg-sky-600 text-white px-3 py-1.5 rounded-lg font-black text-[11px] shadow-md border-2 border-sky-400 flex items-center gap-1.5 animate-pulse">
+                                <span>➕</span> <b>+ Buat PO Manual</b>
+                                <span class="bg-white text-sky-700 text-[9px] px-1 rounded">KLIK INI</span>
+                            </span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- LANGKAH 3: PANDUAN PENGISIAN FORMULIR PO -->
+        <div class="custom-card p-4 flex-1 flex flex-col justify-between">
+            <div class="flex items-start gap-3">
+                <div class="step-bubble bg-amber-500 text-white">3</div>
+                <div class="flex-1">
+                    <h4 class="font-black text-slate-900 text-xs uppercase tracking-wide">LANGKAH 3: Isi Formulir Pemesanan Barang (Pop-up Form)</h4>
+                    <p class="text-[11px] text-slate-600 mt-1">Jendela putih akan muncul di tengah layar. Lakukan pengisian data sesuai petunjuk visual di bawah ini:</p>
+
+                    <!-- MOCKUP UI FORMULIR LENGKAP -->
+                    <div class="ui-window mt-2.5 text-[11px]">
+                        <div class="ui-header">
+                            <span>📝 FORMULIR BUAT BATCH PO SUPPLIER</span>
+                            <span class="text-slate-400">[ ✕ Tutup ]</span>
+                        </div>
+                        
+                        <div class="p-3 space-y-2.5 bg-slate-50">
+                            
+                            <!-- BARIS 1: SUPPLIER & TANGGAL -->
+                            <div class="grid grid-cols-2 gap-3 bg-white p-2.5 rounded-xl border border-slate-200">
+                                <div>
+                                    <label class="text-[9px] font-extrabold text-slate-500 uppercase block">1. PILIH SUPPLIER</label>
+                                    <div class="border-2 border-sky-400 rounded-lg p-1.5 bg-sky-50 font-bold text-sky-900 text-[11px] flex justify-between items-center mt-0.5">
+                                        <span>PT Sumber Makmur</span>
+                                        <span>▼</span>
+                                    </div>
+                                    <span class="text-[9px] text-slate-400 mt-0.5 block">*Bisa pilih manual jika belum ada</span>
+                                </div>
+                                <div>
+                                    <label class="text-[9px] font-extrabold text-slate-500 uppercase block">2. TANGGAL ORDER</label>
+                                    <div class="border border-slate-300 rounded-lg p-1.5 bg-white font-medium text-slate-800 text-[11px] flex justify-between items-center mt-0.5">
+                                        <span>2026-08-29</span>
+                                        <span>📅</span>
+                                    </div>
+                                    <span class="text-[9px] text-slate-400 mt-0.5 block">*Otomatis tanggal hari ini</span>
+                                </div>
+                            </div>
+
+                            <!-- BARIS 2: CARI & TAMBAH BARANG -->
+                            <div class="bg-sky-50/90 p-2.5 rounded-xl border-2 border-sky-200 space-y-2">
+                                <div>
+                                    <label class="text-[10px] font-extrabold text-sky-900 uppercase block">3. CARI & KETIK NAMA BARANG:</label>
+                                    <div class="bg-white border-2 border-sky-500 rounded-lg p-2 font-bold text-slate-800 text-xs shadow-inner flex justify-between items-center">
+                                        <span>Indomie Goreng Spesial</span>
+                                        <span class="text-[10px] text-sky-600 bg-sky-100 px-1.5 py-0.5 rounded font-bold">Terpilih ✔</span>
+                                    </div>
+                                </div>
+
+                                <div class="grid grid-cols-12 gap-1.5 items-center">
+                                    <div class="col-span-3">
+                                        <span class="text-[8px] font-bold text-slate-500 uppercase block">Barcode:</span>
+                                        <div class="bg-slate-200 p-1 rounded font-mono text-[9px] text-slate-600 truncate font-bold">8998866110</div>
+                                    </div>
+                                    <div class="col-span-2">
+                                        <span class="text-[8px] font-bold text-sky-700 uppercase block">Qty (Jumlah):</span>
+                                        <div class="bg-white border-2 border-sky-500 p-1 rounded font-extrabold text-sky-800 text-center text-xs">5</div>
+                                    </div>
+                                    <div class="col-span-2">
+                                        <span class="text-[8px] font-bold text-slate-500 uppercase block">Satuan:</span>
+                                        <div class="bg-white border border-slate-300 p-1 rounded font-bold text-center text-[10px]">DUS ▼</div>
+                                    </div>
+                                    <div class="col-span-3">
+                                        <span class="text-[8px] font-bold text-slate-500 uppercase block">Harga Beli (HPP):</span>
+                                        <div class="bg-white border border-slate-300 p-1 rounded text-right font-bold text-[10px]">112.500</div>
+                                    </div>
+                                    <div class="col-span-2">
+                                        <span class="text-[8px] font-bold text-transparent block">Aksi</span>
+                                        <div class="bg-sky-600 text-white font-black text-center py-1 rounded shadow text-xs border border-sky-400">
+                                            + TAMBAH
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- ITEM YANG BERHASIL DITAMBAH -->
+                                <div class="bg-white p-2 rounded-lg border border-slate-200 text-[10px] space-y-1">
+                                    <div class="flex justify-between items-center font-semibold text-slate-700 border-b border-slate-100 pb-1">
+                                        <span>✔ <b>Indomie Goreng Spesial</b> x 5 DUS @ Rp 112.500</span>
+                                        <span class="text-rose-500 font-bold">[ ✕ Hapus ]</span>
+                                    </div>
+                                    <div class="flex justify-between items-center font-semibold text-slate-700">
+                                        <span>✔ <b>Minyak Goreng 2L</b> x 10 DUS @ Rp 165.000</span>
+                                        <span class="text-rose-500 font-bold">[ ✕ Hapus ]</span>
+                                    </div>
+                                </div>
+                                <div class="text-right font-black text-xs text-sky-900">
+                                    Total Estimasi Belanja: <span class="text-sm font-extrabold text-sky-700">Rp 2.212.500</span>
+                                </div>
+                            </div>
+
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- FOOTER HALAMAN -->
+        <div class="flex items-center justify-between pt-3 border-t border-slate-200 text-[10px] text-slate-400">
+            <span>Adamart Manager System • PT Adaro Karya Mandiri</span>
+            <span class="font-bold bg-slate-100 px-2 py-0.5 rounded text-slate-600">Halaman 2 dari 4</span>
+        </div>
+    </div>
+
+
+    <!-- ========================================================================= -->
+    <!-- HALAMAN 3: SIMPAN PO, METODE SMART RESTOCK & MENCETAK PO                  -->
+    <!-- ========================================================================= -->
+    <div class="page-break flex flex-col justify-between min-h-[275mm] py-2">
+        
+        <!-- HEADER KECIL -->
+        <div class="flex items-center justify-between border-b border-slate-200 pb-2 mb-3">
+            <div class="flex items-center gap-2">
+                <span class="font-extrabold text-sky-600 text-base">ADAMART</span>
+                <span class="text-slate-300">|</span>
+                <span class="text-xs font-bold text-slate-700 uppercase">Simpan, Smart Restock & Cetak Surat PO</span>
+            </div>
+            <span class="text-[10px] font-bold text-slate-500 bg-slate-100 px-2 py-0.5 rounded">Proses Final</span>
+        </div>
+
+        <!-- LANGKAH 4: CENTANG CABANG & KLIK SIMPAN -->
+        <div class="custom-card p-4 mb-3">
+            <div class="flex items-start gap-3">
+                <div class="step-bubble bg-indigo-600 text-white">4</div>
+                <div class="flex-1">
+                    <h4 class="font-black text-slate-900 text-xs uppercase tracking-wide">LANGKAH 4: Pilih Cabang Tujuan & Klik Tombol Simpan</h4>
+                    <p class="text-[11px] text-slate-600 mt-1">Pastikan cabang yang ingin dikirimkan barang sudah tercentang, lalu klik tombol biru besar di bawah formulir:</p>
+                    
+                    <div class="mt-2.5 bg-slate-50 p-3 rounded-xl border border-slate-200 space-y-2">
+                        <div class="flex items-center gap-4 text-xs font-bold text-slate-700">
+                            <span class="text-slate-500 text-[11px]">Kirim Ke Cabang:</span>
+                            <label class="flex items-center gap-1.5 text-sky-900 bg-white px-2.5 py-1 rounded-lg border border-sky-300 shadow-sm">
+                                <input type="checkbox" checked class="w-4 h-4 accent-sky-600"> [✔] Adamart 73
+                            </label>
+                            <label class="flex items-center gap-1.5 text-sky-900 bg-white px-2.5 py-1 rounded-lg border border-sky-300 shadow-sm">
+                                <input type="checkbox" checked class="w-4 h-4 accent-sky-600"> [✔] Adamart Kelanis
+                            </label>
+                        </div>
+                        
+                        <!-- TOMBOL SUBMIT BESAR -->
+                        <div class="bg-gradient-to-r from-sky-600 via-blue-600 to-sky-700 text-white text-center py-2.5 rounded-xl font-extrabold text-xs tracking-wide shadow-md border border-sky-400 flex items-center justify-center gap-2">
+                            <span>💾</span> <b>BUAT & KIRIM BATCH PO</b> 
+                            <span class="bg-white text-sky-800 text-[10px] px-2 py-0.5 rounded font-black">KLIK TOMBOL INI UNTUK MENYIMPAN</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- METODE 2: CARA KILAT DENGAN SMART RESTOCK AI -->
+        <div class="custom-card p-4 mb-3 bg-gradient-to-br from-purple-50/60 to-indigo-50/60 border-purple-200">
+            <div class="flex items-start gap-3">
+                <div class="step-bubble bg-purple-600 text-white">⚡</div>
+                <div class="flex-1">
+                    <div class="flex items-center justify-between">
+                        <h4 class="font-black text-purple-950 text-xs uppercase tracking-wide">METODE KILAT: Pembuatan PO Otomatis (Smart Restock AI)</h4>
+                        <span class="text-[9px] font-extrabold bg-purple-200 text-purple-800 px-2 py-0.5 rounded">Cukup 1x Klik</span>
+                    </div>
+                    <p class="text-[11px] text-purple-900 mt-1">Jika Bapak/Ibu tidak ingin mengetik barang satu-per-satu, gunakan tombol pintar ini:</p>
+                    
+                    <div class="mt-2 grid grid-cols-2 gap-2 text-[11px]">
+                        <div class="bg-white p-2.5 rounded-xl border border-purple-200">
+                            <div class="font-bold text-slate-800 mb-1">1. Klik Menu 🤖 Smart Restock</div>
+                            <p class="text-[10px] text-slate-500">Sistem AI langsung menghitung barang mana saja yang stoknya kritis & mau habis.</p>
+                        </div>
+                        <div class="bg-white p-2.5 rounded-xl border border-purple-200">
+                            <div class="font-bold text-slate-800 mb-1">2. Klik Tombol Ungu ⚡</div>
+                            <div class="bg-purple-600 text-white font-black text-[10px] py-1 px-2 rounded text-center shadow-sm">
+                                ⚡ Auto PO Per Area (73, Kelanis)
+                            </div>
+                            <p class="text-[9px] text-purple-700 text-center mt-1">Sistem otomatis menerbitkan PO untuk semua cabang!</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- CARA MENCETAK SURAT PO RESMI -->
+        <div class="custom-card p-4 flex-1 flex flex-col justify-between">
+            <div class="flex items-start gap-3">
+                <div class="step-bubble bg-emerald-600 text-white">🖨️</div>
+                <div class="flex-1">
+                    <h4 class="font-black text-slate-900 text-xs uppercase tracking-wide">LANGKAH 5: Cara Mencetak Surat PO Resmi (Kop Koperasi Adaro)</h4>
+                    <p class="text-[11px] text-slate-600 mt-1">Setelah PO disimpan, dokumen akan tampil di tabel. Klik tombol kecil berwarna biru muda <b>🖨️ Cetak PO</b>:</p>
+
+                    <!-- MOCKUP TABEL PO -->
+                    <div class="mt-2 bg-white rounded-xl border border-slate-200 overflow-hidden text-[10px]">
+                        <table class="w-full text-left">
+                            <thead class="bg-slate-100 font-bold text-slate-600 border-b border-slate-200">
+                                <tr>
+                                    <th class="p-2">Tgl Order</th>
+                                    <th class="p-2">Batch ID</th>
+                                    <th class="p-2">Supplier</th>
+                                    <th class="p-2">Cabang</th>
+                                    <th class="p-2 text-center">Tombol Aksi</th>
+                                </tr>
+                            </thead>
+                            <tbody class="divide-y divide-slate-100">
+                                <tr>
+                                    <td class="p-2 font-medium">29/08/2026</td>
+                                    <td class="p-2 font-mono font-bold text-sky-700">BATCH-17249...</td>
+                                    <td class="p-2 font-bold">PT Sumber Makmur</td>
+                                    <td class="p-2"><span class="bg-purple-100 text-purple-800 px-1.5 py-0.5 rounded font-bold text-[9px]">Adamart 73</span></td>
+                                    <td class="p-2 text-center">
+                                        <span class="bg-sky-100 text-sky-800 border border-sky-300 font-extrabold px-2.5 py-1 rounded-lg inline-block shadow-sm">
+                                            🖨️ Cetak PO 👈 KLIK INI
+                                        </span>
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <!-- PREVIEW SURAT HASIL CETAK -->
+                    <div class="mt-2.5 bg-amber-50 p-2.5 rounded-xl border border-amber-200 text-[10px] text-amber-950 flex items-center justify-between">
+                        <div>
+                            <b>Hasil Cetak Surat PO Sudah Otomatis Memuat:</b>
+                            <ul class="list-disc list-inside mt-0.5 text-[9px] text-slate-700">
+                                <li>Kop Surat Resmi Koperasi Karyawan Adaro Karya Mandiri</li>
+                                <li>Nomor PO, Tanggal Pemesanan, dan Cabang Tujuan</li>
+                                <li>Tabel Daftar Barang, Qty, Satuan, dan Total Biaya</li>
+                                <li>Kolom Tanda Tangan: <b>( Manager Adamart )</b> & <b>( Pihak Supplier )</b></li>
+                            </ul>
+                        </div>
+                        <div class="text-right">
+                            <span class="bg-emerald-600 text-white font-bold text-[9px] px-2 py-1 rounded block">Bisa Print Kertas / Simpan PDF</span>
+                        </div>
+                    </div>
+
+                </div>
+            </div>
+        </div>
+
+        <!-- FOOTER HALAMAN -->
+        <div class="flex items-center justify-between pt-3 border-t border-slate-200 text-[10px] text-slate-400">
+            <span>Adamart Manager System • PT Adaro Karya Mandiri</span>
+            <span class="font-bold bg-slate-100 px-2 py-0.5 rounded text-slate-600">Halaman 3 dari 4</span>
+        </div>
+    </div>
+
+
+    <!-- ========================================================================= -->
+    <!-- HALAMAN 4: EDIT, HAPUS, PENERIMAAN BARANG & CONTEKAN TOMBOL               -->
+    <!-- ========================================================================= -->
+    <div class="flex flex-col justify-between min-h-[275mm] py-2">
+        
+        <!-- HEADER KECIL -->
+        <div class="flex items-center justify-between border-b border-slate-200 pb-2 mb-3">
+            <div class="flex items-center gap-2">
+                <span class="font-extrabold text-sky-600 text-base">ADAMART</span>
+                <span class="text-slate-300">|</span>
+                <span class="text-xs font-bold text-slate-700 uppercase">Edit PO, Penerimaan Barang & Contekan Tombol</span>
+            </div>
+            <span class="text-[10px] font-bold text-slate-500 bg-slate-100 px-2 py-0.5 rounded">Bantuan Lengkap</span>
+        </div>
+
+        <!-- BAGIAN EDIT & HAPUS PO -->
+        <div class="grid grid-cols-2 gap-3 mb-3">
+            <div class="custom-card p-3.5 border-amber-200 bg-amber-50/40">
+                <div class="flex items-center gap-2 mb-1.5">
+                    <span class="text-base">✏️</span>
+                    <h4 class="font-extrabold text-amber-950 text-xs uppercase">Cara Mengubah (Edit) PO</h4>
+                </div>
+                <p class="text-[11px] text-slate-600 leading-normal">
+                    Jika ada salah ketik jumlah barang atau ganti supplier:
+                </p>
+                <div class="mt-2 space-y-1 text-[10px] text-slate-700">
+                    <div class="flex items-center gap-1.5">
+                        <span class="font-bold text-amber-600">1.</span> Klik tombol kuning <b>✏️ Edit PO</b> di tabel.
+                    </div>
+                    <div class="flex items-center gap-1.5">
+                        <span class="font-bold text-amber-600">2.</span> Ubah data atau hapus barang yang keliru.
+                    </div>
+                    <div class="flex items-center gap-1.5">
+                        <span class="font-bold text-amber-600">3.</span> Klik tombol <b>Simpan Perubahan PO</b>.
+                    </div>
+                </div>
+            </div>
+
+            <div class="custom-card p-3.5 border-rose-200 bg-rose-50/40">
+                <div class="flex items-center gap-2 mb-1.5">
+                    <span class="text-base">🗑️</span>
+                    <h4 class="font-extrabold text-rose-950 text-xs uppercase">Cara Menghapus PO</h4>
+                </div>
+                <p class="text-[11px] text-slate-600 leading-normal">
+                    Jika pesanan batal atau ingin dibuang:
+                </p>
+                <div class="mt-2 space-y-1 text-[10px] text-slate-700">
+                    <div class="flex items-center gap-1.5">
+                        <span class="font-bold text-rose-600">1.</span> Klik tombol merah <b>🗑️ Hapus</b> di tabel.
+                    </div>
+                    <div class="flex items-center gap-1.5">
+                        <span class="font-bold text-rose-600">2.</span> Muncul pertanyaan konfirmasi pada layar.
+                    </div>
+                    <div class="flex items-center gap-1.5">
+                        <span class="font-bold text-rose-600">3.</span> Klik <b>OK / Ya</b> untuk menghapus permanen.
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- TAHAP SETELAHNYA: BARANG MASUK DARI SUPPLIER -->
+        <div class="custom-card p-3.5 mb-3 bg-emerald-50/60 border-emerald-200">
+            <div class="flex items-center justify-between mb-1.5">
+                <div class="flex items-center gap-2">
+                    <span class="text-base">🚛</span>
+                    <h4 class="font-extrabold text-emerald-950 text-xs uppercase">Tahap Penerimaan Barang (Ketika Kurir/Truk Tiba)</h4>
+                </div>
+                <span class="text-[9px] font-bold bg-emerald-200 text-emerald-900 px-2 py-0.5 rounded">Logistik Toko</span>
+            </div>
+            <p class="text-[11px] text-slate-700 leading-normal">
+                Saat barang pesanan tiba di toko Adamart:
+            </p>
+            <div class="grid grid-cols-3 gap-2 mt-2 text-[10px]">
+                <div class="bg-white p-2 rounded-lg border border-emerald-200">
+                    <b>Langkah 1:</b>
+                    <p class="text-slate-600 mt-0.5">Klik menu <b>🚛 Barang Masuk</b> di sidebar kiri.</p>
+                </div>
+                <div class="bg-white p-2 rounded-lg border border-emerald-200">
+                    <b>Langkah 2:</b>
+                    <p class="text-slate-600 mt-0.5">Cari nomor PO pesanan yang sedang datang.</p>
+                </div>
+                <div class="bg-white p-2 rounded-lg border border-emerald-200">
+                    <b>Langkah 3:</b>
+                    <p class="text-slate-600 mt-0.5">Klik tombol hijau <b>📦 Proses Penerimaan</b>.</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- TABEL CONTEKAN CEPAT WARNA & FUNGSI TOMBOL -->
+        <div class="custom-card p-4 flex-1 flex flex-col justify-between">
+            <div>
+                <div class="flex items-center gap-2 mb-2">
+                    <span class="text-base">📌</span>
+                    <h4 class="font-black text-slate-900 text-xs uppercase tracking-wide">CONTEKAN WARNA & FUNGSI TOMBOL (PETUNJUK CEPAT)</h4>
+                </div>
+                
+                <div class="rounded-xl border border-slate-200 overflow-hidden text-[10px]">
+                    <table class="w-full text-left">
+                        <thead class="bg-slate-900 text-white font-bold">
+                            <tr>
+                                <th class="p-2">Tampilan Tombol</th>
+                                <th class="p-2">Warna Tombol</th>
+                                <th class="p-2">Letak Tombol</th>
+                                <th class="p-2">Fungsi Utama</th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y divide-slate-200 text-slate-700">
+                            <tr class="bg-white">
+                                <td class="p-2 font-extrabold text-sky-700">🛒 Purchase Order</td>
+                                <td class="p-2"><span class="bg-slate-800 text-white px-1.5 py-0.5 rounded font-bold">Hitam</span></td>
+                                <td class="p-2">Menu Kiri (Sidebar)</td>
+                                <td class="p-2">Membuka halaman utama PO</td>
+                            </tr>
+                            <tr class="bg-slate-50">
+                                <td class="p-2"><span class="bg-sky-600 text-white px-2 py-0.5 rounded font-bold">+ Buat PO Manual</span></td>
+                                <td class="p-2"><span class="bg-sky-600 text-white px-1.5 py-0.5 rounded font-bold">Biru Terang</span></td>
+                                <td class="p-2">Kanan Atas Layar</td>
+                                <td class="p-2">Membuka form pesanan baru</td>
+                            </tr>
+                            <tr class="bg-white">
+                                <td class="p-2"><span class="bg-purple-600 text-white px-2 py-0.5 rounded font-bold">⚡ Auto PO Per Area</span></td>
+                                <td class="p-2"><span class="bg-purple-600 text-white px-1.5 py-0.5 rounded font-bold">Ungu</span></td>
+                                <td class="p-2">Kanan Atas / Restock</td>
+                                <td class="p-2">Buat PO otomatis dengan AI</td>
+                            </tr>
+                            <tr class="bg-slate-50">
+                                <td class="p-2"><span class="bg-sky-600 text-white px-2 py-0.5 rounded font-bold">+</span> (Tambah Item)</td>
+                                <td class="p-2"><span class="bg-sky-600 text-white px-1.5 py-0.5 rounded font-bold">Biru Kotak</span></td>
+                                <td class="p-2">Di samping Harga Beli</td>
+                                <td class="p-2">Memasukkan barang ke list PO</td>
+                            </tr>
+                            <tr class="bg-white">
+                                <td class="p-2"><span class="bg-sky-700 text-white px-2 py-0.5 rounded font-bold">Buat & Kirim Batch PO</span></td>
+                                <td class="p-2"><span class="bg-sky-700 text-white px-1.5 py-0.5 rounded font-bold">Biru Panjang</span></td>
+                                <td class="p-2">Paling Bawah Form</td>
+                                <td class="p-2">Menyimpan & terbitkan PO</td>
+                            </tr>
+                            <tr class="bg-slate-50">
+                                <td class="p-2"><span class="bg-sky-100 text-sky-800 border border-sky-300 px-1.5 py-0.5 rounded font-bold">🖨️ Cetak PO</span></td>
+                                <td class="p-2"><span class="bg-sky-200 text-sky-800 px-1.5 py-0.5 rounded font-bold">Biru Muda</span></td>
+                                <td class="p-2">Tabel Daftar PO</td>
+                                <td class="p-2">Cetak lembar surat resmi PO</td>
+                            </tr>
+                            <tr class="bg-white">
+                                <td class="p-2"><span class="bg-amber-100 text-amber-800 border border-amber-300 px-1.5 py-0.5 rounded font-bold">✏️ Edit PO</span></td>
+                                <td class="p-2"><span class="bg-amber-200 text-amber-900 px-1.5 py-0.5 rounded font-bold">Kuning/Oranye</span></td>
+                                <td class="p-2">Tabel Daftar PO</td>
+                                <td class="p-2">Mengoreksi isi pesanan PO</td>
+                            </tr>
+                            <tr class="bg-slate-50">
+                                <td class="p-2"><span class="bg-rose-100 text-rose-800 border border-rose-300 px-1.5 py-0.5 rounded font-bold">🗑️ Hapus</span></td>
+                                <td class="p-2"><span class="bg-rose-200 text-rose-900 px-1.5 py-0.5 rounded font-bold">Merah</span></td>
+                                <td class="p-2">Tabel Daftar PO</td>
+                                <td class="p-2">Membatalkan / menghapus PO</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- TIPS BANTUAN -->
+            <div class="mt-2 bg-sky-50 border border-sky-200 p-2 rounded-xl flex items-center justify-between text-[10px] text-sky-950">
+                <div class="flex items-center gap-2">
+                    <span class="text-sm">💡</span>
+                    <span><b>Tips Tampilan Komputer:</b> Tekan tombol <b>Ctrl</b> dan <b>+</b> pada keyboard untuk memperbesar huruf jika layar kurang jelas.</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- FOOTER HALAMAN -->
+        <div class="flex items-center justify-between pt-3 border-t border-slate-200 text-[10px] text-slate-400">
+            <span>Adamart Manager System • PT Adaro Karya Mandiri</span>
+            <span class="font-bold bg-slate-100 px-2 py-0.5 rounded text-slate-600">Halaman 4 dari 4 • Selesai</span>
+        </div>
+    </div>
+
+</body>
+</html>
