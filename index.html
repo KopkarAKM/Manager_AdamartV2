@@ -252,6 +252,10 @@
         const State = { 
             currentPage: 'dashboard', 
             dashboardFilter: 'today',
+            poAreaFilter: 'all',
+            poSearch: '',
+            poSort: 'newest',
+            poStatusFilter: 'all',
             filters: {
                 dashboard: { datePreset: 'today', startDate: '', endDate: '', area: 'all' },
                 reports: { datePreset: 'this_month', startDate: '', endDate: '', area: 'all' },
@@ -454,7 +458,11 @@
                 
                 State.data.products = pData;
                 State.data.sales = sData;
-                State.data.purchases = poData;
+                State.data.purchases = (poData || []).sort((a,b) => {
+                    const dateA = new Date(a.orderDate || a.createdAt || a.timestamp || 0).getTime() || 0;
+                    const dateB = new Date(b.orderDate || b.createdAt || b.timestamp || 0).getTime() || 0;
+                    return dateB - dateA;
+                });
                 State.data.shifts = shiftData;
                 State.data.logs = logData;
                 
@@ -1029,58 +1037,150 @@
 
             Purchase: () => {
                 const poAreaFilter = State.poAreaFilter || 'all';
-                let filteredPOs = State.data.purchases;
+                const poSort = State.poSort || 'newest';
+                const poStatusFilter = State.poStatusFilter || 'all';
+
+                let filteredPOs = [...(State.data.purchases || [])];
+
+                // 1. Filter Area Cabang
                 if (poAreaFilter !== 'all') {
                     filteredPOs = filteredPOs.filter(p => (p.branch || '').toLowerCase().includes(poAreaFilter.toLowerCase()));
                 }
 
+                // 2. Filter Status
+                if (poStatusFilter !== 'all') {
+                    filteredPOs = filteredPOs.filter(p => (p.status || 'pending').toLowerCase() === poStatusFilter.toLowerCase());
+                }
+
+                // 3. Sorting (Urutan)
+                filteredPOs.sort((a, b) => {
+                    const dateA = new Date(a.orderDate || a.createdAt || a.timestamp || 0).getTime() || 0;
+                    const dateB = new Date(b.orderDate || b.createdAt || b.timestamp || 0).getTime() || 0;
+                    
+                    if (poSort === 'newest') return dateB - dateA;
+                    if (poSort === 'oldest') return dateA - dateB;
+                    if (poSort === 'supplier_asc') return (a.supplier || '').localeCompare(b.supplier || '');
+                    if (poSort === 'supplier_desc') return (b.supplier || '').localeCompare(a.supplier || '');
+                    if (poSort === 'items_desc') {
+                        let cntA = 0, cntB = 0;
+                        try { cntA = JSON.parse(a.items || '[]').length; } catch(e){}
+                        try { cntB = JSON.parse(b.items || '[]').length; } catch(e){}
+                        return cntB - cntA;
+                    }
+                    return dateB - dateA;
+                });
+
                 return `
                 <div class="space-y-4">
-                    <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 bg-white p-4 rounded-2xl shadow-sm border border-slate-200/80">
+                    <!-- HEADER & KONTROL FILTER / URUTAN PO -->
+                    <div class="flex flex-col xl:flex-row justify-between items-start xl:items-center gap-3 bg-white p-4 rounded-2xl shadow-sm border border-slate-200/80">
                         <div>
-                            <h3 class="text-lg font-bold text-slate-800">Daftar Purchase Orders (PO)</h3>
-                            <p class="text-xs text-slate-500 mt-0.5">Kelola dan cetak pesanan barang per area cabang</p>
+                            <div class="flex items-center gap-2">
+                                <h3 class="text-lg font-bold text-slate-800">Daftar Purchase Orders (PO)</h3>
+                                <span class="px-2.5 py-0.5 rounded-full text-xs font-bold bg-sky-100 text-sky-800 border border-sky-200" id="po-badge-count">${filteredPOs.length} Dokumen</span>
+                            </div>
+                            <p class="text-xs text-slate-500 mt-0.5">Kelola, urutkan, cetak, edit, dan hapus pesanan barang supplier</p>
                         </div>
 
-                        <div class="flex flex-wrap items-center gap-3 w-full sm:w-auto">
+                        <div class="flex flex-wrap items-center gap-2.5 w-full xl:w-auto">
+                            <!-- Quick Search Bar -->
+                            <div class="relative flex-1 sm:flex-initial">
+                                <input type="text" placeholder="🔍 Cari No PO / Supplier..." oninput="window.filterPOTable(this.value)" class="w-full sm:w-52 p-2.5 pl-3 border border-slate-300 rounded-xl text-xs bg-slate-50 font-medium focus:outline-none focus:border-sky-500 focus:bg-white transition touch-target">
+                            </div>
+
+                            <!-- Filter Cabang -->
                             <select onchange="State.poAreaFilter = this.value; renderPage();" class="p-2.5 border border-slate-300 rounded-xl text-xs bg-slate-50 font-bold focus:outline-none focus:border-sky-400 cursor-pointer touch-target">
-                                <option value="all" ${poAreaFilter === 'all' ? 'selected' : ''}>Semua Area Cabang</option>
+                                <option value="all" ${poAreaFilter === 'all' ? 'selected' : ''}>🏢 Semua Cabang</option>
                                 <option value="73" ${poAreaFilter === '73' ? 'selected' : ''}>Adamart 73</option>
                                 <option value="induksi" ${poAreaFilter === 'induksi' ? 'selected' : ''}>Adamart Induksi</option>
                                 <option value="kelanis" ${poAreaFilter === 'kelanis' ? 'selected' : ''}>Adamart Kelanis</option>
                             </select>
-                            <button onclick="Actions.generateAutoPOPerArea()" class="bg-gradient-to-r from-purple-600 to-indigo-600 text-white px-4 py-2.5 rounded-xl font-bold hover:from-purple-700 hover:to-indigo-700 shadow-md transition touch-target text-xs sm:text-sm flex items-center gap-1.5">
+
+                            <!-- Filter Status -->
+                            <select onchange="State.poStatusFilter = this.value; renderPage();" class="p-2.5 border border-slate-300 rounded-xl text-xs bg-slate-50 font-bold focus:outline-none focus:border-sky-400 cursor-pointer touch-target">
+                                <option value="all" ${poStatusFilter === 'all' ? 'selected' : ''}>Semua Status</option>
+                                <option value="pending" ${poStatusFilter === 'pending' ? 'selected' : ''}>⏳ Status: PENDING</option>
+                                <option value="received" ${poStatusFilter === 'received' ? 'selected' : ''}>✅ Status: RECEIVED</option>
+                            </select>
+
+                            <!-- Pengurutan (Sorting) -->
+                            <select onchange="State.poSort = this.value; renderPage();" class="p-2.5 border border-sky-300 bg-sky-50 text-sky-900 rounded-xl text-xs font-bold focus:outline-none focus:border-sky-500 cursor-pointer touch-target">
+                                <option value="newest" ${poSort === 'newest' ? 'selected' : ''}>📅 Urut: Tanggal Terbaru</option>
+                                <option value="oldest" ${poSort === 'oldest' ? 'selected' : ''}>📅 Urut: Tanggal Terlama</option>
+                                <option value="supplier_asc" ${poSort === 'supplier_asc' ? 'selected' : ''}>🏢 Urut: Supplier (A - Z)</option>
+                                <option value="supplier_desc" ${poSort === 'supplier_desc' ? 'selected' : ''}>🏢 Urut: Supplier (Z - A)</option>
+                                <option value="items_desc" ${poSort === 'items_desc' ? 'selected' : ''}>📦 Urut: Total Item Terbanyak</option>
+                            </select>
+
+                            <!-- Tombol Aksi -->
+                            <button onclick="Actions.generateAutoPOPerArea()" class="bg-gradient-to-r from-purple-600 to-indigo-600 text-white px-3.5 py-2.5 rounded-xl font-bold hover:from-purple-700 hover:to-indigo-700 shadow-md transition touch-target text-xs flex items-center gap-1.5">
                                 <span>⚡</span> Auto PO Per Area
                             </button>
-                            <button onclick="Modals.openBatchPO()" class="bg-sky-600 text-white px-4 py-2.5 rounded-xl font-bold hover:bg-sky-700 shadow-sm transition touch-target text-xs sm:text-sm">
-                                + Buat PO Manual
+                            <button onclick="Modals.openBatchPO()" class="bg-sky-600 text-white px-3.5 py-2.5 rounded-xl font-bold hover:bg-sky-700 shadow-sm transition touch-target text-xs flex items-center gap-1">
+                                <span>+</span> Buat PO Manual
                             </button>
                         </div>
                     </div>
 
+                    <!-- TABEL PO BERURUTAN -->
                     <div class="bg-white rounded-2xl shadow-sm overflow-hidden h-[calc(100vh-220px)] flex flex-col border border-slate-200/80">
                         <div class="overflow-x-auto flex-1">
                             <table class="w-full text-sm text-left whitespace-nowrap">
-                                <thead class="bg-slate-100 sticky top-0 z-10 text-slate-600 uppercase text-xs font-bold">
-                                    <tr><th class="p-4">Tanggal Order</th><th class="p-4">Batch ID</th><th class="p-4">Supplier</th><th class="p-4">Cabang</th><th class="p-4">Status</th><th class="p-4">Total Item</th><th class="p-4 text-center">Aksi</th></tr>
+                                <thead class="bg-slate-100 sticky top-0 z-10 text-slate-600 uppercase text-xs font-bold shadow-sm">
+                                    <tr>
+                                        <th class="p-3.5 text-center w-12">No</th>
+                                        <th class="p-3.5">Tanggal Order</th>
+                                        <th class="p-3.5">Nomor PO (Batch ID)</th>
+                                        <th class="p-3.5">Supplier</th>
+                                        <th class="p-3.5">Cabang Tujuan</th>
+                                        <th class="p-3.5">Total Item & Nilai</th>
+                                        <th class="p-3.5 text-center">Status</th>
+                                        <th class="p-3.5 text-center">Aksi Dokumen</th>
+                                    </tr>
                                 </thead>
                                 <tbody class="divide-y divide-slate-100">
-                                    ${filteredPOs.length === 0 ? '<tr><td colspan="7" class="p-8 text-center text-slate-400">Belum ada dokumen PO untuk area ini.</td></tr>' : filteredPOs.map(p=>`
-                                        <tr class="hover:bg-slate-50">
-                                            <td class="p-4 text-slate-500 text-xs font-semibold">${p.orderDate ? new Date(p.orderDate).toLocaleDateString('id-ID') : new Date(p.createdAt || p.timestamp).toLocaleDateString('id-ID')}</td>
-                                            <td class="p-4 text-sky-600 font-mono font-bold">${p.batchNumber}</td>
-                                            <td class="p-4 font-semibold text-slate-800">${p.supplier}</td>
-                                            <td class="p-4"><span class="px-2.5 py-1 bg-purple-100 text-purple-800 rounded-lg text-xs font-bold border border-purple-200">${p.branch}</span></td>
-                                            <td class="p-4">${getStatusBadge(p.status)}</td>
-                                            <td class="p-4 font-medium text-slate-500">${JSON.parse(p.items || '[]').length} items</td>
-                                            <td class="p-4 text-center">
-                                                <button onclick="Actions.printPO('${p.batchNumber}')" class="bg-sky-50 text-sky-700 border border-sky-200 px-3 py-1.5 rounded-lg font-bold text-xs hover:bg-sky-100 touch-target mb-1">🖨️ Cetak PO</button>
-                                                <br>
-                                                <button onclick="Actions.editPO('${p.id}')" class="bg-amber-50 text-amber-700 border border-amber-200 px-3 py-1.5 rounded-lg font-bold text-xs hover:bg-amber-100 touch-target mb-1">✏️ Edit PO</button>
-                                                <br>
-                                                <button onclick="Actions.deletePO('${p.id}')" class="bg-rose-50 text-rose-700 border border-rose-200 px-3 py-1.5 rounded-lg font-bold text-xs hover:bg-rose-100 touch-target">🗑️ Hapus</button>
+                                    ${filteredPOs.length === 0 ? '<tr><td colspan="8" class="p-12 text-center text-slate-400 font-medium">Belum ada dokumen Purchase Order yang sesuai filter.</td></tr>' : filteredPOs.map((p, idx)=>{
+                                        let items = [];
+                                        try { items = JSON.parse(p.items || '[]'); } catch(e) { items = []; }
+                                        const totalQty = items.reduce((sum, i) => sum + (parseInt(i.qty) || 0), 0);
+                                        const totalHpp = items.reduce((sum, i) => sum + ((parseInt(i.qty) || 0) * (parseInt(i.hpp) || 0)), 0);
+                                        const dateFormatted = p.orderDate ? new Date(p.orderDate).toLocaleDateString('id-ID', {day: 'numeric', month: 'short', year: 'numeric'}) : new Date(p.createdAt || p.timestamp || Date.now()).toLocaleDateString('id-ID', {day: 'numeric', month: 'short', year: 'numeric'});
+
+                                        return `
+                                        <tr class="hover:bg-slate-50/80 transition po-row">
+                                            <td class="p-3.5 text-center font-bold text-xs text-slate-500">
+                                                <span class="inline-flex items-center justify-center w-7 h-7 rounded-full bg-slate-100 text-slate-700 font-extrabold border border-slate-200 text-xs">${idx + 1}</span>
                                             </td>
-                                        </tr>`).join('')}
+                                            <td class="p-3.5 text-slate-600 text-xs font-semibold">
+                                                <div class="font-bold text-slate-800">${dateFormatted}</div>
+                                                <div class="text-[10px] text-slate-400">${p.createdAt ? new Date(p.createdAt).toLocaleTimeString('id-ID', {hour: '2-digit', minute:'2-digit'}) : ''}</div>
+                                            </td>
+                                            <td class="p-3.5">
+                                                <span class="font-mono font-bold text-xs bg-sky-50 text-sky-700 px-2.5 py-1 rounded-lg border border-sky-200">${p.batchNumber}</span>
+                                            </td>
+                                            <td class="p-3.5 font-bold text-slate-800 text-sm">
+                                                <div class="flex items-center gap-1.5">
+                                                    <span class="text-slate-400 text-xs">🏢</span>
+                                                    <span>${p.supplier}</span>
+                                                </div>
+                                            </td>
+                                            <td class="p-3.5">
+                                                <span class="px-2.5 py-1 bg-purple-100 text-purple-800 rounded-lg text-xs font-bold border border-purple-200">${p.branch}</span>
+                                            </td>
+                                            <td class="p-3.5">
+                                                <div class="font-bold text-slate-800 text-xs">${items.length} item (${totalQty} pcs)</div>
+                                                <div class="text-[11px] font-bold text-emerald-600">${formatRp(totalHpp)}</div>
+                                            </td>
+                                            <td class="p-3.5 text-center">${getStatusBadge(p.status)}</td>
+                                            <td class="p-3.5 text-center">
+                                                <div class="inline-flex items-center gap-1.5">
+                                                    <button onclick="Actions.printPO('${p.batchNumber}')" title="Cetak Surat PO" class="bg-sky-50 text-sky-700 border border-sky-200 px-2.5 py-1.5 rounded-lg font-bold text-xs hover:bg-sky-100 touch-target transition flex items-center gap-1">🖨️ Cetak</button>
+                                                    <button onclick="Actions.editPO('${p.id}')" title="Edit Item & Data PO" class="bg-amber-50 text-amber-700 border border-amber-200 px-2.5 py-1.5 rounded-lg font-bold text-xs hover:bg-amber-100 touch-target transition flex items-center gap-1">✏️ Edit</button>
+                                                    <button onclick="Actions.deletePO('${p.id}')" title="Hapus Dokumen PO" class="bg-rose-50 text-rose-700 border border-rose-200 px-2.5 py-1.5 rounded-lg font-bold text-xs hover:bg-rose-100 touch-target transition flex items-center gap-1">🗑️ Hapus</button>
+                                                </div>
+                                            </td>
+                                        </tr>`;
+                                    }).join('')}
                                 </tbody>
                             </table>
                         </div>
@@ -1090,27 +1190,66 @@
             
             Logistics: () => {
                 const poAreaFilter = State.poAreaFilter || 'all';
-                let filteredPOs = State.data.purchases;
+                const poSort = State.poSort || 'newest';
+                const poStatusFilter = State.poStatusFilter || 'all';
+
+                let filteredPOs = [...(State.data.purchases || [])];
+                
                 if (poAreaFilter !== 'all') {
                     filteredPOs = filteredPOs.filter(p => (p.branch || '').toLowerCase().includes(poAreaFilter.toLowerCase()));
                 }
-                
-                // Menampilkan semua pesanan agar pengguna bisa memproses PO yang statusnya masih 'pending' namun sudah OK secara verbal
+
+                if (poStatusFilter !== 'all') {
+                    filteredPOs = filteredPOs.filter(p => (p.status || 'pending').toLowerCase() === poStatusFilter.toLowerCase());
+                }
+
+                // Sorting
+                filteredPOs.sort((a, b) => {
+                    const dateA = new Date(a.orderDate || a.createdAt || a.timestamp || 0).getTime() || 0;
+                    const dateB = new Date(b.orderDate || b.createdAt || b.timestamp || 0).getTime() || 0;
+                    
+                    if (poSort === 'newest') return dateB - dateA;
+                    if (poSort === 'oldest') return dateA - dateB;
+                    if (poSort === 'supplier_asc') return (a.supplier || '').localeCompare(b.supplier || '');
+                    if (poSort === 'supplier_desc') return (b.supplier || '').localeCompare(a.supplier || '');
+                    if (poSort === 'items_desc') {
+                        let cntA = 0, cntB = 0;
+                        try { cntA = JSON.parse(a.items || '[]').length; } catch(e){}
+                        try { cntB = JSON.parse(b.items || '[]').length; } catch(e){}
+                        return cntB - cntA;
+                    }
+                    return dateB - dateA;
+                });
+
                 const incomingGoods = filteredPOs;
 
                 return `
                 <div class="space-y-4">
-                    <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 bg-white p-4 rounded-2xl shadow-sm border border-slate-200/80">
+                    <div class="flex flex-col xl:flex-row justify-between items-start xl:items-center gap-3 bg-white p-4 rounded-2xl shadow-sm border border-slate-200/80">
                         <div>
-                            <h3 class="text-lg font-bold text-slate-800">Logistik Toko (Barang Masuk)</h3>
+                            <div class="flex items-center gap-2">
+                                <h3 class="text-lg font-bold text-slate-800">Logistik Toko (Barang Masuk)</h3>
+                                <span class="px-2.5 py-0.5 rounded-full text-xs font-bold bg-emerald-100 text-emerald-800 border border-emerald-200">${incomingGoods.length} Dokumen</span>
+                            </div>
                             <p class="text-xs text-slate-500 mt-0.5">Penerimaan barang dari Purchase Order yang disetujui</p>
                         </div>
-                        <div class="flex flex-wrap items-center gap-3 w-full sm:w-auto">
+                        <div class="flex flex-wrap items-center gap-2.5 w-full xl:w-auto">
+                            <!-- Quick Search -->
+                            <div class="relative flex-1 sm:flex-initial">
+                                <input type="text" placeholder="🔍 Cari Barang Masuk / Supplier..." oninput="window.filterLogisticsTable(this.value)" class="w-full sm:w-56 p-2.5 pl-3 border border-slate-300 rounded-xl text-xs bg-slate-50 font-medium focus:outline-none focus:border-sky-500 focus:bg-white transition touch-target">
+                            </div>
+
                             <select onchange="State.poAreaFilter = this.value; renderPage();" class="p-2.5 border border-slate-300 rounded-xl text-xs bg-slate-50 font-bold focus:outline-none focus:border-sky-400 cursor-pointer touch-target">
-                                <option value="all" ${poAreaFilter === 'all' ? 'selected' : ''}>Semua Area Cabang</option>
+                                <option value="all" ${poAreaFilter === 'all' ? 'selected' : ''}>🏢 Semua Cabang</option>
                                 <option value="73" ${poAreaFilter === '73' ? 'selected' : ''}>Adamart 73</option>
                                 <option value="induksi" ${poAreaFilter === 'induksi' ? 'selected' : ''}>Adamart Induksi</option>
                                 <option value="kelanis" ${poAreaFilter === 'kelanis' ? 'selected' : ''}>Adamart Kelanis</option>
+                            </select>
+
+                            <select onchange="State.poSort = this.value; renderPage();" class="p-2.5 border border-sky-300 bg-sky-50 text-sky-900 rounded-xl text-xs font-bold focus:outline-none focus:border-sky-500 cursor-pointer touch-target">
+                                <option value="newest" ${poSort === 'newest' ? 'selected' : ''}>📅 Urut: Tanggal Terbaru</option>
+                                <option value="oldest" ${poSort === 'oldest' ? 'selected' : ''}>📅 Urut: Tanggal Terlama</option>
+                                <option value="supplier_asc" ${poSort === 'supplier_asc' ? 'selected' : ''}>🏢 Urut: Supplier (A - Z)</option>
                             </select>
                         </div>
                     </div>
@@ -1118,22 +1257,57 @@
                     <div class="bg-white rounded-2xl shadow-sm overflow-hidden h-[calc(100vh-220px)] flex flex-col border border-slate-200/80">
                         <div class="overflow-x-auto flex-1">
                             <table class="w-full text-sm text-left whitespace-nowrap">
-                                <thead class="bg-slate-100 sticky top-0 z-10 text-slate-600 uppercase text-xs font-bold">
-                                    <tr><th class="p-4">Tanggal Order</th><th class="p-4">Batch ID</th><th class="p-4">Supplier</th><th class="p-4">Cabang</th><th class="p-4">Status</th><th class="p-4">Total Item</th><th class="p-4 text-center">Aksi</th></tr>
+                                <thead class="bg-slate-100 sticky top-0 z-10 text-slate-600 uppercase text-xs font-bold shadow-sm">
+                                    <tr>
+                                        <th class="p-3.5 text-center w-12">No</th>
+                                        <th class="p-3.5">Tanggal Order</th>
+                                        <th class="p-3.5">Batch ID</th>
+                                        <th class="p-3.5">Supplier</th>
+                                        <th class="p-3.5">Cabang</th>
+                                        <th class="p-3.5">Total Item & Nilai</th>
+                                        <th class="p-3.5 text-center">Status</th>
+                                        <th class="p-3.5 text-center">Aksi Penerimaan</th>
+                                    </tr>
                                 </thead>
                                 <tbody class="divide-y divide-slate-100">
-                                    ${incomingGoods.length === 0 ? '<tr><td colspan="7" class="p-8 text-center text-slate-400">Belum ada barang masuk yang menunggu penerimaan.</td></tr>' : incomingGoods.map(p=>`
-                                        <tr class="hover:bg-slate-50">
-                                            <td class="p-4 text-slate-500 text-xs font-semibold">${p.orderDate ? new Date(p.orderDate).toLocaleDateString('id-ID') : new Date(p.createdAt || p.timestamp).toLocaleDateString('id-ID')}</td>
-                                            <td class="p-4 text-sky-600 font-mono font-bold">${p.batchNumber}</td>
-                                            <td class="p-4 font-semibold text-slate-800">${p.supplier}</td>
-                                            <td class="p-4"><span class="px-2.5 py-1 bg-purple-100 text-purple-800 rounded-lg text-xs font-bold border border-purple-200">${p.branch}</span></td>
-                                            <td class="p-4">${getStatusBadge(p.status)}</td>
-                                            <td class="p-4 font-medium text-slate-500">${JSON.parse(p.items || '[]').length} items</td>
-                                            <td class="p-4 text-center">
-                                                <button onclick="Actions.editPO('${p.id}')" class="bg-emerald-50 text-emerald-700 border border-emerald-200 px-3 py-1.5 rounded-lg font-bold text-xs hover:bg-emerald-100 touch-target mb-1">📦 Proses Penerimaan</button>
+                                    ${incomingGoods.length === 0 ? '<tr><td colspan="8" class="p-12 text-center text-slate-400 font-medium">Belum ada barang masuk yang menunggu penerimaan.</td></tr>' : incomingGoods.map((p, idx)=>{
+                                        let items = [];
+                                        try { items = JSON.parse(p.items || '[]'); } catch(e) { items = []; }
+                                        const totalQty = items.reduce((sum, i) => sum + (parseInt(i.qty) || 0), 0);
+                                        const totalHpp = items.reduce((sum, i) => sum + ((parseInt(i.qty) || 0) * (parseInt(i.hpp) || 0)), 0);
+                                        const dateFormatted = p.orderDate ? new Date(p.orderDate).toLocaleDateString('id-ID', {day: 'numeric', month: 'short', year: 'numeric'}) : new Date(p.createdAt || p.timestamp || Date.now()).toLocaleDateString('id-ID', {day: 'numeric', month: 'short', year: 'numeric'});
+
+                                        return `
+                                        <tr class="hover:bg-slate-50/80 transition po-logistics-row">
+                                            <td class="p-3.5 text-center font-bold text-xs text-slate-500">
+                                                <span class="inline-flex items-center justify-center w-7 h-7 rounded-full bg-slate-100 text-slate-700 font-extrabold border border-slate-200 text-xs">${idx + 1}</span>
                                             </td>
-                                        </tr>`).join('')}
+                                            <td class="p-3.5 text-slate-600 text-xs font-semibold">
+                                                <div class="font-bold text-slate-800">${dateFormatted}</div>
+                                                <div class="text-[10px] text-slate-400">${p.createdAt ? new Date(p.createdAt).toLocaleTimeString('id-ID', {hour: '2-digit', minute:'2-digit'}) : ''}</div>
+                                            </td>
+                                            <td class="p-3.5">
+                                                <span class="font-mono font-bold text-xs bg-sky-50 text-sky-700 px-2.5 py-1 rounded-lg border border-sky-200">${p.batchNumber}</span>
+                                            </td>
+                                            <td class="p-3.5 font-bold text-slate-800 text-sm">
+                                                <div class="flex items-center gap-1.5">
+                                                    <span class="text-slate-400 text-xs">🏢</span>
+                                                    <span>${p.supplier}</span>
+                                                </div>
+                                            </td>
+                                            <td class="p-3.5">
+                                                <span class="px-2.5 py-1 bg-purple-100 text-purple-800 rounded-lg text-xs font-bold border border-purple-200">${p.branch}</span>
+                                            </td>
+                                            <td class="p-3.5">
+                                                <div class="font-bold text-slate-800 text-xs">${items.length} item (${totalQty} pcs)</div>
+                                                <div class="text-[11px] font-bold text-emerald-600">${formatRp(totalHpp)}</div>
+                                            </td>
+                                            <td class="p-3.5 text-center">${getStatusBadge(p.status)}</td>
+                                            <td class="p-3.5 text-center">
+                                                <button onclick="Actions.editPO('${p.id}')" class="bg-emerald-600 text-white px-3.5 py-1.5 rounded-lg font-bold text-xs hover:bg-emerald-700 touch-target shadow-sm transition inline-flex items-center gap-1">📦 Proses Penerimaan</button>
+                                            </td>
+                                        </tr>`;
+                                    }).join('')}
                                 </tbody>
                             </table>
                         </div>
@@ -2184,7 +2358,12 @@
                 const selectVal = document.getElementById('supplierSelect').value; 
                 let supplier = selectVal === 'custom' ? document.getElementById('customSupplier').value.trim() : selectVal; 
                 if(State.tempBatchItems.length === 0) return window.showToast("Belum ada item ditambahkan ke PO!", "warning"); 
-                const batchId = 'BATCH-' + Date.now(); 
+                
+                const now = new Date();
+                const dateStr = now.toISOString().slice(0,10).replace(/-/g,'');
+                const timeStr = String(now.getHours()).padStart(2,'0') + String(now.getMinutes()).padStart(2,'0') + String(now.getSeconds()).padStart(2,'0');
+                const batchId = `PO-${dateStr}-${timeStr}`;
+                
                 const promises = []; 
                 const orderDate = form.elements['orderDate'].value; 
                 BRANCHES.forEach(branch => { 
@@ -2195,7 +2374,8 @@
                 }); 
                 await Promise.all(promises); 
                 closeModal(); 
-                window.showToast("Sukses! PO Batch berhasil dibuat.", "success"); 
+                State.tempBatchItems = [];
+                window.showToast("✅ Sukses! PO Batch berhasil dibuat.", "success"); 
                 loadAllData(); 
             },
             
@@ -2257,11 +2437,13 @@
             },
 
             deletePO: async (poId) => {
-                if(!confirm("Yakin ingin menghapus PO ini secara permanen?")) return;
+                const po = State.data.purchases.find(p => p.id === poId);
+                const poDetails = po ? `\n\n• Nomor PO: ${po.batchNumber}\n• Supplier: ${po.supplier}\n• Cabang: ${po.branch}` : '';
+                if(!confirm(`⚠️ Apakah Anda yakin ingin menghapus dokumen Purchase Order ini secara permanen?${poDetails}`)) return;
                 try {
                     const docRef = window.doc(window.db, "purchases", poId);
                     await window.deleteDoc(docRef);
-                    window.showToast("PO Berhasil Dihapus!", "success");
+                    window.showToast("✅ PO Berhasil Dihapus!", "success");
                     loadAllData();
                 } catch (err) {
                     window.showToast("Gagal menghapus PO: " + err.message, "error");
@@ -3017,6 +3199,25 @@
         window.filterInventory = (v) => { 
             document.querySelectorAll('.product-row').forEach(r => r.style.display = r.innerText.toLowerCase().includes(v.toLowerCase()) ? '' : 'none'); 
         };
+
+        window.filterPOTable = (v) => { 
+            const query = (v || '').toLowerCase();
+            let count = 0;
+            document.querySelectorAll('.po-row').forEach(r => {
+                const match = r.innerText.toLowerCase().includes(query);
+                r.style.display = match ? '' : 'none';
+                if (match) count++;
+            }); 
+            const el = document.getElementById('po-badge-count');
+            if (el) el.innerText = `${count} Dokumen`;
+        };
+
+        window.filterLogisticsTable = (v) => { 
+            const query = (v || '').toLowerCase();
+            document.querySelectorAll('.po-logistics-row').forEach(r => {
+                r.style.display = r.innerText.toLowerCase().includes(query) ? '' : 'none';
+            }); 
+        };
         
         window.exportTransferReportToCSV = () => {
             const rows = [['Timestamp', 'Barcode', 'Nama Produk', 'Dari Cabang', 'Ke Cabang', 'Jumlah (Qty)', 'Catatan']];
@@ -3118,7 +3319,17 @@
 
         function formatRp(n) { return "Rp " + (n || 0).toLocaleString('id-ID'); }
         function checkStock(v) { return (v || 0) < 10 ? 'text-rose-600 font-bold' : 'text-slate-800'; }
-        function getStatusBadge(s) { return `<span class="px-2.5 py-1 rounded-full text-xs font-bold bg-slate-100 text-slate-700 border border-slate-200">${s.toUpperCase()}</span>`; }
+        function getStatusBadge(s) { 
+            const st = (s || 'pending').toLowerCase();
+            if (st === 'received' || st === 'selesai' || st === 'approved') {
+                return `<span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-bold bg-emerald-100 text-emerald-800 border border-emerald-200"><span>✓</span> ${st.toUpperCase()}</span>`;
+            } else if (st === 'pending' || st === 'menunggu') {
+                return `<span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-bold bg-amber-100 text-amber-800 border border-amber-200"><span>⏳</span> ${st.toUpperCase()}</span>`;
+            } else if (st === 'cancelled' || st === 'batal') {
+                return `<span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-bold bg-rose-100 text-rose-800 border border-rose-200"><span>✕</span> ${st.toUpperCase()}</span>`;
+            }
+            return `<span class="px-2.5 py-1 rounded-full text-xs font-bold bg-slate-100 text-slate-700 border border-slate-200">${(s || 'PENDING').toUpperCase()}</span>`; 
+        }
 
         window.Actions = Actions; window.Modals = Modals; window.Pages = Pages; window.State = State; window.EvoucherState = EvoucherState; window.EvoucherActions = EvoucherActions;
     </script>
