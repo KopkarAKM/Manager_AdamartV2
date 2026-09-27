@@ -84,23 +84,14 @@
                     window.State.data = { products: [], sales: [], purchases: [], shifts: [], logs: [], returns: [], audits: [], transfers: [] };
                 }
 
-                // Tampilkan Gerbang Login jika tidak dalam mode sandbox offline
-                if (window.DemoEngine && window.DemoEngine.isSandboxActive) {
-                    if (gatekeeperModal) gatekeeperModal.classList.add('hidden');
-                    if (screenLockModal) screenLockModal.classList.add('hidden');
-                } else {
-                    if (gatekeeperModal) gatekeeperModal.classList.remove('hidden');
-                    if (screenLockModal) screenLockModal.classList.add('hidden');
-                    if (loadingState) loadingState.classList.add('hidden');
-                    if (contentArea) contentArea.classList.add('hidden');
-                }
+                // Tampilkan Gerbang Login
+                if (gatekeeperModal) gatekeeperModal.classList.remove('hidden');
+                if (screenLockModal) screenLockModal.classList.add('hidden');
+                if (loadingState) loadingState.classList.add('hidden');
+                if (contentArea) contentArea.classList.add('hidden');
             }
         });
     </script>
-
-    <!-- Adamart Demo Dataset & Interactive Auto-Tour Engine -->
-    <script src="demo-data.js"></script>
-    <script src="demo-tour.js"></script>
 
     <script>
         tailwind.config = {
@@ -170,18 +161,6 @@
         </div>
 
         <nav class="flex-1 py-4 px-3 space-y-1 text-sm">
-            <div class="px-4 py-2 text-[11px] font-bold text-sky-400 uppercase tracking-wider flex items-center justify-between">
-                <span>Panduan & Demo</span>
-                <span class="w-2 h-2 rounded-full bg-sky-400 animate-ping"></span>
-            </div>
-            <a onclick="DemoEngine.startTour()" class="sidebar-item px-4 py-3 rounded-xl cursor-pointer flex items-center justify-between text-white font-bold bg-gradient-to-r from-sky-600/30 to-indigo-600/30 border border-sky-400/40 hover:from-sky-600/50 hover:to-indigo-600/50 shadow-md">
-                <div class="flex items-center gap-3"><span>🚀</span> Tur Demo Otomatis</div>
-                <span class="bg-sky-500 text-slate-950 text-[10px] font-black px-2 py-0.5 rounded-full">PLAY</span>
-            </a>
-            <a onclick="DemoEngine.enableSandbox()" class="sidebar-item px-4 py-3 rounded-xl cursor-pointer flex items-center justify-between text-purple-200 hover:text-white font-semibold bg-purple-500/10 border border-purple-500/20 hover:bg-purple-500/20">
-                <div class="flex items-center gap-3"><span>🧪</span> Sandbox Data Dummy</div>
-                <span class="text-xs">🎮</span>
-            </a>
 
             <div class="px-4 py-2 text-[11px] font-bold text-slate-400 uppercase tracking-wider mt-3">Utama</div>
             <a onclick="navigate('dashboard')" id="nav-dashboard" class="sidebar-item px-4 py-3 rounded-xl cursor-pointer flex items-center justify-between text-slate-300 hover:text-white">
@@ -261,18 +240,6 @@
             </div>
             
             <div class="flex items-center gap-2 sm:gap-3">
-                <!-- TUR DEMO BUTTON -->
-                <button onclick="DemoEngine.startTour()" class="bg-gradient-to-r from-sky-500 to-indigo-600 text-white px-3 sm:px-4 py-2 rounded-xl font-extrabold text-xs hover:from-sky-600 hover:to-indigo-700 shadow-md shadow-sky-500/20 transition flex items-center gap-1.5 touch-target" title="Jalankan Tur Demo Otomatis">
-                    <span>🚀</span>
-                    <span class="hidden sm:inline">Tur Demo Otomatis</span>
-                    <span class="sm:hidden">Demo</span>
-                </button>
-
-                <!-- SANDBOX DUMMY TOGGLE BUTTON -->
-                <button onclick="DemoEngine.isSandboxActive ? DemoEngine.disableSandbox() : DemoEngine.enableSandbox()" class="bg-purple-50 text-purple-700 border border-purple-200 hover:bg-purple-100 px-3 py-2 rounded-xl font-bold text-xs transition flex items-center gap-1.5 touch-target" title="Uji Coba Data Dummy Bebas">
-                    <span>🧪</span>
-                    <span class="hidden md:inline">Mode Dummy</span>
-                </button>
 
                 <button onclick="loadAllData()" class="p-2.5 bg-slate-100 text-slate-600 rounded-xl hover:bg-slate-200 transition touch-target flex items-center justify-center" title="Refresh Data">
                     <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path></svg>
@@ -292,7 +259,6 @@
                         <span>🚪</span>
                     </button>
                 </div>
-            </div>
             </div>
         </header>
 
@@ -3546,9 +3512,6 @@
             if (!confirm("Apakah Anda yakin ingin keluar (Logout) dari akun Manajer?")) return;
             sessionStorage.removeItem('adamart_screen_locked');
             try {
-                if (window.DemoEngine && window.DemoEngine.isSandboxActive) {
-                    window.DemoEngine.disableSandbox();
-                }
                 await window.signOut(window.auth);
                 window.showToast("Sesi berhasil diakhiri.", "info");
             } catch (err) {
@@ -3610,13 +3573,6 @@
             } else {
                 el.type = 'password';
                 if (icon) icon.innerText = '👁️';
-            }
-        };
-
-        window.launchSandboxFromLogin = () => {
-            document.getElementById('auth-gatekeeper-modal')?.classList.add('hidden');
-            if (window.DemoEngine) {
-                window.DemoEngine.enableSandbox(true);
             }
         };
 
@@ -3731,16 +3687,6 @@
                     <span>🔐</span> Masuk ke Dasbor
                 </button>
             </form>
-
-            <div class="relative my-6">
-                <div class="absolute inset-0 flex items-center"><div class="w-full border-t border-slate-200"></div></div>
-                <div class="relative flex justify-center text-[11px] uppercase font-bold text-slate-400"><span class="bg-white px-3">Atau Uji Coba Offline</span></div>
-            </div>
-
-            <!-- Demo Sandbox Quick Launcher -->
-            <button type="button" onclick="window.launchSandboxFromLogin()" class="w-full py-3 px-4 bg-purple-50 hover:bg-purple-100 border border-purple-200 text-purple-800 font-bold rounded-xl text-xs flex items-center justify-center gap-2 transition touch-target">
-                <span>🧪</span> Masuk Mode Demo Sandbox (Data Simulasi)
-            </button>
 
             <div class="mt-6 text-center text-[11px] text-slate-400">
                 Terproteksi Firebase Authentication &bull; Kopkar Mandiri
