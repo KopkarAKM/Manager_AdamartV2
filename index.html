@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Adamart - Manager Dashboard (v7.0 Smart Enterprise)</title>
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='20' fill='%230284c7'/><text x='50%' y='65%' font-size='60' font-family='sans-serif' font-weight='bold' fill='white' text-anchor='middle'>A</text></svg>">
     
     <!-- Google Fonts: Plus Jakarta Sans & Inter -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -18,7 +19,7 @@
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
         import { getFirestore, collection, getDocs, addDoc, updateDoc, deleteDoc, doc, query, where, orderBy, limit, increment } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
-        import { getAuth, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
+        import { getAuth, signInWithEmailAndPassword, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
 
         const firebaseConfig = {
             apiKey: "AIzaSyBApyoL7sczxl1kDq_WgPtnYF4lyujuWgc",
@@ -37,23 +38,69 @@
         window.addDoc = addDoc; window.updateDoc = updateDoc; window.deleteDoc = deleteDoc; 
         window.doc = doc; window.query = query; window.where = where; 
         window.orderBy = orderBy; window.limit = limit; window.increment = increment;
+        window.auth = auth;
+        window.signInWithEmailAndPassword = signInWithEmailAndPassword;
+        window.signOut = signOut;
         
         let isFirebaseReady = false;
         onAuthStateChanged(auth, (user) => {
-            if (user) {
-                console.log("Manager authenticated");
-                if (!isFirebaseReady) {
-                    isFirebaseReady = true;
-                    document.dispatchEvent(new Event('firebase-ready'));
+            window.currentUser = user;
+            const gatekeeperModal = document.getElementById('auth-gatekeeper-modal');
+            const screenLockModal = document.getElementById('screen-lock-modal');
+            const loadingState = document.getElementById('loadingState');
+            const contentArea = document.getElementById('content-area');
+
+            if (user && !user.isAnonymous) {
+                console.log("Manager authenticated:", user.email);
+                
+                // Update tampilan identitas manajer
+                const userEmail = user.email || 'Manager';
+                const headerEmail = document.getElementById('header-user-email');
+                const sidebarEmail = document.getElementById('sidebar-user-email');
+                const lockedEmail = document.getElementById('locked-user-email');
+                if (headerEmail) headerEmail.innerText = userEmail;
+                if (sidebarEmail) sidebarEmail.innerText = userEmail;
+                if (lockedEmail) lockedEmail.innerText = userEmail;
+
+                // Tutup modal login jika terbuka
+                if (gatekeeperModal) gatekeeperModal.classList.add('hidden');
+
+                // Cek apakah layar sedang terkunci di sesi browser
+                if (sessionStorage.getItem('adamart_screen_locked') === 'true') {
+                    if (screenLockModal) screenLockModal.classList.remove('hidden');
+                } else {
+                    if (screenLockModal) screenLockModal.classList.add('hidden');
+                    if (!isFirebaseReady) {
+                        isFirebaseReady = true;
+                        document.dispatchEvent(new Event('firebase-ready'));
+                    }
                 }
             } else {
-                signInAnonymously(auth).catch((error) => {
-                    console.error("Auth error:", error);
-                    if(window.showToast) window.showToast("Gagal Login Firebase: " + error.message, "error");
-                });
+                console.log("No authenticated manager session.");
+                isFirebaseReady = false;
+                
+                // Bersihkan data di memori saat logout
+                if (window.State && window.State.data) {
+                    window.State.data = { products: [], sales: [], purchases: [], shifts: [], logs: [], returns: [], audits: [], transfers: [] };
+                }
+
+                // Tampilkan Gerbang Login jika tidak dalam mode sandbox offline
+                if (window.DemoEngine && window.DemoEngine.isSandboxActive) {
+                    if (gatekeeperModal) gatekeeperModal.classList.add('hidden');
+                    if (screenLockModal) screenLockModal.classList.add('hidden');
+                } else {
+                    if (gatekeeperModal) gatekeeperModal.classList.remove('hidden');
+                    if (screenLockModal) screenLockModal.classList.add('hidden');
+                    if (loadingState) loadingState.classList.add('hidden');
+                    if (contentArea) contentArea.classList.add('hidden');
+                }
             }
         });
     </script>
+
+    <!-- Adamart Demo Dataset & Interactive Auto-Tour Engine -->
+    <script src="demo-data.js"></script>
+    <script src="demo-tour.js"></script>
 
     <script>
         tailwind.config = {
@@ -123,7 +170,20 @@
         </div>
 
         <nav class="flex-1 py-4 px-3 space-y-1 text-sm">
-            <div class="px-4 py-2 text-[11px] font-bold text-slate-400 uppercase tracking-wider">Utama</div>
+            <div class="px-4 py-2 text-[11px] font-bold text-sky-400 uppercase tracking-wider flex items-center justify-between">
+                <span>Panduan & Demo</span>
+                <span class="w-2 h-2 rounded-full bg-sky-400 animate-ping"></span>
+            </div>
+            <a onclick="DemoEngine.startTour()" class="sidebar-item px-4 py-3 rounded-xl cursor-pointer flex items-center justify-between text-white font-bold bg-gradient-to-r from-sky-600/30 to-indigo-600/30 border border-sky-400/40 hover:from-sky-600/50 hover:to-indigo-600/50 shadow-md">
+                <div class="flex items-center gap-3"><span>🚀</span> Tur Demo Otomatis</div>
+                <span class="bg-sky-500 text-slate-950 text-[10px] font-black px-2 py-0.5 rounded-full">PLAY</span>
+            </a>
+            <a onclick="DemoEngine.enableSandbox()" class="sidebar-item px-4 py-3 rounded-xl cursor-pointer flex items-center justify-between text-purple-200 hover:text-white font-semibold bg-purple-500/10 border border-purple-500/20 hover:bg-purple-500/20">
+                <div class="flex items-center gap-3"><span>🧪</span> Sandbox Data Dummy</div>
+                <span class="text-xs">🎮</span>
+            </a>
+
+            <div class="px-4 py-2 text-[11px] font-bold text-slate-400 uppercase tracking-wider mt-3">Utama</div>
             <a onclick="navigate('dashboard')" id="nav-dashboard" class="sidebar-item px-4 py-3 rounded-xl cursor-pointer flex items-center justify-between text-slate-300 hover:text-white">
                 <div class="flex items-center gap-3 font-medium"><span>📊</span> Dashboard</div>
             </a>
@@ -168,8 +228,24 @@
             </a>
         </nav>
         
-        <div class="p-4 border-t border-slate-800/80 text-xs text-slate-400 text-center shrink-0">
-            Adamart Manager AI &bull; Tablet Ready
+        <div class="p-4 border-t border-slate-800/80 bg-slate-950/60 shrink-0 space-y-2.5">
+            <div class="flex items-center gap-2.5">
+                <div class="w-8 h-8 rounded-lg bg-sky-500/20 text-sky-400 border border-sky-500/30 flex items-center justify-center font-bold text-xs shrink-0">👤</div>
+                <div class="overflow-hidden flex-1 min-w-0">
+                    <div id="sidebar-user-email" class="text-xs font-bold text-slate-200 truncate">Manager</div>
+                    <div class="text-[10px] text-emerald-400 font-medium flex items-center gap-1">
+                        <span class="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span> Sesi Terotentikasi
+                    </div>
+                </div>
+            </div>
+            <div class="grid grid-cols-2 gap-1.5 pt-1">
+                <button onclick="window.lockScreen()" class="p-2 bg-slate-800/90 hover:bg-slate-700 text-slate-300 rounded-xl text-[11px] font-bold flex items-center justify-center gap-1 transition touch-target" title="Kunci Layar Sementara">
+                    <span>🔒</span> Kunci
+                </button>
+                <button onclick="window.logoutManager()" class="p-2 bg-rose-500/10 hover:bg-rose-500/20 border border-rose-500/30 text-rose-300 rounded-xl text-[11px] font-bold flex items-center justify-center gap-1 transition touch-target" title="Keluar dari Akun">
+                    <span>🚪</span> Logout
+                </button>
+            </div>
         </div>
     </aside>
 
@@ -184,16 +260,39 @@
                 <h1 id="page-title" class="text-lg sm:text-xl font-bold text-slate-800 truncate">Dashboard</h1>
             </div>
             
-            <div class="flex items-center gap-2 sm:gap-4">
+            <div class="flex items-center gap-2 sm:gap-3">
+                <!-- TUR DEMO BUTTON -->
+                <button onclick="DemoEngine.startTour()" class="bg-gradient-to-r from-sky-500 to-indigo-600 text-white px-3 sm:px-4 py-2 rounded-xl font-extrabold text-xs hover:from-sky-600 hover:to-indigo-700 shadow-md shadow-sky-500/20 transition flex items-center gap-1.5 touch-target" title="Jalankan Tur Demo Otomatis">
+                    <span>🚀</span>
+                    <span class="hidden sm:inline">Tur Demo Otomatis</span>
+                    <span class="sm:hidden">Demo</span>
+                </button>
+
+                <!-- SANDBOX DUMMY TOGGLE BUTTON -->
+                <button onclick="DemoEngine.isSandboxActive ? DemoEngine.disableSandbox() : DemoEngine.enableSandbox()" class="bg-purple-50 text-purple-700 border border-purple-200 hover:bg-purple-100 px-3 py-2 rounded-xl font-bold text-xs transition flex items-center gap-1.5 touch-target" title="Uji Coba Data Dummy Bebas">
+                    <span>🧪</span>
+                    <span class="hidden md:inline">Mode Dummy</span>
+                </button>
+
                 <button onclick="loadAllData()" class="p-2.5 bg-slate-100 text-slate-600 rounded-xl hover:bg-slate-200 transition touch-target flex items-center justify-center" title="Refresh Data">
                     <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path></svg>
                 </button>
-                <div class="text-right hidden sm:block">
-                    <div class="font-bold text-sm text-slate-800">Manager Adamart</div>
-                    <div class="text-xs text-emerald-600 font-medium flex items-center justify-end gap-1.5">
-                        <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span> Firebase Online
+
+                <div class="hidden lg:flex items-center gap-2 border-l border-slate-200 pl-3">
+                    <div class="text-right">
+                        <div id="header-user-email" class="font-bold text-xs text-slate-800 truncate max-w-[140px]">Manager</div>
+                        <div class="text-[11px] text-emerald-600 font-medium flex items-center justify-end gap-1">
+                            <span class="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span> Firebase Auth
+                        </div>
                     </div>
+                    <button onclick="window.lockScreen()" class="p-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl transition text-xs font-bold flex items-center gap-1 touch-target" title="Kunci Layar (Lock Screen)">
+                        <span>🔒</span>
+                    </button>
+                    <button onclick="window.logoutManager()" class="p-2 bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200 rounded-xl transition text-xs font-bold flex items-center gap-1 touch-target" title="Logout Akun">
+                        <span>🚪</span>
+                    </button>
                 </div>
+            </div>
             </div>
         </header>
 
@@ -240,10 +339,23 @@
         const EVOUCHER_API_URL = "https://script.google.com/macros/s/AKfycbyQFkZW0QuBXi082jgXTsVBIy1OfVfhaQYVogvr7uBJBrCuGtkM73tTGqA1dl9ThlfL/exec";
 
                 const BRANCH_CONFIG = [
-            { id: '73', name: 'Adamart 73', code: 'PO-73', active: true },
-            { id: 'kelanis', name: 'Adamart Kelanis', code: 'PO-KELANIS', active: true },
-            { id: 'induksi', name: 'Adamart Induksi', code: 'PO-INDUKSI', active: false }
+            { id: 'cabang utama', name: 'Cabang Utama', code: 'PO-UTM', active: true },
+            { id: 'cabang express', name: 'Cabang Express', code: 'PO-EXP', active: true },
+            { id: 'cabang mitra', name: 'Cabang Mitra', code: 'PO-MTR', active: false }
         ];
+
+        window.getProductStock = (p) => {
+            if (!p) return { utama: 0, express: 0, mitra: 0, total: 0 };
+            const utama = parseInt(p['Stok Area Kasir cabang utama'] ?? 0 ?? 0) || 0;
+            const express = parseInt(p['Stok Area Kasir cabang express'] ?? 0 ?? 0) || 0;
+            const mitra = parseInt(p['Stok Area Kasir cabang mitra'] ?? 0 ?? 0) || 0;
+            return {
+                utama,
+                express,
+                mitra,
+                total: utama + express + mitra
+            };
+        };
         const ACTIVE_BRANCHES = BRANCH_CONFIG.filter(b => b.active).map(b => b.name);
         const ALL_BRANCHES = BRANCH_CONFIG.map(b => b.name);
         const BRANCHES = ACTIVE_BRANCHES;
@@ -442,6 +554,14 @@
         }
 
         async function loadAllData() {
+            if (window.DemoEngine && window.DemoEngine.isSandboxActive) {
+                renderPage();
+                updateBadges();
+                document.getElementById('loadingState').classList.add('hidden'); 
+                document.getElementById('content-area').classList.remove('hidden');
+                return;
+            }
+
             try {
                 document.getElementById('loadingState').classList.remove('hidden'); 
                 document.getElementById('content-area').classList.add('hidden');
@@ -469,6 +589,13 @@
                 State.data.returns = retData.sort((a,b) => new Date(b.timestamp) - new Date(a.timestamp));
                 State.data.audits = audData.sort((a,b) => new Date(b.timestamp) - new Date(a.timestamp));
                 
+                // If database is completely empty, initialize sandbox data for demonstration
+                if (pData.length === 0 && window.DemoEngine) {
+                    console.log("Firebase data is empty. Auto-activating Dummy Sandbox for rich experience.");
+                    window.DemoEngine.enableSandbox(true);
+                    return;
+                }
+
                 calculateABCAnalysis();
 
                 renderPage(); 
@@ -479,6 +606,10 @@
             } catch (e) { 
                 console.error(e); 
                 window.showToast("Gagal sinkronisasi data: " + e.message, "error"); 
+                // Fallback to dummy data
+                if (window.DemoEngine) {
+                    window.DemoEngine.enableSandbox(true);
+                }
             }
         }
 
@@ -521,7 +652,7 @@
 
         function updateBadges() {
             const lowStockCount = State.data.products.filter(p => {
-                const total = (p['Stok Area Kasir adamart 73']||0) + (p['Stok Area Kasir adamart induksi']||0) + (p['Stok Area Kasir adamart kelanis']||0);
+                const total = window.getProductStock(p).total;
                 return total < 10;
             }).length;
 
@@ -598,7 +729,7 @@
                 }
 
                 const lowStockItems = State.data.products.filter(p => {
-                    const totalStok = (p['Stok Area Kasir adamart 73']||0) + (p['Stok Area Kasir adamart induksi']||0) + (p['Stok Area Kasir adamart kelanis']||0);
+                    const totalStok = window.getProductStock(p).total;
                     return totalStok < 10;
                 }).sort((a,b) => a.totalStok - b.totalStok).slice(0, 10);
 
@@ -610,7 +741,7 @@
                 }).sort((a,b) => new Date(a.ExpiryDate || a['Tanggal Kadaluarsa']) - new Date(b.ExpiryDate || b['Tanggal Kadaluarsa'])).slice(0, 10);
 
                 const renderLowStock = (items) => items.length === 0 ? '<div class="text-slate-400 italic text-sm p-4 text-center">Semua stok produk aman</div>' : items.map(p => {
-                         const total = (p['Stok Area Kasir adamart 73']||0) + (p['Stok Area Kasir adamart induksi']||0) + (p['Stok Area Kasir adamart kelanis']||0);
+                         const total = window.getProductStock(p).total;
                          return `<div class="flex justify-between items-center border-b border-slate-100 py-3 last:border-0"><div><div class="font-bold text-sm text-slate-800">${p['Nama Produk']}</div><div class="text-xs text-slate-400 font-mono">${p.Barcode}</div></div><span class="bg-rose-100 text-rose-800 text-xs font-bold px-3 py-1 rounded-full border border-rose-200">${total} Unit</span></div>`;
                     }).join('');
 
@@ -624,14 +755,36 @@
                 const pm = calculatePaymentBreakdown(filteredSales);
 
                 const totalRev = filteredSales.reduce((s, i) => s + (i.total || 0), 0);
-                const rev73 = filteredSales.filter(s => (s.area||'').toLowerCase().includes('73')).reduce((s, i) => s + (i.total || 0), 0);
-                const revInduksi = filteredSales.filter(s => (s.area||'').toLowerCase().includes('induksi')).reduce((s, i) => s + (i.total || 0), 0);
-                const revKelanis = filteredSales.filter(s => (s.area||'').toLowerCase().includes('kelanis')).reduce((s, i) => s + (i.total || 0), 0);
+                const revUtama = filteredSales.filter(s => {
+                    const a = (s.area||'').toLowerCase();
+                    return a.includes('utama') ;
+                }).reduce((s, i) => s + (i.total || 0), 0);
+
+                const revExpress = filteredSales.filter(s => {
+                    const a = (s.area||'').toLowerCase();
+                    return a.includes('express') ;
+                }).reduce((s, i) => s + (i.total || 0), 0);
+
+                const revMitra = filteredSales.filter(s => {
+                    const a = (s.area||'').toLowerCase();
+                    return a.includes('mitra') ;
+                }).reduce((s, i) => s + (i.total || 0), 0);
 
                 const trxTotal = filteredSales.length;
-                const trx73 = filteredSales.filter(s => (s.area||'').toLowerCase().includes('73')).length;
-                const trxInduksi = filteredSales.filter(s => (s.area||'').toLowerCase().includes('induksi')).length;
-                const trxKelanis = filteredSales.filter(s => (s.area||'').toLowerCase().includes('kelanis')).length;
+                const trxUtama = filteredSales.filter(s => {
+                    const a = (s.area||'').toLowerCase();
+                    return a.includes('utama') ;
+                }).length;
+
+                const trxExpress = filteredSales.filter(s => {
+                    const a = (s.area||'').toLowerCase();
+                    return a.includes('express') ;
+                }).length;
+
+                const trxMitra = filteredSales.filter(s => {
+                    const a = (s.area||'').toLowerCase();
+                    return a.includes('mitra') ;
+                }).length;
 
                 return `
                 <!-- FILTER BAR DASHBOARD -->
@@ -661,9 +814,9 @@
                                 <span class="text-xs font-bold text-slate-500 uppercase">Area:</span>
                                 <select onchange="window.setFilter('dashboard', 'area', this.value)" class="p-2.5 border-2 border-slate-200 rounded-xl text-xs bg-slate-50 text-slate-800 font-bold focus:outline-none focus:border-sky-400 cursor-pointer touch-target flex-1 sm:flex-none">
                                     <option value="all" ${dashFilter.area === 'all' ? 'selected' : ''}>Semua Area Cabang</option>
-                                    <option value="73" ${dashFilter.area === '73' ? 'selected' : ''}>Adamart 73</option>
-                                    <option value="induksi" ${dashFilter.area === 'induksi' ? 'selected' : ''}>Adamart Induksi</option>
-                                    <option value="kelanis" ${dashFilter.area === 'kelanis' ? 'selected' : ''}>Adamart Kelanis</option>
+                                    <option value="cabang utama">Cabang Utama</option>
+                                    <option value="cabang express">Cabang Express</option>
+                                    <option value="cabang mitra">Cabang Mitra</option>
                                 </select>
                             </div>
                         </div>
@@ -696,16 +849,16 @@
                         </div>
                         <div class="space-y-1.5 border-t border-slate-100 pt-3">
                             <div class="flex justify-between items-center text-xs">
-                                <span class="font-medium text-slate-500">🏢 Adamart 73</span>
-                                <span class="font-bold text-slate-800">${formatRp(rev73)}</span>
+                                <span class="font-medium text-slate-500">🏢 Cabang Utama</span>
+                                <span class="font-bold text-slate-800">${formatRp(revUtama)}</span>
                             </div>
                             <div class="flex justify-between items-center text-xs">
-                                <span class="font-medium text-slate-500">⚡ Induksi</span>
-                                <span class="font-bold text-slate-800">${formatRp(revInduksi)}</span>
+                                <span class="font-medium text-slate-500">⚡ Cabang Mitra</span>
+                                <span class="font-bold text-slate-800">${formatRp(revMitra)}</span>
                             </div>
                             <div class="flex justify-between items-center text-xs">
-                                <span class="font-medium text-slate-500">🌟 Kelanis</span>
-                                <span class="font-bold text-slate-800">${formatRp(revKelanis)}</span>
+                                <span class="font-medium text-slate-500">🌟 Cabang Express</span>
+                                <span class="font-bold text-slate-800">${formatRp(revExpress)}</span>
                             </div>
                         </div>
                     </div>
@@ -761,16 +914,16 @@
                         </div>
                         <div class="space-y-1.5 border-t border-slate-100 pt-3">
                             <div class="flex justify-between items-center text-xs">
-                                <span class="font-medium text-slate-500">🏢 Adamart 73</span>
-                                <span class="font-bold text-slate-800">${trx73} Struk</span>
+                                <span class="font-medium text-slate-500">🏢 Cabang Utama</span>
+                                <span class="font-bold text-slate-800">${trxUtama} Struk</span>
                             </div>
                             <div class="flex justify-between items-center text-xs">
-                                <span class="font-medium text-slate-500">⚡ Induksi</span>
-                                <span class="font-bold text-slate-800">${trxInduksi} Struk</span>
+                                <span class="font-medium text-slate-500">⚡ Cabang Mitra</span>
+                                <span class="font-bold text-slate-800">${trxMitra} Struk</span>
                             </div>
                             <div class="flex justify-between items-center text-xs">
-                                <span class="font-medium text-slate-500">🌟 Kelanis</span>
-                                <span class="font-bold text-slate-800">${trxKelanis} Struk</span>
+                                <span class="font-medium text-slate-500">🌟 Cabang Express</span>
+                                <span class="font-bold text-slate-800">${trxExpress} Struk</span>
                             </div>
                         </div>
                     </div>
@@ -853,9 +1006,10 @@
                 }).sort((a,b) => a.daysLeft - b.daysLeft);
 
                 const renderRows = expiringList.map(p => {
-                    const s73 = p['Stok Area Kasir adamart 73'] || 0;
-                    const sInd = p['Stok Area Kasir adamart induksi'] || 0;
-                    const sKel = p['Stok Area Kasir adamart kelanis'] || 0;
+                    const st = window.getProductStock(p);
+                    const s73 = st.utama;
+                    const sKel = st.express;
+                    const sInd = st.mitra;
                     const totalStok = s73 + sInd + sKel;
                     
                     let suggestion = '';
@@ -918,9 +1072,9 @@
                                     <tr>
                                         <th class="p-4">Produk</th>
                                         <th class="p-4 text-center">Tanggal Expired</th>
-                                        <th class="p-4 text-center">Adamart 73</th>
-                                        <th class="p-4 text-center">Induksi</th>
-                                        <th class="p-4 text-center">Kelanis</th>
+                                        <th class="p-4 text-center">Cabang Utama</th>
+                                        <th class="p-4 text-center">Cabang Express</th>
+                                        <th class="p-4 text-center">Cabang Mitra</th>
                                         <th class="p-4 text-center">Total Stok</th>
                                         <th class="p-4 text-center">Saran Strategi</th>
                                     </tr>
@@ -958,7 +1112,7 @@
                 let restockList = State.data.products.map(p => {
                     const soldLast30Days = productStats[p['Nama Produk']] || 0;
                     const avgDailySales = soldLast30Days / 30;
-                    const currentStock = (p['Stok Area Kasir adamart 73']||0) + (p['Stok Area Kasir adamart induksi']||0) + (p['Stok Area Kasir adamart kelanis']||0);
+                    const currentStock = window.getProductStock(p).total;
                     const daysLeft = avgDailySales > 0 ? currentStock / avgDailySales : 999;
                     
                     const targetStock = Math.max(5, Math.ceil(avgDailySales * 14)); 
@@ -1007,7 +1161,7 @@
                             <h3 class="font-bold text-slate-700 text-sm">Prioritas Restock Belanja</h3>
                             <div class="flex items-center gap-2 flex-wrap">
                                 <button onclick="Actions.generateAutoPOPerArea()" class="bg-gradient-to-r from-purple-600 to-indigo-600 text-white px-4 py-2.5 rounded-xl font-bold hover:from-purple-700 hover:to-indigo-700 shadow-md transition flex items-center gap-2 touch-target text-xs sm:text-sm">
-                                    <span>⚡</span> Auto PO Per Area (73, Induksi, Kelanis)
+                                    <span>⚡</span> Auto PO Per Area (Multi-Cabang)
                                 </button>
                                 <button onclick="Actions.generateAutoPO()" class="bg-sky-600 text-white px-4 py-2.5 rounded-xl font-bold hover:bg-sky-700 shadow-sm transition flex items-center gap-2 touch-target text-xs sm:text-sm">
                                     <span>🛒</span> Batch PO Manual
@@ -1091,9 +1245,9 @@
                             <!-- Filter Cabang -->
                             <select onchange="State.poAreaFilter = this.value; renderPage();" class="p-2.5 border border-slate-300 rounded-xl text-xs bg-slate-50 font-bold focus:outline-none focus:border-sky-400 cursor-pointer touch-target">
                                 <option value="all" ${poAreaFilter === 'all' ? 'selected' : ''}>🏢 Semua Cabang</option>
-                                <option value="73" ${poAreaFilter === '73' ? 'selected' : ''}>Adamart 73</option>
-                                <option value="induksi" ${poAreaFilter === 'induksi' ? 'selected' : ''}>Adamart Induksi</option>
-                                <option value="kelanis" ${poAreaFilter === 'kelanis' ? 'selected' : ''}>Adamart Kelanis</option>
+                                <option value="cabang utama">Cabang Utama</option>
+                                    <option value="cabang express">Cabang Express</option>
+                                    <option value="cabang mitra">Cabang Mitra</option>
                             </select>
 
                             <!-- Filter Status -->
@@ -1241,9 +1395,9 @@
 
                             <select onchange="State.poAreaFilter = this.value; renderPage();" class="p-2.5 border border-slate-300 rounded-xl text-xs bg-slate-50 font-bold focus:outline-none focus:border-sky-400 cursor-pointer touch-target">
                                 <option value="all" ${poAreaFilter === 'all' ? 'selected' : ''}>🏢 Semua Cabang</option>
-                                <option value="73" ${poAreaFilter === '73' ? 'selected' : ''}>Adamart 73</option>
-                                <option value="induksi" ${poAreaFilter === 'induksi' ? 'selected' : ''}>Adamart Induksi</option>
-                                <option value="kelanis" ${poAreaFilter === 'kelanis' ? 'selected' : ''}>Adamart Kelanis</option>
+                                <option value="cabang utama">Cabang Utama</option>
+                                    <option value="cabang express">Cabang Express</option>
+                                    <option value="cabang mitra">Cabang Mitra</option>
                             </select>
 
                             <select onchange="State.poSort = this.value; renderPage();" class="p-2.5 border border-sky-300 bg-sky-50 text-sky-900 rounded-xl text-xs font-bold focus:outline-none focus:border-sky-500 cursor-pointer touch-target">
@@ -1406,9 +1560,9 @@
                                 <tr>
                                     <th class="p-4">Produk & ABC</th>
                                     <th class="p-4">HPP vs Jual</th>
-                                    <th class="p-4 text-center">Stok 73</th>
-                                    <th class="p-4 text-center">Stok Induksi</th>
-                                    <th class="p-4 text-center">Stok Kelanis</th>
+                                    <th class="p-4 text-center">Stok Utama</th>
+                                    <th class="p-4 text-center">Stok Express</th>
+                                    <th class="p-4 text-center">Stok Mitra</th>
                                     <th class="p-4 text-center">Aksi</th>
                                 </tr>
                             </thead>
@@ -1418,9 +1572,10 @@
                                     const hppClass = hpp === 0 ? 'text-rose-500 font-bold' : 'text-slate-400'; 
                                     const abcBadge = p.abcCategory === 'A' ? 'bg-emerald-100 text-emerald-800 border-emerald-200' : (p.abcCategory === 'B' ? 'bg-sky-100 text-sky-800 border-sky-200' : 'bg-slate-100 text-slate-600 border-slate-200');
                                     
-                                    const s73 = p['Stok Area Kasir adamart 73'] || 0;
-                                    const sInd = p['Stok Area Kasir adamart induksi'] || 0;
-                                    const sKel = p['Stok Area Kasir adamart kelanis'] || 0;
+                                    const st = window.getProductStock(p);
+                    const s73 = st.utama;
+                    const sKel = st.express;
+                    const sInd = st.mitra;
                                     
                                     const cleanName = (p['Nama Produk'] || '').replace(/'/g, "\\'");
 
@@ -1444,19 +1599,19 @@
                                         
                                         <!-- TAP STOK CELL FOR INLINE INSTANT POPOVER -->
                                         <td class="p-4 text-center">
-                                            <button type="button" onclick="Actions.openQuickStockModal('${p.Barcode}', '${cleanName}', 'adamart 73', ${s73})" class="px-3 py-1.5 rounded-xl border border-slate-200 bg-white hover:bg-sky-50 hover:border-sky-300 font-bold ${checkStock(s73)} transition flex items-center justify-center gap-1.5 mx-auto touch-target shadow-2xs group" title="Tap untuk Quick Update Stok Adamart 73">
+                                            <button type="button" onclick="Actions.openQuickStockModal('${p.Barcode}', '${cleanName}', 'Cabang Utama', ${s73})" class="px-3 py-1.5 rounded-xl border border-slate-200 bg-white hover:bg-sky-50 hover:border-sky-300 font-bold ${checkStock(s73)} transition flex items-center justify-center gap-1.5 mx-auto touch-target shadow-2xs group" title="Tap untuk Quick Update Stok Cabang Utama">
                                                 <span>${s73}</span>
                                                 <span class="text-[11px] text-slate-300 group-hover:text-sky-600 font-normal">✏️</span>
                                             </button>
                                         </td>
                                         <td class="p-4 text-center">
-                                            <button type="button" onclick="Actions.openQuickStockModal('${p.Barcode}', '${cleanName}', 'adamart induksi', ${sInd})" class="px-3 py-1.5 rounded-xl border border-slate-200 bg-white hover:bg-sky-50 hover:border-sky-300 font-bold ${checkStock(sInd)} transition flex items-center justify-center gap-1.5 mx-auto touch-target shadow-2xs group" title="Tap untuk Quick Update Stok Induksi">
+                                            <button type="button" onclick="Actions.openQuickStockModal('${p.Barcode}', '${cleanName}', 'Cabang Mitra', ${sInd})" class="px-3 py-1.5 rounded-xl border border-slate-200 bg-white hover:bg-sky-50 hover:border-sky-300 font-bold ${checkStock(sInd)} transition flex items-center justify-center gap-1.5 mx-auto touch-target shadow-2xs group" title="Tap untuk Quick Update Stok Cabang Mitra">
                                                 <span>${sInd}</span>
                                                 <span class="text-[11px] text-slate-300 group-hover:text-sky-600 font-normal">✏️</span>
                                             </button>
                                         </td>
                                         <td class="p-4 text-center">
-                                            <button type="button" onclick="Actions.openQuickStockModal('${p.Barcode}', '${cleanName}', 'adamart kelanis', ${sKel})" class="px-3 py-1.5 rounded-xl border border-slate-200 bg-white hover:bg-sky-50 hover:border-sky-300 font-bold ${checkStock(sKel)} transition flex items-center justify-center gap-1.5 mx-auto touch-target shadow-2xs group" title="Tap untuk Quick Update Stok Kelanis">
+                                            <button type="button" onclick="Actions.openQuickStockModal('${p.Barcode}', '${cleanName}', 'Cabang Express', ${sKel})" class="px-3 py-1.5 rounded-xl border border-slate-200 bg-white hover:bg-sky-50 hover:border-sky-300 font-bold ${checkStock(sKel)} transition flex items-center justify-center gap-1.5 mx-auto touch-target shadow-2xs group" title="Tap untuk Quick Update Stok Cabang Express">
                                                 <span>${sKel}</span>
                                                 <span class="text-[11px] text-slate-300 group-hover:text-sky-600 font-normal">✏️</span>
                                             </button>
@@ -1608,9 +1763,9 @@
                                     <span class="text-xs font-bold text-slate-500 uppercase">Area:</span>
                                     <select onchange="window.setFilter('returns', 'area', this.value)" class="p-2.5 border-2 border-slate-200 rounded-xl text-xs bg-slate-50 text-slate-800 font-bold focus:outline-none focus:border-orange-400 cursor-pointer touch-target flex-1 sm:flex-none">
                                         <option value="all" ${retFilter.area === 'all' ? 'selected' : ''}>Semua Area Cabang</option>
-                                        <option value="73" ${retFilter.area === '73' ? 'selected' : ''}>Adamart 73</option>
-                                        <option value="induksi" ${retFilter.area === 'induksi' ? 'selected' : ''}>Adamart Induksi</option>
-                                        <option value="kelanis" ${retFilter.area === 'kelanis' ? 'selected' : ''}>Adamart Kelanis</option>
+                                        <option value="cabang utama">Cabang Utama</option>
+                                    <option value="cabang express">Cabang Express</option>
+                                    <option value="cabang mitra">Cabang Mitra</option>
                                     </select>
                                 </div>
                             </div>
@@ -1737,9 +1892,9 @@
                                     <span class="text-xs font-bold text-slate-500 uppercase">Area:</span>
                                     <select onchange="window.setFilter('audits', 'area', this.value)" class="p-2.5 border-2 border-slate-200 rounded-xl text-xs bg-slate-50 text-slate-800 font-bold focus:outline-none focus:border-indigo-400 cursor-pointer touch-target flex-1 sm:flex-none">
                                         <option value="all" ${audFilter.area === 'all' ? 'selected' : ''}>Semua Area Cabang</option>
-                                        <option value="73" ${audFilter.area === '73' ? 'selected' : ''}>Adamart 73</option>
-                                        <option value="induksi" ${audFilter.area === 'induksi' ? 'selected' : ''}>Adamart Induksi</option>
-                                        <option value="kelanis" ${audFilter.area === 'kelanis' ? 'selected' : ''}>Adamart Kelanis</option>
+                                        <option value="cabang utama">Cabang Utama</option>
+                                    <option value="cabang express">Cabang Express</option>
+                                    <option value="cabang mitra">Cabang Mitra</option>
                                     </select>
                                 </div>
                             </div>
@@ -1846,9 +2001,9 @@
                                     <span class="text-xs font-bold text-slate-500 uppercase">Area:</span>
                                     <select id="reportArea" onchange="window.setFilter('reports', 'area', this.value)" class="p-2.5 border-2 border-slate-200 rounded-xl text-xs bg-slate-50 text-slate-800 font-bold focus:outline-none focus:border-emerald-400 cursor-pointer touch-target flex-1 sm:flex-none">
                                         <option value="all" ${repFilter.area === 'all' ? 'selected' : ''}>Semua Area Cabang</option>
-                                        <option value="73" ${repFilter.area === '73' ? 'selected' : ''}>Adamart 73</option>
-                                        <option value="induksi" ${repFilter.area === 'induksi' ? 'selected' : ''}>Adamart Induksi</option>
-                                        <option value="kelanis" ${repFilter.area === 'kelanis' ? 'selected' : ''}>Adamart Kelanis</option>
+                                        <option value="cabang utama">Cabang Utama</option>
+                                    <option value="cabang express">Cabang Express</option>
+                                    <option value="cabang mitra">Cabang Mitra</option>
                                     </select>
                                 </div>
                             </div>
@@ -2174,13 +2329,13 @@
             render: () => {
                 const container = document.getElementById('content-area');
                 if (EvoucherState.view === 'login') {
-                    container.innerHTML = `<div class="max-w-md mx-auto bg-white p-8 rounded-2xl shadow-xl border border-slate-200/80 text-center mt-6"><div class="bg-sky-100 w-16 h-16 rounded-2xl flex items-center justify-center mx-auto mb-4 text-4xl">🎫</div><h2 class="text-2xl font-bold text-slate-800">E-Voucher System</h2><p class="text-sm text-slate-500 mb-6">Koperasi Karyawan Adaro</p><select id="evPeriod" onchange="EvoucherState.selectedPeriod = this.value" class="w-full p-3.5 border border-slate-300 rounded-xl mb-4 bg-slate-50 font-medium touch-target">${EvoucherActions.getMonthOptions()}</select><div class="grid grid-cols-2 gap-4"><button onclick="EvoucherActions.switchView('admin')" class="p-4 border rounded-xl hover:bg-sky-50 transition text-left group touch-target"><div class="font-bold text-sky-800">Administrator</div><div class="text-xs text-slate-500">Rekap Gaji Kopkar</div></button><button onclick="EvoucherActions.switchView('merchant')" class="p-4 border rounded-xl hover:bg-emerald-50 transition text-left group touch-target"><div class="font-bold text-emerald-800">Kasir / Toko</div><div class="text-xs text-slate-500">Input Belanja POS</div></button></div></div>`;
+                    container.innerHTML = `<div class="max-w-md mx-auto bg-white p-8 rounded-2xl shadow-xl border border-slate-200/80 text-center mt-6"><div class="bg-sky-100 w-16 h-16 rounded-2xl flex items-center justify-center mx-auto mb-4 text-4xl">🎫</div><h2 class="text-2xl font-bold text-slate-800">E-Voucher System</h2><p class="text-sm text-slate-500 mb-6">Koperasi Karyawan & Payroll Belanja</p><select id="evPeriod" onchange="EvoucherState.selectedPeriod = this.value" class="w-full p-3.5 border border-slate-300 rounded-xl mb-4 bg-slate-50 font-medium touch-target">${EvoucherActions.getMonthOptions()}</select><div class="grid grid-cols-2 gap-4"><button onclick="EvoucherActions.switchView('admin')" class="p-4 border rounded-xl hover:bg-sky-50 transition text-left group touch-target"><div class="font-bold text-sky-800">Administrator</div><div class="text-xs text-slate-500">Rekap Gaji Kopkar</div></button><button onclick="EvoucherActions.switchView('merchant')" class="p-4 border rounded-xl hover:bg-emerald-50 transition text-left group touch-target"><div class="font-bold text-emerald-800">Kasir / Toko</div><div class="text-xs text-slate-500">Input Belanja POS</div></button></div></div>`;
                 } else if (EvoucherState.view === 'admin') {
                     const totalPrincipal = EvoucherState.users.reduce((acc, curr) => acc + (curr.used || 0), 0);
                     const totalFee = totalPrincipal * 0.05;
-                    container.innerHTML = `<div class="flex justify-between items-center mb-6"><h2 class="text-2xl font-bold text-slate-800">Dashboard Admin E-Voucher</h2><button onclick="EvoucherActions.switchView('login')" class="text-rose-600 font-bold touch-target">&larr; Kembali</button></div><div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6"><div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-200/80"><p class="text-slate-500 text-xs font-bold uppercase">Total Pokok</p><h3 class="text-2xl font-extrabold text-slate-900 mt-1">${formatRp(totalPrincipal)}</h3></div><div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-200/80"><p class="text-slate-500 text-xs font-bold uppercase">Fee Kopkar (5%)</p><h3 class="text-2xl font-extrabold text-emerald-600 mt-1">${formatRp(totalFee)}</h3></div><div class="bg-slate-900 text-white p-6 rounded-2xl shadow-sm"><p class="text-slate-400 text-xs font-bold uppercase">Total Potong Gaji</p><h3 class="text-2xl font-extrabold text-sky-400 mt-1">${formatRp(totalPrincipal + totalFee)}</h3></div></div><div class="bg-white rounded-2xl shadow-sm overflow-hidden border border-slate-200/80"><div class="p-4 border-b border-slate-100 flex justify-between items-center"><h3 class="font-bold text-slate-800">Rincian Anggota Koperasi</h3><button onclick="EvoucherActions.generateSummary()" class="bg-sky-600 text-white px-4 py-2 rounded-xl text-xs font-bold hover:bg-sky-700 touch-target">Download Rekap Excel</button></div><div class="overflow-x-auto h-[500px]"><table class="w-full text-sm text-left"><thead class="bg-slate-50 sticky top-0 font-bold text-xs uppercase text-slate-600"><tr><th class="p-3">Nama</th><th class="p-3">NIK</th><th class="p-3 text-right">Limit</th><th class="p-3 text-right">Terpakai</th><th class="p-3 text-right">Tagihan</th></tr></thead><tbody class="divide-y divide-slate-100">${EvoucherState.users.map(u => { const used = u.used || 0; const bill = used + (used * 0.05); return `<tr class="hover:bg-slate-50"><td class="p-3 font-bold text-slate-800">${u.name}</td><td class="p-3 text-slate-500 font-mono text-xs">${u.nik}</td><td class="p-3 text-right font-medium">${formatRp(u.limit)}</td><td class="p-3 text-right font-medium">${formatRp(used)}</td><td class="p-3 text-right font-bold text-sky-600">${formatRp(bill)}</td></tr>`; }).join('')}</tbody></table></div></div>`;
+                    container.innerHTML = `<div class="flex justify-between items-center mb-6"><h2 class="text-2xl font-bold text-slate-800">Dashboard Admin E-Voucher</h2><button onclick="EvoucherActions.switchView('login')" class="text-rose-600 font-bold touch-target">&larr; Kembali</button></div><div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6"><div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-200/80"><p class="text-slate-500 text-xs font-bold uppercase">Total Pokok</p><h3 class="text-2xl font-extrabold text-slate-900 mt-1">${formatRp(totalPrincipal)}</h3></div><div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-200/80"><p class="text-slate-500 text-xs font-bold uppercase">Fee Kopkar (5%)</p><h3 class="text-2xl font-extrabold text-emerald-600 mt-1">${formatRp(totalFee)}</h3></div><div class="bg-slate-900 text-white p-6 rounded-2xl shadow-sm"><p class="text-slate-400 text-xs font-bold uppercase">Total Potong Gaji</p><h3 class="text-2xl font-extrabold text-sky-400 mt-1">${formatRp(totalPrincipal + totalFee)}</h3></div></div><div class="bg-white rounded-2xl shadow-sm overflow-hidden border border-slate-200/80"><div class="p-4 border-b border-slate-100 flex justify-between items-center"><h3 class="font-bold text-slate-800">Rincian Anggota Koperasi</h3><button onclick="EvoucherActions.generateSummary()" class="bg-sky-600 text-white px-4 py-2 rounded-xl text-xs font-bold hover:bg-sky-700 touch-target">Download Rekap Excel</button></div><div class="overflow-x-auto h-[500px]"><table class="w-full text-sm text-left"><thead class="bg-slate-50 sticky top-0 font-bold text-xs uppercase text-slate-600"><tr><th class="p-3">Nama</th><th class="p-3"><div class="inline-flex items-center gap-1.5"><span>NIK</span><button type="button" onclick="window.toggleMaskNIK()" class="text-[10px] bg-slate-200 hover:bg-slate-300 text-slate-700 px-1.5 py-0.5 rounded font-bold cursor-pointer transition">${window.isNikMasked ? '👁️ Intip' : '🔒 Sensor'}</button></div></th><th class="p-3 text-right">Limit</th><th class="p-3 text-right">Terpakai</th><th class="p-3 text-right">Tagihan</th></tr></thead><tbody class="divide-y divide-slate-100">${EvoucherState.users.map(u => { const used = u.used || 0; const bill = used + (used * 0.05); return `<tr class="hover:bg-slate-50"><td class="p-3 font-bold text-slate-800">${u.name}</td><td class="p-3 font-mono text-xs text-slate-600"><span class="nik-masked">${window.maskNIK ? window.maskNIK(u.nik) : u.nik}</span></td><td class="p-3 text-right font-medium">${formatRp(u.limit)}</td><td class="p-3 text-right font-medium">${formatRp(used)}</td><td class="p-3 text-right font-bold text-sky-600">${formatRp(bill)}</td></tr>`; }).join('')}</tbody></table></div></div>`;
                 } else if (EvoucherState.view === 'merchant') {
-                    container.innerHTML = `<div class="max-w-md mx-auto bg-white rounded-2xl shadow-xl overflow-hidden border border-slate-200/80 mt-4"><div class="bg-emerald-700 p-4 text-white flex justify-between items-center"><h2 class="font-bold text-lg">Kasir E-Voucher</h2><button onclick="EvoucherActions.switchView('login')" class="text-white/80 hover:text-white touch-target">✕</button></div><div class="p-6 space-y-4">${!EvoucherState.foundUser ? `<div><label class="block text-xs font-bold text-slate-500 uppercase mb-1">Cari Anggota</label><div class="flex gap-2"><input id="evSearchId" placeholder="No Anggota / NIK" class="w-full p-3 border border-slate-300 rounded-xl font-mono text-lg touch-target" onkeydown="if(event.key==='Enter') EvoucherActions.checkUser()"><button onclick="EvoucherActions.checkUser()" class="bg-emerald-600 text-white px-5 rounded-xl font-bold touch-target">Cek</button></div></div>` : `<div class="bg-emerald-50 p-4 rounded-xl border border-emerald-200"><div class="font-bold text-emerald-900 text-lg">${EvoucherState.foundUser.name}</div><div class="flex justify-between text-sm mt-1"><span>Sisa Limit:</span><span class="font-bold text-emerald-800">${formatRp(EvoucherState.foundUser.limit - (EvoucherState.foundUser.used || 0))}</span></div></div><div><label class="block text-xs font-bold text-slate-500 uppercase mb-1">Total Belanja</label><input id="evAmount" type="number" placeholder="0" class="w-full p-3.5 border border-slate-300 rounded-xl font-mono text-2xl font-extrabold text-slate-900 touch-target"></div><div><label class="block text-xs font-bold text-slate-500 uppercase mb-1">Lokasi / Keterangan</label><input id="evNotes" type="text" placeholder="Contoh: Adamart 73" class="w-full p-3 border border-slate-300 rounded-xl touch-target"></div><div class="flex gap-2 pt-2"><button onclick="EvoucherState.foundUser=null; EvoucherActions.render()" class="flex-1 py-3.5 border border-slate-300 rounded-xl font-bold text-slate-600 touch-target">Batal</button><button onclick="EvoucherActions.submitTx()" class="flex-[2] py-3.5 bg-emerald-600 text-white rounded-xl font-bold shadow-lg touch-target">BAYAR SEKARANG</button></div>`}</div></div>`;
+                    container.innerHTML = `<div class="max-w-md mx-auto bg-white rounded-2xl shadow-xl overflow-hidden border border-slate-200/80 mt-4"><div class="bg-emerald-700 p-4 text-white flex justify-between items-center"><h2 class="font-bold text-lg">Kasir E-Voucher</h2><button onclick="EvoucherActions.switchView('login')" class="text-white/80 hover:text-white touch-target">✕</button></div><div class="p-6 space-y-4">${!EvoucherState.foundUser ? `<div><label class="block text-xs font-bold text-slate-500 uppercase mb-1">Cari Anggota</label><div class="flex gap-2"><input id="evSearchId" placeholder="No Anggota / NIK" class="w-full p-3 border border-slate-300 rounded-xl font-mono text-lg touch-target" onkeydown="if(event.key==='Enter') EvoucherActions.checkUser()"><button onclick="EvoucherActions.checkUser()" class="bg-emerald-600 text-white px-5 rounded-xl font-bold touch-target">Cek</button></div></div>` : `<div class="bg-emerald-50 p-4 rounded-xl border border-emerald-200"><div class="font-bold text-emerald-900 text-lg">${EvoucherState.foundUser.name}</div><div class="flex justify-between text-sm mt-1"><span>Sisa Limit:</span><span class="font-bold text-emerald-800">${formatRp(EvoucherState.foundUser.limit - (EvoucherState.foundUser.used || 0))}</span></div></div><div><label class="block text-xs font-bold text-slate-500 uppercase mb-1">Total Belanja</label><input id="evAmount" type="number" placeholder="0" class="w-full p-3.5 border border-slate-300 rounded-xl font-mono text-2xl font-extrabold text-slate-900 touch-target"></div><div><label class="block text-xs font-bold text-slate-500 uppercase mb-1">Lokasi / Keterangan</label><input id="evNotes" type="text" placeholder="Contoh: Cabang Utama" class="w-full p-3 border border-slate-300 rounded-xl touch-target"></div><div class="flex gap-2 pt-2"><button onclick="EvoucherState.foundUser=null; EvoucherActions.render()" class="flex-1 py-3.5 border border-slate-300 rounded-xl font-bold text-slate-600 touch-target">Batal</button><button onclick="EvoucherActions.submitTx()" class="flex-[2] py-3.5 bg-emerald-600 text-white rounded-xl font-bold shadow-lg touch-target">BAYAR SEKARANG</button></div>`}</div></div>`;
                 }
             },
             switchView: async (viewName) => { 
@@ -2392,11 +2547,11 @@
                 <html><head><title>Cetak PO - ${po.batchNumber}</title>
                     <style>body{font-family:'Times New Roman',serif;padding:20px;color:#000;font-size:14px;} .header{display:flex;align-items:center;border-bottom:4px double #000;padding-bottom:15px;margin-bottom:20px;} .logo{width:110px;height:auto;margin-right:20px;} .kop{text-align:center;flex:1;} .kop h1{margin:0 0 5px 0;font-size:20px;font-weight:bold;text-transform:uppercase;} .kop p{margin:2px 0;font-size:13px;line-height:1.4;} .title{text-align:center;font-size:18px;font-weight:bold;text-decoration:underline;margin-bottom:25px;} .info{display:flex;justify-content:space-between;margin-bottom:20px;} .info table{font-size:14px;} .info table td{padding:3px 8px;vertical-align:top;} .content-table{width:100%;border-collapse:collapse;margin-bottom:40px;} .content-table th{border:1px solid #000;padding:10px;background:#f0f0f0;font-weight:bold;} .footer{display:flex;justify-content:space-between;margin-top:50px;padding:0 30px;} .sign{text-align:center;width:250px;} .sign-space{height:100px;} @media print{body{padding:0;}}</style>
                 </head><body onload="setTimeout(()=>{window.print();window.close();},500)">
-                    <div class="header"><img src="https://i.ibb.co.com/WvTwLMn5/image-1.png" class="logo" alt="Logo Kopkar"><div class="kop"><h1>Koperasi Karyawan Adaro Karya Mandiri</h1><p>Badan Hukum Nomor : 2128/BH/IX Tanggal 31 Juli 1995</p><p>Office : Jl. Jend. A. Yani Komp. Swadharma Jalur II Blok Mawar RT IV<br>Kel. Mabuun Kec. Murung Pudak Kab. Tabalong Prov. Kalimantan Selatan</p><p>Kode Pos 71571 | Telp/Fax : 0526 – 2023593 | Email : kopkar.adaro@gmail.com</p></div></div>
+                    <div class="header"><img src="https://i.ibb.co.com/WvTwLMn5/image-1.png" class="logo" alt="Logo Kopkar"><div class="kop"><h1>Koperasi Karyawan & Retail Mandiri</h1><p>Badan Hukum Nomor : 2128/BH/IX/1995</p><p>Office : Sentra Niaga Retail Terpadu - Gedung Manajemen Operasional</p><p>Telp/Fax : (021) 555-0192 | Email : info@smartretail-pos.com</p></div></div>
                     <div class="title">SURAT PEMESANAN BARANG (PURCHASE ORDER)</div>
                     <div class="info"><div><table><tr><td>Nomor PO</td><td>:</td><td><b>${po.batchNumber}</b></td></tr><tr><td>Tanggal</td><td>:</td><td>${new Date(po.orderDate).toLocaleDateString('id-ID',{day:'numeric',month:'long',year:'numeric'})}</td></tr><tr><td>Pengiriman</td><td>:</td><td>${po.branch}</td></tr></table></div><div><table><tr><td>Kepada Yth.</td><td>:</td><td><b>${po.supplier}</b></td></tr></table></div></div>
                     <table class="content-table"><thead><tr><th>No</th><th>Kode & Nama Barang</th><th>Qty</th><th>Harga Satuan (Beli)</th><th>Total Harga</th></tr></thead><tbody>${tbody}</tbody><tfoot><tr><td colspan="4" style="border:1px solid #000;padding:10px;text-align:right;font-weight:bold;">TOTAL NILAI PO</td><td style="border:1px solid #000;padding:10px;text-align:right;font-weight:bold;font-size:16px;">${formatRp(total)}</td></tr></tfoot></table>
-                    <div class="footer"><div class="sign"><p>Mengetahui & Menyetujui,</p><div class="sign-space"></div><p><b>( Manager Adamart )</b></p></div><div class="sign"><p>Diterima Oleh,</p><div class="sign-space"></div><p><b>( Pihak Supplier )</b></p></div></div>
+                    <div class="footer"><div class="sign"><p>Mengetahui & Menyetujui,</p><div class="sign-space"></div><p><b>( Manager Operasional )</b></p></div><div class="sign"><p>Diterima Oleh,</p><div class="sign-space"></div><p><b>( Pihak Supplier )</b></p></div></div>
                 </body></html>`);
                 printWindow.document.close();
             },
@@ -2438,12 +2593,18 @@
 
             deletePO: async (poId) => {
                 const po = State.data.purchases.find(p => p.id === poId);
-                const poDetails = po ? `\n\n• Nomor PO: ${po.batchNumber}\n• Supplier: ${po.supplier}\n• Cabang: ${po.branch}` : '';
-                if(!confirm(`⚠️ Apakah Anda yakin ingin menghapus dokumen Purchase Order ini secara permanen?${poDetails}`)) return;
+                if (!po) return window.showToast("Data PO tidak ditemukan", "error");
+                
+                const confirmed = await window.promptDestructiveAuth(
+                    "Hapus Dokumen Purchase Order (PO)",
+                    `<b>Nomor PO:</b> ${po.batchNumber}<br><b>Supplier:</b> ${po.supplier}<br><b>Cabang:</b> ${po.branch}<br><br><span class="text-rose-600 font-semibold">Dokumen PO akan dihapus permanen dari Firestore database.</span>`
+                );
+                if (!confirmed) return;
+
                 try {
                     const docRef = window.doc(window.db, "purchases", poId);
                     await window.deleteDoc(docRef);
-                    window.showToast("✅ PO Berhasil Dihapus!", "success");
+                    window.showToast("✅ Dokumen PO Berhasil Dihapus!", "success");
                     loadAllData();
                 } catch (err) {
                     window.showToast("Gagal menghapus PO: " + err.message, "error");
@@ -2482,12 +2643,12 @@
 
                 if (checkedItems.length === 0) {
                     checkedItems = State.data.products.filter(p => {
-                        const totalStok = (p['Stok Area Kasir adamart 73']||0) + (p['Stok Area Kasir adamart induksi']||0) + (p['Stok Area Kasir adamart kelanis']||0);
+                        const totalStok = window.getProductStock(p).total;
                         return totalStok < 10;
                     }).map(p => ({
                         barcode: p.Barcode,
                         name: p['Nama Produk'],
-                        qty: Math.max(5, 10 - ((p['Stok Area Kasir adamart 73']||0) + (p['Stok Area Kasir adamart induksi']||0) + (p['Stok Area Kasir adamart kelanis']||0))),
+                        qty: Math.max(5, 10 - (window.getProductStock(p).total)),
                         hpp: p.HPP || 0,
                         price: p.Harga || 0
                     }));
@@ -2562,7 +2723,7 @@
 
                 try {
                     await Promise.all(promises);
-                    window.showToast(`✅ Berhasil membuat ${createdCount} PO Otomatis per Area (Adamart 73, Induksi, Kelanis)!`, "success");
+                    window.showToast(`✅ Berhasil membuat ${createdCount} PO Otomatis per Area (Multi-Cabang)!`, "success");
                     loadAllData();
                     if (State.currentPage === 'smart_restock') navigate('purchase');
                 } catch (err) {
@@ -2638,7 +2799,7 @@
                         <button onclick="closeModal()" class="text-slate-400 hover:text-slate-700 touch-target" aria-label="Close modal">✕</button>
                     </div>
                     <div class="bg-sky-50 border border-sky-200 rounded-xl p-3 mb-4 text-xs text-sky-900 leading-relaxed">
-                        Fitur ini mengubah barcode sementara menjadi barcode baru / resmi. <b>Seluruh data stok cabang (73, Induksi, Kelanis) dan histori akan tetap utuh.</b>
+                        Fitur ini mengubah barcode sementara menjadi barcode baru / resmi. <b>Seluruh data stok multi-cabang dan histori akan tetap utuh.</b>
                     </div>
                     <form onsubmit="Actions.submitChangeBarcode(event, '${docId}', '${currentBarcode}')" class="space-y-4">
                         <div>
@@ -2690,12 +2851,16 @@
             },
 
             deleteProduct: async (docId, barcode, productName) => {
-                if (!confirm(`⚠️ HAPUS PRODUK?\n\nApakah Anda yakin ingin menghapus produk:\n"${productName}" (Barcode: ${barcode})\n\nProduk akan dihapus permanen dari sistem.`)) return;
+                const confirmed = await window.promptDestructiveAuth(
+                    `Hapus Master Produk: "${productName}"`,
+                    `<b>Nama:</b> ${productName}<br><b>Barcode:</b> ${barcode}<br><br><span class="text-rose-600 font-semibold">Produk akan dihapus permanen dari database master inventori.</span>`
+                );
+                if (!confirmed) return;
 
                 try {
                     const docRef = window.doc(window.db, "products", docId);
                     await window.deleteDoc(docRef);
-                    fetch(APPS_SCRIPT_URL, { method: 'POST', body: JSON.stringify({ action: 'delete_product', data: { barcode } }) });
+                    fetch(APPS_SCRIPT_URL, { method: 'POST', body: JSON.stringify({ action: 'delete_product', data: { barcode } }) }).catch(e=>{});
                     window.showToast(`🗑️ Produk "${productName}" berhasil dihapus!`, "success");
                     if (document.getElementById('selectedDocId')?.value === docId) {
                         if (window.cancelEditMode) window.cancelEditMode();
@@ -2755,9 +2920,10 @@
                 if (!barcode) return;
                 const product = State.data.products.find(p => p.Barcode === barcode);
                 if (product) {
-                    document.getElementById('stk-73').innerText = product['Stok Area Kasir adamart 73'] || 0;
-                    document.getElementById('stk-ind').innerText = product['Stok Area Kasir adamart induksi'] || 0;
-                    document.getElementById('stk-kel').innerText = product['Stok Area Kasir adamart kelanis'] || 0;
+                    const st = window.getProductStock(product);
+                    if (document.getElementById('stk-73')) document.getElementById('stk-73').innerText = st.utama;
+                    if (document.getElementById('stk-ind')) document.getElementById('stk-ind').innerText = st.mitra;
+                    if (document.getElementById('stk-kel')) document.getElementById('stk-kel').innerText = st.express;
                 }
             },
 
@@ -3301,7 +3467,7 @@
             Object.keys(ps).forEach(n=>{ 
                 const s=ps[n]; 
                 const p=State.data.products.find(prod=>prod['Nama Produk'].trim().toLowerCase()===n.toLowerCase()); 
-                const st=p?(parseInt(p['Stok Area Kasir adamart 73']||0)+parseInt(p['Stok Area Kasir adamart induksi']||0)+parseInt(p['Stok Area Kasir adamart kelanis']||0)):0; 
+                const st = p ? window.getProductStock(p).total : 0; 
                 const h=p?(parseInt(p.HPP)||0):0; 
                 const abc = p ? p.abcCategory || 'C' : 'C';
                 rows.push([`"${n}"`, abc, s.qty, st, h, s.rev, s.rev-(h*s.qty)]); 
@@ -3331,7 +3497,330 @@
             return `<span class="px-2.5 py-1 rounded-full text-xs font-bold bg-slate-100 text-slate-700 border border-slate-200">${(s || 'PENDING').toUpperCase()}</span>`; 
         }
 
+        
+        // ==========================================
+        // AUTHENTICATION & SECURITY MANAGEMENT UTILS
+        // ==========================================
+        window.loginWithFirebase = async (e) => {
+            if (e) e.preventDefault();
+            const emailInput = document.getElementById('login-email');
+            const pwdInput = document.getElementById('login-password');
+            const errBanner = document.getElementById('login-error-msg');
+            const errText = document.getElementById('login-error-text');
+            const btn = document.getElementById('btn-login-submit');
+
+            const email = emailInput?.value?.trim();
+            const password = pwdInput?.value;
+
+            if (!email || !password) {
+                if (errText) errText.innerText = "Email dan kata sandi wajib diisi!";
+                if (errBanner) errBanner.classList.remove('hidden');
+                return;
+            }
+
+            try {
+                if (btn) { btn.disabled = true; btn.innerHTML = '<span>⏳</span> Memverifikasi...'; }
+                if (errBanner) errBanner.classList.add('hidden');
+
+                await window.signInWithEmailAndPassword(window.auth, email, password);
+                window.showToast("✅ Login Berhasil! Selamat datang di Dasbor Manajer.", "success");
+            } catch (err) {
+                console.error("Login failed:", err);
+                let msg = "Gagal login: Periksa email dan kata sandi Anda.";
+                if (err.code === 'auth/invalid-credential' || err.code === 'auth/wrong-password' || err.code === 'auth/user-not-found') {
+                    msg = "Email atau Kata Sandi salah!";
+                } else if (err.code === 'auth/too-many-requests') {
+                    msg = "Terlalu banyak percobaan gagal. Silakan tunggu beberapa saat.";
+                } else if (err.code === 'auth/network-request-failed') {
+                    msg = "Koneksi ke server gagal. Cek sambungan internet.";
+                }
+                if (errText) errText.innerText = msg;
+                if (errBanner) errBanner.classList.remove('hidden');
+                window.showToast(msg, "error");
+            } finally {
+                if (btn) { btn.disabled = false; btn.innerHTML = '<span>🔐</span> Masuk ke Dasbor'; }
+            }
+        };
+
+        window.logoutManager = async () => {
+            if (!confirm("Apakah Anda yakin ingin keluar (Logout) dari akun Manajer?")) return;
+            sessionStorage.removeItem('adamart_screen_locked');
+            try {
+                if (window.DemoEngine && window.DemoEngine.isSandboxActive) {
+                    window.DemoEngine.disableSandbox();
+                }
+                await window.signOut(window.auth);
+                window.showToast("Sesi berhasil diakhiri.", "info");
+            } catch (err) {
+                window.showToast("Gagal logout: " + err.message, "error");
+            }
+        };
+
+        window.lockScreen = () => {
+            sessionStorage.setItem('adamart_screen_locked', 'true');
+            const screenLockModal = document.getElementById('screen-lock-modal');
+            if (screenLockModal) {
+                screenLockModal.classList.remove('hidden');
+                const unlockInput = document.getElementById('unlock-password-input');
+                if (unlockInput) { unlockInput.value = ''; unlockInput.focus(); }
+            }
+        };
+
+        window.unlockScreen = async (e) => {
+            if (e) e.preventDefault();
+            const pwdInput = document.getElementById('unlock-password-input');
+            const errBanner = document.getElementById('unlock-error-msg');
+            const btn = document.getElementById('btn-unlock-submit');
+            const password = pwdInput?.value;
+
+            if (!password) {
+                if (errBanner) { errBanner.innerText = "Masukkan kata sandi akun!"; errBanner.classList.remove('hidden'); }
+                return;
+            }
+
+            const email = window.currentUser?.email;
+            if (!email) {
+                window.logoutManager();
+                return;
+            }
+
+            try {
+                if (btn) { btn.disabled = true; btn.innerHTML = '<span>⏳</span> Membuka...'; }
+                if (errBanner) errBanner.classList.add('hidden');
+
+                await window.signInWithEmailAndPassword(window.auth, email, password);
+                sessionStorage.removeItem('adamart_screen_locked');
+                document.getElementById('screen-lock-modal')?.classList.add('hidden');
+                window.showToast("🔓 Layar berhasil dibuka!", "success");
+            } catch (err) {
+                if (errBanner) { errBanner.innerText = "Kata sandi salah!"; errBanner.classList.remove('hidden'); }
+                window.showToast("Kata sandi tidak valid!", "error");
+            } finally {
+                if (btn) { btn.disabled = false; btn.innerHTML = '<span>🔓</span> Buka Kunci Layar'; }
+            }
+        };
+
+        window.togglePasswordVisibility = (inputId, iconId) => {
+            const el = document.getElementById(inputId);
+            const icon = document.getElementById(iconId);
+            if (!el) return;
+            if (el.type === 'password') {
+                el.type = 'text';
+                if (icon) icon.innerText = '🙈';
+            } else {
+                el.type = 'password';
+                if (icon) icon.innerText = '👁️';
+            }
+        };
+
+        window.launchSandboxFromLogin = () => {
+            document.getElementById('auth-gatekeeper-modal')?.classList.add('hidden');
+            if (window.DemoEngine) {
+                window.DemoEngine.enableSandbox(true);
+            }
+        };
+
+        
+        // Destructive Action Guard Handlers
+        let destructiveAuthResolver = null;
+
+        window.promptDestructiveAuth = (title, detailsHtml) => {
+            return new Promise((resolve) => {
+                destructiveAuthResolver = resolve;
+                const modal = document.getElementById('destructive-confirm-modal');
+                const titleEl = document.getElementById('destructive-title');
+                const detailsEl = document.getElementById('destructive-details');
+                const inputEl = document.getElementById('destructive-input');
+
+                if (titleEl) titleEl.innerText = title;
+                if (detailsEl) detailsEl.innerHTML = detailsHtml;
+                if (inputEl) { inputEl.value = ''; }
+                if (modal) {
+                    modal.classList.remove('hidden');
+                    setTimeout(() => inputEl && inputEl.focus(), 100);
+                }
+            });
+        };
+
+        window.submitDestructiveConfirmation = (e) => {
+            if (e) e.preventDefault();
+            const inputVal = document.getElementById('destructive-input')?.value?.trim()?.toUpperCase();
+            if (inputVal !== 'HAPUS') {
+                window.showToast("Ketik kata 'HAPUS' secara tepat untuk konfirmasi!", "warning");
+                return;
+            }
+            document.getElementById('destructive-confirm-modal')?.classList.add('hidden');
+            if (destructiveAuthResolver) {
+                destructiveAuthResolver(true);
+                destructiveAuthResolver = null;
+            }
+        };
+
+        window.cancelDestructiveConfirmation = () => {
+            document.getElementById('destructive-confirm-modal')?.classList.add('hidden');
+            if (destructiveAuthResolver) {
+                destructiveAuthResolver(false);
+                destructiveAuthResolver = null;
+            }
+        };
+
+        window.isNikMasked = true;
+        window.maskNIK = (nik) => {
+            if (!nik || nik === '-') return '-';
+            const str = String(nik);
+            if (!window.isNikMasked) return str;
+            if (str.length <= 6) return '••••••';
+            return str.substring(0, 3) + '••••••' + str.substring(str.length - 3);
+        };
+
+        window.toggleMaskNIK = () => {
+            window.isNikMasked = !window.isNikMasked;
+            if (window.EvoucherActions && window.EvoucherState.view === 'admin') {
+                window.EvoucherActions.render();
+            }
+        };
+
         window.Actions = Actions; window.Modals = Modals; window.Pages = Pages; window.State = State; window.EvoucherState = EvoucherState; window.EvoucherActions = EvoucherActions;
     </script>
+
+    <!-- ======================================================== -->
+    <!-- GERBANG AUTENTIKASI UTAMA (ENTERPRISE AUTH GATEKEEPER)   -->
+    <!-- ======================================================== -->
+    <div id="auth-gatekeeper-modal" class="fixed inset-0 z-[999] bg-slate-950/85 backdrop-blur-md flex items-center justify-center p-4 overflow-y-auto">
+        <div class="bg-white rounded-3xl shadow-2xl border border-slate-200 max-w-md w-full p-6 sm:p-8 relative transform transition-all">
+            <!-- Header Brand -->
+            <div class="text-center mb-6">
+                <div class="w-14 h-14 rounded-2xl bg-gradient-to-tr from-sky-500 to-indigo-600 flex items-center justify-center font-black text-2xl text-white shadow-xl shadow-sky-500/25 mx-auto mb-3">
+                    A
+                </div>
+                <h2 class="text-xl sm:text-2xl font-extrabold text-slate-900 tracking-tight">Adamart Manager</h2>
+                <p class="text-xs font-semibold text-sky-600 uppercase tracking-wider mt-0.5">Portal Manajemen &bull; Kopkar AKM</p>
+                <p class="text-xs text-slate-500 mt-2">Masukkan kredensial akun manajer resmi untuk mengakses data operasional & finansial.</p>
+            </div>
+
+            <!-- Error Banner -->
+            <div id="login-error-msg" class="hidden mb-4 p-3.5 bg-rose-50 border border-rose-200 text-rose-700 text-xs font-bold rounded-xl flex items-center gap-2">
+                <span>⚠️</span>
+                <span id="login-error-text">Email atau Kata Sandi tidak valid.</span>
+            </div>
+
+            <!-- Form Login -->
+            <form onsubmit="window.loginWithFirebase(event)" class="space-y-4">
+                <div>
+                    <label class="block text-xs font-bold text-slate-600 uppercase mb-1.5">Email Manajer / Pengurus</label>
+                    <div class="relative">
+                        <span class="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400 text-sm">✉️</span>
+                        <input type="email" id="login-email" required placeholder="kopkar.adaro@gmail.com" autocomplete="username" class="w-full pl-10 pr-3.5 py-3 bg-slate-50 border border-slate-300 rounded-xl text-sm font-medium focus:bg-white focus:outline-none focus:ring-2 focus:ring-sky-500 transition touch-target">
+                    </div>
+                </div>
+
+                <div>
+                    <div class="flex justify-between items-center mb-1.5">
+                        <label class="block text-xs font-bold text-slate-600 uppercase">Kata Sandi (Password)</label>
+                    </div>
+                    <div class="relative">
+                        <span class="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400 text-sm">🔒</span>
+                        <input type="password" id="login-password" required placeholder="••••••••••••" autocomplete="current-password" class="w-full pl-10 pr-11 py-3 bg-slate-50 border border-slate-300 rounded-xl text-sm font-medium focus:bg-white focus:outline-none focus:ring-2 focus:ring-sky-500 transition touch-target">
+                        <button type="button" onclick="window.togglePasswordVisibility('login-password', 'login-pwd-toggle-icon')" class="absolute inset-y-0 right-0 pr-3 flex items-center text-slate-400 hover:text-slate-600" aria-label="Toggle password visibility">
+                            <span id="login-pwd-toggle-icon">👁️</span>
+                        </button>
+                    </div>
+                </div>
+
+                <button type="submit" id="btn-login-submit" class="w-full py-3.5 px-4 bg-gradient-to-r from-sky-600 to-indigo-600 hover:from-sky-700 hover:to-indigo-700 text-white font-extrabold rounded-xl shadow-lg shadow-sky-500/25 transition text-sm flex items-center justify-center gap-2 touch-target">
+                    <span>🔐</span> Masuk ke Dasbor
+                </button>
+            </form>
+
+            <div class="relative my-6">
+                <div class="absolute inset-0 flex items-center"><div class="w-full border-t border-slate-200"></div></div>
+                <div class="relative flex justify-center text-[11px] uppercase font-bold text-slate-400"><span class="bg-white px-3">Atau Uji Coba Offline</span></div>
+            </div>
+
+            <!-- Demo Sandbox Quick Launcher -->
+            <button type="button" onclick="window.launchSandboxFromLogin()" class="w-full py-3 px-4 bg-purple-50 hover:bg-purple-100 border border-purple-200 text-purple-800 font-bold rounded-xl text-xs flex items-center justify-center gap-2 transition touch-target">
+                <span>🧪</span> Masuk Mode Demo Sandbox (Data Simulasi)
+            </button>
+
+            <div class="mt-6 text-center text-[11px] text-slate-400">
+                Terproteksi Firebase Authentication &bull; Kopkar Mandiri
+            </div>
+        </div>
+    </div>
+
+    <!-- ======================================================== -->
+    <!-- MODAL KUNCI LAYAR SEMENTARA (SESSION SCREEN LOCK)        -->
+    <!-- ======================================================== -->
+    <div id="screen-lock-modal" class="fixed inset-0 z-[990] bg-slate-950/90 backdrop-blur-lg flex items-center justify-center p-4 hidden">
+        <div class="bg-slate-900 border border-slate-800 rounded-3xl shadow-2xl max-w-sm w-full p-6 sm:p-8 text-center text-white">
+            <div class="w-16 h-16 rounded-2xl bg-gradient-to-tr from-amber-500 to-orange-600 flex items-center justify-center text-2xl mx-auto mb-4 shadow-xl shadow-amber-500/20 animate-bounce">
+                🔒
+            </div>
+            <h3 class="text-xl font-extrabold text-white">Layar Dikunci</h3>
+            <p class="text-xs text-slate-400 mt-1">Sesi manajer tetap aman saat Anda meninggalkan komputer.</p>
+
+            <div class="bg-slate-800/80 border border-slate-700/80 rounded-2xl p-3 my-5">
+                <div class="text-[11px] text-slate-400 font-semibold uppercase">Akun Terhubung:</div>
+                <div id="locked-user-email" class="text-xs font-mono font-bold text-sky-400 truncate mt-0.5">manager@kopkarakm.com</div>
+            </div>
+
+            <!-- Error Banner Lock -->
+            <div id="unlock-error-msg" class="hidden mb-4 p-2.5 bg-rose-950/80 border border-rose-500/50 text-rose-300 text-xs font-bold rounded-xl">
+                Kata sandi tidak sesuai!
+            </div>
+
+            <form onsubmit="window.unlockScreen(event)" class="space-y-3">
+                <div class="relative">
+                    <input type="password" id="unlock-password-input" placeholder="Masukkan kata sandi akun..." required class="w-full px-4 py-3 bg-slate-950 border border-slate-700 rounded-xl text-white text-sm font-medium focus:outline-none focus:border-amber-400 focus:ring-1 focus:ring-amber-400 touch-target">
+                </div>
+                <button type="submit" id="btn-unlock-submit" class="w-full py-3 bg-gradient-to-r from-amber-500 to-orange-600 hover:from-amber-600 hover:to-orange-700 text-white font-extrabold rounded-xl shadow-lg transition text-sm flex items-center justify-center gap-1.5 touch-target">
+                    <span>🔓</span> Buka Kunci Layar
+                </button>
+            </form>
+
+            <div class="mt-4 pt-4 border-t border-slate-800 flex justify-between items-center text-xs">
+                <span class="text-slate-500">Bukan Anda?</span>
+                <button type="button" onclick="window.logoutManager()" class="text-rose-400 hover:text-rose-300 font-bold transition">
+                    Keluar / Ganti Akun &rarr;
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ======================================================== -->
+    <!-- MODAL KONFIRMASI OTORISASI AKSI HAPUS (DESTRUCTIVE GUARD)-->
+    <!-- ======================================================== -->
+    <div id="destructive-confirm-modal" class="fixed inset-0 z-[995] bg-slate-950/80 backdrop-blur-sm flex items-center justify-center p-4 hidden">
+        <div class="bg-white rounded-3xl shadow-2xl border border-rose-200 max-w-md w-full p-6 sm:p-7 relative">
+            <div class="flex items-center gap-3 text-rose-600 mb-4">
+                <div class="w-12 h-12 rounded-2xl bg-rose-100 flex items-center justify-center text-2xl font-bold">⚠️</div>
+                <div>
+                    <h3 class="text-lg font-extrabold text-slate-900" id="destructive-title">Konfirmasi Penghapusan</h3>
+                    <p class="text-xs text-rose-600 font-semibold uppercase">Otorisasi Manajer Diperlukan</p>
+                </div>
+            </div>
+
+            <div class="bg-rose-50/70 border border-rose-100 rounded-2xl p-4 mb-4 text-xs text-slate-700 leading-relaxed" id="destructive-details">
+                Aksi ini bersifat permanen dan tidak dapat dibatalkan di database.
+            </div>
+
+            <form onsubmit="window.submitDestructiveConfirmation(event)" class="space-y-4">
+                <div>
+                    <label class="block text-xs font-bold text-slate-600 uppercase mb-1">Ketik kata <span class="text-rose-600 font-black">"HAPUS"</span> untuk mengonfirmasi:</label>
+                    <input type="text" id="destructive-input" placeholder="Ketik HAPUS disini..." required class="w-full px-4 py-3 bg-slate-50 border-2 border-rose-300 rounded-xl text-sm font-bold uppercase text-slate-900 focus:outline-none focus:border-rose-600 focus:bg-white touch-target">
+                </div>
+
+                <div class="flex gap-2.5 pt-1">
+                    <button type="button" onclick="window.cancelDestructiveConfirmation()" class="flex-1 py-3 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold rounded-xl text-xs transition touch-target">
+                        Batal
+                    </button>
+                    <button type="submit" id="btn-destructive-confirm" class="flex-1 py-3 bg-rose-600 hover:bg-rose-700 text-white font-extrabold rounded-xl text-xs shadow-md shadow-rose-600/20 transition touch-target">
+                        🗑️ Ya, Hapus Sekarang
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
 </body>
 </html>
