@@ -807,7 +807,8 @@
                 const renderExpiry = (items) => items.length === 0 ? '<div class="text-slate-400 italic text-sm p-4 text-center">Tidak ada barang mendekati expired</div>' : items.map(p => {
                         const expDate = new Date(p.ExpiryDate || p['Tanggal Kadaluarsa']);
                         const diffTime = Math.abs(expDate - today);
-                           return `<div class="flex justify-between items-center border-b border-slate-100 py-3 last:border-0"><div><div class="font-bold text-sm text-slate-800">${p['Nama Produk']}</div><div class="text-xs text-slate-400 font-medium">Exp: ${expDate.toLocaleDateString('id-ID')}</div></div><span class="bg-amber-100 text-amber-800 text-xs font-bold px-3 py-1 rounded-full border border-amber-200">${diffDays} Hari Lagi</span></div>`;
+                        const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+                        return `<div class="flex justify-between items-center border-b border-slate-100 py-3 last:border-0"><div><div class="font-bold text-sm text-slate-800">${p['Nama Produk']}</div><div class="text-xs text-slate-400 font-medium">Exp: ${expDate.toLocaleDateString('id-ID')}</div></div><span class="bg-amber-100 text-amber-800 text-xs font-bold px-3 py-1 rounded-full border border-amber-200">${diffDays} Hari Lagi</span></div>`;
                     }).join('');
 
                 const pm = calculatePaymentBreakdown(filteredSales);
