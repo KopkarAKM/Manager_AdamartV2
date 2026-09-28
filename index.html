@@ -185,6 +185,10 @@
             <a onclick="navigate('logistics')" id="nav-logistics" class="sidebar-item px-4 py-3 rounded-xl cursor-pointer flex items-center gap-3 text-slate-300 hover:text-white font-medium">
                 <span>🚛</span> Barang Masuk
             </a>
+            <a onclick="navigate('consignment')" id="nav-consignment" class="sidebar-item px-4 py-3 rounded-xl cursor-pointer flex items-center justify-between text-amber-200 hover:text-white font-medium">
+                <div class="flex items-center gap-3"><span>🍞</span> Barang Titipan</div>
+                <span class="bg-amber-500/20 text-amber-300 border border-amber-500/30 text-[10px] font-extrabold px-2 py-0.5 rounded-full">Konsinyasi</span>
+            </a>
             <a onclick="navigate('retur')" id="nav-retur" class="sidebar-item px-4 py-3 rounded-xl cursor-pointer flex items-center gap-3 text-slate-300 hover:text-white font-medium">
                 <span>🔄</span> Retur & Rusak
             </a>
@@ -326,6 +330,90 @@
         const ALL_BRANCHES = BRANCH_CONFIG.map(b => b.name);
         const BRANCHES = ACTIVE_BRANCHES;
         const SUPPLIERS = ["PT Sumber Makmur", "CV Mitra Jaya", "Toko Grosir Berkah", "PT Indo Supplier"];
+
+        // Preset 17 Item Standar Sari Roti (Sesuai Laporan Titipan Kelanis)
+        window.SARI_ROTI_PRESETS = [
+            { name: "Tawar Spesial", unit: "Pcs", price: 16500 },
+            { name: "Tawar Gandum", unit: "Pcs", price: 22500 },
+            { name: "Sandwich Coklat", unit: "Pcs", price: 7000 },
+            { name: "Sandwich Keju", unit: "Pcs", price: 6500 },
+            { name: "Roti Tawar Kupas", unit: "Pcs", price: 20500 },
+            { name: "Roti Tawar Dos Milky", unit: "Pcs", price: 23000 },
+            { name: "Dorayaki Coklat", unit: "Pcs", price: 7500 },
+            { name: "Roti Kasur Keju", unit: "Pcs", price: 18000 },
+            { name: "Roti Sobek Coklat", unit: "Pcs", price: 21000 },
+            { name: "Roti Sobek Keju", unit: "Pcs", price: 21000 },
+            { name: "Roti Sobek Sarikaya", unit: "Pcs", price: 20000 },
+            { name: "Roti Sobek Strawbery", unit: "Pcs", price: 21000 },
+            { name: "Roti Sobek Bluberi", unit: "Pcs", price: 21000 },
+            { name: "Kasur meses", unit: "Pcs", price: 14500 },
+            { name: "S.Cheese Cake", unit: "Pcs", price: 12000 },
+            { name: "Waffle Ori", unit: "Pcs", price: 6500 },
+            { name: "Lapis Ori", unit: "Pcs", price: 13000 }
+        ];
+
+        window.getDefaultConsignmentData = () => [
+            {
+                id: "csg_kelanis_sep2026",
+                batchNumber: "TITIP-SR-20260928-01",
+                vendor: "Sari Roti",
+                branch: "Kelanis Kantor",
+                startDate: "2026-09-28",
+                settlementDate: "2026-09-28",
+                status: "settled",
+                commissionRate: 10,
+                vendorShareRate: 90,
+                title: "Laporan Barang Titipan Kelanis Kantor Periode September 2026",
+                notes: "Rekapitulasi penjualan konsinyasi harian Kelanis Kantor",
+                createdAt: "2026-09-28T07:30:00.000Z",
+                settledAt: "2026-09-28T17:00:00.000Z",
+                items: [
+                    { no: 1, name: "Tawar Spesial", unit: "Pcs", inDate: "2026-09-28", inQty: 3, price: 16500, soldDate: "2026-09-28", soldQty: 3, returnQty: 0 },
+                    { no: 2, name: "Tawar Gandum", unit: "Pcs", inDate: "2026-09-28", inQty: 3, price: 22500, soldDate: "2026-09-28", soldQty: 3, returnQty: 0 },
+                    { no: 3, name: "Sandwich Coklat", unit: "Pcs", inDate: "2026-09-28", inQty: 6, price: 7000, soldDate: "2026-09-28", soldQty: 6, returnQty: 0 },
+                    { no: 4, name: "Sandwich Keju", unit: "Pcs", inDate: "2026-09-28", inQty: 6, price: 6500, soldDate: "2026-09-28", soldQty: 6, returnQty: 0 },
+                    { no: 5, name: "Roti Tawar Kupas", unit: "Pcs", inDate: "2026-09-28", inQty: 3, price: 20500, soldDate: "2026-09-28", soldQty: 3, returnQty: 0 },
+                    { no: 6, name: "Roti Tawar Dos Milky", unit: "Pcs", inDate: "2026-09-28", inQty: 3, price: 23000, soldDate: "2026-09-28", soldQty: 3, returnQty: 0 },
+                    { no: 7, name: "Dorayaki Coklat", unit: "Pcs", inDate: "2026-09-28", inQty: 6, price: 7500, soldDate: "2026-09-28", soldQty: 6, returnQty: 0 },
+                    { no: 8, name: "Roti Kasur Keju", unit: "Pcs", inDate: "2026-09-28", inQty: 2, price: 18000, soldDate: "2026-09-28", soldQty: 2, returnQty: 0 },
+                    { no: 9, name: "Roti Sobek Coklat", unit: "Pcs", inDate: "2026-09-28", inQty: 2, price: 21000, soldDate: "2026-09-28", soldQty: 2, returnQty: 0 },
+                    { no: 10, name: "Roti Sobek Keju", unit: "Pcs", inDate: "2026-09-28", inQty: 2, price: 21000, soldDate: "2026-09-28", soldQty: 2, returnQty: 0 },
+                    { no: 11, name: "Roti Sobek Sarikaya", unit: "Pcs", inDate: "2026-09-28", inQty: 2, price: 20000, soldDate: "2026-09-28", soldQty: 2, returnQty: 0 },
+                    { no: 12, name: "Roti Sobek Strawbery", unit: "Pcs", inDate: "2026-09-28", inQty: 2, price: 21000, soldDate: "2026-09-28", soldQty: 2, returnQty: 0 },
+                    { no: 13, name: "Roti Sobek Bluberi", unit: "Pcs", inDate: "2026-09-28", inQty: 2, price: 21000, soldDate: "2026-09-28", soldQty: 2, returnQty: 0 },
+                    { no: 14, name: "Kasur meses", unit: "Pcs", inDate: "2026-09-28", inQty: 2, price: 14500, soldDate: "2026-09-28", soldQty: 2, returnQty: 0 },
+                    { no: 15, name: "S.Cheese Cake", unit: "Pcs", inDate: "2026-09-28", inQty: 5, price: 12000, soldDate: "2026-09-28", soldQty: 5, returnQty: 0 },
+                    { no: 16, name: "Waffle Ori", unit: "Pcs", inDate: "2026-09-28", inQty: 3, price: 6500, soldDate: "2026-09-28", soldQty: 3, returnQty: 0 },
+                    { no: 17, name: "Lapis Ori", unit: "Pcs", inDate: "2026-09-28", inQty: 5, price: 13000, soldDate: "2026-09-28", soldQty: 5, returnQty: 0 }
+                ]
+            },
+            {
+                id: "csg_kelanis_active",
+                batchNumber: "TITIP-SR-20260929-02",
+                vendor: "Sari Roti",
+                branch: "Kelanis Kantor",
+                startDate: "2026-09-29",
+                settlementDate: "",
+                status: "active",
+                commissionRate: 10,
+                vendorShareRate: 90,
+                title: "Drop Berjalan Hari Ini (Kelanis Kantor)",
+                notes: "Drop pagi, siap rekonsiliasi sore / saat salesman datang",
+                createdAt: "2026-09-29T08:00:00.000Z",
+                settledAt: null,
+                items: [
+                    { no: 1, name: "Tawar Spesial", unit: "Pcs", inDate: "2026-09-29", inQty: 4, price: 16500, soldDate: "2026-09-29", soldQty: 3, returnQty: 1 },
+                    { no: 2, name: "Tawar Gandum", unit: "Pcs", inDate: "2026-09-29", inQty: 3, price: 22500, soldDate: "2026-09-29", soldQty: 2, returnQty: 1 },
+                    { no: 3, name: "Sandwich Coklat", unit: "Pcs", inDate: "2026-09-29", inQty: 8, price: 7000, soldDate: "2026-09-29", soldQty: 8, returnQty: 0 },
+                    { no: 4, name: "Sandwich Keju", unit: "Pcs", inDate: "2026-09-29", inQty: 8, price: 6500, soldDate: "2026-09-29", soldQty: 7, returnQty: 1 },
+                    { no: 5, name: "Roti Tawar Kupas", unit: "Pcs", inDate: "2026-09-29", inQty: 4, price: 20500, soldDate: "2026-09-29", soldQty: 4, returnQty: 0 },
+                    { no: 6, name: "Dorayaki Coklat", unit: "Pcs", inDate: "2026-09-29", inQty: 6, price: 7500, soldDate: "2026-09-29", soldQty: 5, returnQty: 1 },
+                    { no: 7, name: "Roti Sobek Coklat", unit: "Pcs", inDate: "2026-09-29", inQty: 3, price: 21000, soldDate: "2026-09-29", soldQty: 3, returnQty: 0 },
+                    { no: 8, name: "S.Cheese Cake", unit: "Pcs", inDate: "2026-09-29", inQty: 6, price: 12000, soldDate: "2026-09-29", soldQty: 6, returnQty: 0 }
+                ]
+            }
+        ];
+
         
         const State = { 
             currentPage: 'dashboard', 
@@ -338,9 +426,11 @@
                 dashboard: { datePreset: 'today', startDate: '', endDate: '', area: 'all' },
                 reports: { datePreset: 'this_month', startDate: '', endDate: '', area: 'all' },
                 returns: { datePreset: 'this_month', startDate: '', endDate: '', area: 'all' },
-                audits: { datePreset: 'this_month', startDate: '', endDate: '', area: 'all' }
+                audits: { datePreset: 'this_month', startDate: '', endDate: '', area: 'all' },
+                consignment: { datePreset: 'this_month', startDate: '', endDate: '', vendor: 'all', status: 'all', area: 'all' }
             },
-            data: { products: [], sales: [], purchases: [], shifts: [], logs: [], returns: [], audits: [], transfers: [] }, 
+            data: { products: [], sales: [], purchases: [], shifts: [], logs: [], returns: [], audits: [], transfers: [], consignments: [] },
+            selectedConsignmentId: 'csg_kelanis_sep2026', tempConsignmentItems: [], 
             tempBatchItems: [], 
             editPoItems: [],
             editPoId: null,
@@ -532,14 +622,15 @@
                 document.getElementById('loadingState').classList.remove('hidden'); 
                 document.getElementById('content-area').classList.add('hidden');
                 
-                const [pData, sData, poData, shiftData, logData, retData, audData] = await Promise.all([
+                const [pData, sData, poData, shiftData, logData, retData, audData, csgData] = await Promise.all([
                     fetchCollectionSafe("products"),
                     fetchCollectionSafe("sales", window.query(window.collection(window.db, "sales"), window.orderBy("timestamp", "desc"), window.limit(500))),
                     fetchCollectionSafe("purchases"),
                     fetchCollectionSafe("shifts", window.query(window.collection(window.db, "shifts"), window.orderBy("openTime", "desc"), window.limit(100))),
                     fetchCollectionSafe("inventory_logs", window.query(window.collection(window.db, "inventory_logs"), window.orderBy("timestamp", "desc"), window.limit(50))),
                     fetchCollectionSafe("returns", window.query(window.collection(window.db, "returns"), window.limit(100))),
-                    fetchCollectionSafe("audits", window.query(window.collection(window.db, "audits"), window.limit(100)))
+                    fetchCollectionSafe("audits", window.query(window.collection(window.db, "audits"), window.limit(100))),
+                    fetchCollectionSafe("consignments")
                 ]);
                 
                 State.data.products = pData;
@@ -554,6 +645,7 @@
                 
                 State.data.returns = retData.sort((a,b) => new Date(b.timestamp) - new Date(a.timestamp));
                 State.data.audits = audData.sort((a,b) => new Date(b.timestamp) - new Date(a.timestamp));
+                State.data.consignments = (csgData && csgData.length > 0) ? csgData : window.getDefaultConsignmentData();
                 
                 // If database is completely empty, initialize sandbox data for demonstration
                 if (pData.length === 0 && window.DemoEngine) {
@@ -676,6 +768,7 @@
                 case 'retur': title.innerText = 'Manajemen Retur & Barang Rusak'; container.innerHTML = Pages.Retur(); break;
                 case 'audit': title.innerText = 'Stock Opname & Audit'; container.innerHTML = Pages.Audit(); break;
                 case 'evoucher': title.innerText = 'E-Voucher System (Kopkar)'; const today = new Date(); EvoucherState.selectedPeriod = `${today.getMonth() + 1}-${today.getFullYear()}`; EvoucherActions.render(); break;
+                case 'consignment': title.innerText = 'Barang Titipan & Konsinyasi'; container.innerHTML = Pages.Consignment(); break;
                 case 'reports': title.innerText = 'Analisa Profit & Bisnis'; container.innerHTML = Pages.Reports(); setTimeout(Pages.initReportCharts, 100); break;
             }
         }
@@ -1935,6 +2028,375 @@
                 </div>`;
             },
 
+            
+            Consignment: () => {
+                const csgFilter = State.filters.consignment;
+                let consignments = State.data.consignments || [];
+                
+                // Filter by date preset / custom
+                consignments = filterSalesData(consignments, csgFilter);
+
+                // Filter by vendor
+                if (csgFilter.vendor && csgFilter.vendor !== 'all') {
+                    consignments = consignments.filter(c => (c.vendor || '').toLowerCase().includes(csgFilter.vendor.toLowerCase()));
+                }
+
+                // Filter by status
+                if (csgFilter.status && csgFilter.status !== 'all') {
+                    consignments = consignments.filter(c => c.status === csgFilter.status);
+                }
+
+                // Filter by branch / area
+                if (csgFilter.area && csgFilter.area !== 'all') {
+                    consignments = consignments.filter(c => (c.branch || '').toLowerCase().includes(csgFilter.area.toLowerCase()));
+                }
+
+                // Find active selected batch
+                let selectedBatch = consignments.find(c => c.id === State.selectedConsignmentId);
+                if (!selectedBatch && consignments.length > 0) {
+                    selectedBatch = consignments[0];
+                    State.selectedConsignmentId = selectedBatch.id;
+                }
+
+                // Calculate KPI Aggregate
+                let aggOmzet = 0, aggLaba = 0, aggBayar = 0, aggInQty = 0, aggSoldQty = 0, aggRetQty = 0;
+                consignments.forEach(b => {
+                    const rate = (b.commissionRate || 10) / 100;
+                    (b.items || []).forEach(i => {
+                        const inQ = parseInt(i.inQty) || 0;
+                        const soldQ = parseInt(i.soldQty) || 0;
+                        const retQ = parseInt(i.returnQty) || 0;
+                        const pr = parseInt(i.price) || 0;
+                        const subTotal = soldQ * pr;
+
+                        aggInQty += inQ;
+                        aggSoldQty += soldQ;
+                        aggRetQty += retQ;
+                        aggOmzet += subTotal;
+                        aggLaba += (subTotal * rate);
+                        aggBayar += (subTotal * (1 - rate));
+                    });
+                });
+
+                // Calculate Selected Batch Totals
+                let bInQty = 0, bInTotal = 0, bSoldQty = 0, bSoldTotal = 0, bRetQty = 0, bModal = 0, bBayar = 0, bLaba = 0;
+                const bRate = selectedBatch ? ((selectedBatch.commissionRate || 10) / 100) : 0.1;
+
+                if (selectedBatch && selectedBatch.items) {
+                    selectedBatch.items.forEach(i => {
+                        const inQ = parseInt(i.inQty) || 0;
+                        const soldQ = parseInt(i.soldQty) || 0;
+                        const retQ = parseInt(i.returnQty) || 0;
+                        const pr = parseInt(i.price) || 0;
+
+                        const inTot = inQ * pr;
+                        const soldTot = soldQ * pr;
+                        const labaItem = soldTot * bRate;
+                        const bayarItem = soldTot - labaItem;
+
+                        bInQty += inQ;
+                        bInTotal += inTot;
+                        bSoldQty += soldQ;
+                        bSoldTotal += soldTot;
+                        bRetQty += retQ;
+                        bModal += soldTot;
+                        bBayar += bayarItem;
+                        bLaba += labaItem;
+                    });
+                }
+
+                return `
+                <div class="space-y-6">
+                    <!-- FILTER & HEADER BAR -->
+                    <div class="bg-white p-5 rounded-2xl shadow-sm border border-slate-200/80 space-y-4">
+                        <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+                            <div>
+                                <div class="flex items-center gap-2.5">
+                                    <span class="text-2xl">🍞</span>
+                                    <h2 class="text-lg font-bold text-slate-800">Manajemen Konsinyasi & Barang Titipan</h2>
+                                    <span class="bg-amber-100 text-amber-900 border border-amber-200 text-xs font-black px-2.5 py-0.5 rounded-full">Sistem Titip Jual</span>
+                                </div>
+                                <p class="text-xs text-slate-500 mt-1">Kelola drop barang Sari Roti & mitra, rekonsiliasi retur sisa basi, bagi hasil laba koperasi 10%, dan cetak settlement resmi.</p>
+                            </div>
+
+                            <div class="flex flex-wrap items-center gap-2.5 w-full md:w-auto">
+                                <button onclick="Actions.openNewConsignmentModal()" class="bg-gradient-to-r from-amber-500 to-orange-600 hover:from-amber-600 hover:to-orange-700 text-white px-4 py-2.5 rounded-xl text-xs font-extrabold shadow-md shadow-amber-500/20 flex items-center gap-2 transition touch-target">
+                                    <span>➕</span> Terima Drop Titipan Baru
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- FILTER CONTROLS -->
+                        <div class="grid grid-cols-2 sm:grid-cols-4 gap-3 pt-3 border-t border-slate-100 text-xs">
+                            <div>
+                                <label class="font-bold text-slate-500 block mb-1">Periode:</label>
+                                <select onchange="window.setFilter('consignment', 'datePreset', this.value)" class="w-full p-2.5 border border-slate-300 rounded-xl bg-white font-semibold touch-target">
+                                    <option value="this_month" ${csgFilter.datePreset === 'this_month' ? 'selected' : ''}>Bulan Ini</option>
+                                    <option value="today" ${csgFilter.datePreset === 'today' ? 'selected' : ''}>Hari Ini</option>
+                                    <option value="yesterday" ${csgFilter.datePreset === 'yesterday' ? 'selected' : ''}>Kemarin</option>
+                                    <option value="7days" ${csgFilter.datePreset === '7days' ? 'selected' : ''}>7 Hari Terakhir</option>
+                                    <option value="all_time" ${csgFilter.datePreset === 'all_time' ? 'selected' : ''}>Semua Waktu</option>
+                                </select>
+                            </div>
+
+                            <div>
+                                <label class="font-bold text-slate-500 block mb-1">Mitra / Pemilik:</label>
+                                <select onchange="window.setFilter('consignment', 'vendor', this.value)" class="w-full p-2.5 border border-slate-300 rounded-xl bg-white font-semibold touch-target">
+                                    <option value="all" ${csgFilter.vendor === 'all' ? 'selected' : ''}>Semua Vendor</option>
+                                    <option value="Sari Roti" ${csgFilter.vendor === 'Sari Roti' ? 'selected' : ''}>Sari Roti</option>
+                                    <option value="UMKM" ${csgFilter.vendor === 'UMKM' ? 'selected' : ''}>Mitra UMKM Lain</option>
+                                </select>
+                            </div>
+
+                            <div>
+                                <label class="font-bold text-slate-500 block mb-1">Status Settlement:</label>
+                                <select onchange="window.setFilter('consignment', 'status', this.value)" class="w-full p-2.5 border border-slate-300 rounded-xl bg-white font-semibold touch-target">
+                                    <option value="all" ${csgFilter.status === 'all' ? 'selected' : ''}>Semua Status</option>
+                                    <option value="settled" ${csgFilter.status === 'settled' ? 'selected' : ''}>✅ Lunas / Selesai</option>
+                                    <option value="active" ${csgFilter.status === 'active' ? 'selected' : ''}>⏳ Aktif / Berjalan</option>
+                                </select>
+                            </div>
+
+                            <div>
+                                <label class="font-bold text-slate-500 block mb-1">Lokasi Cabang:</label>
+                                <select onchange="window.setFilter('consignment', 'area', this.value)" class="w-full p-2.5 border border-slate-300 rounded-xl bg-white font-semibold touch-target">
+                                    <option value="all" ${csgFilter.area === 'all' ? 'selected' : ''}>Semua Lokasi</option>
+                                    <option value="Kelanis" ${csgFilter.area === 'Kelanis' ? 'selected' : ''}>Kelanis Kantor</option>
+                                    <option value="Utama" ${csgFilter.area === 'Utama' ? 'selected' : ''}>Cabang Utama</option>
+                                    <option value="Express" ${csgFilter.area === 'Express' ? 'selected' : ''}>Cabang Express</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- RINGKASAN FINANSIAL KONSINYASI (4 CARDS) -->
+                    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                        <div class="bg-white p-5 rounded-2xl shadow-sm border border-slate-200/80 border-l-4 border-l-sky-500 flex flex-col justify-between">
+                            <div class="flex justify-between items-center">
+                                <span class="text-xs font-bold text-slate-400 uppercase tracking-wider">Total Penjualan Kotor</span>
+                                <span class="text-xs font-mono font-bold bg-sky-50 text-sky-700 px-2 py-0.5 rounded">Gross Sales</span>
+                            </div>
+                            <div class="text-2xl font-extrabold text-slate-900 mt-2">${formatRp(aggOmzet)}</div>
+                            <div class="text-[11px] text-slate-500 font-medium mt-1">${aggSoldQty} Pcs Laku Terjual di Toko</div>
+                        </div>
+
+                        <div class="bg-white p-5 rounded-2xl shadow-sm border border-slate-200/80 border-l-4 border-l-emerald-500 flex flex-col justify-between bg-gradient-to-br from-emerald-50/60 to-white">
+                            <div class="flex justify-between items-center">
+                                <span class="text-xs font-bold text-emerald-800 uppercase tracking-wider">Laba Koperasi (10%)</span>
+                                <span class="bg-emerald-200 text-emerald-900 text-[10px] font-black px-2 py-0.5 rounded-full">Komisi Hak Toko</span>
+                            </div>
+                            <div class="text-2xl sm:text-3xl font-extrabold text-emerald-950 mt-2">${formatRp(aggLaba)}</div>
+                            <div class="text-[11px] text-emerald-700 font-bold mt-1">Cuan Bersih Tanpa Modal Beli</div>
+                        </div>
+
+                        <div class="bg-white p-5 rounded-2xl shadow-sm border border-slate-200/80 border-l-4 border-l-amber-500 flex flex-col justify-between">
+                            <div class="flex justify-between items-center">
+                                <span class="text-xs font-bold text-amber-800 uppercase tracking-wider">Hutang Vendor (90%)</span>
+                                <span class="bg-amber-100 text-amber-900 text-[10px] font-black px-2 py-0.5 rounded-full">Kewajiban Setor</span>
+                            </div>
+                            <div class="text-2xl font-extrabold text-amber-950 mt-2">${formatRp(aggBayar)}</div>
+                            <div class="text-[11px] text-amber-700 font-medium mt-1">Hak Penagihan Pihak Sari Roti</div>
+                        </div>
+
+                        <div class="bg-white p-5 rounded-2xl shadow-sm border border-slate-200/80 border-l-4 border-l-purple-500 flex flex-col justify-between">
+                            <div class="flex justify-between items-center">
+                                <span class="text-xs font-bold text-purple-800 uppercase tracking-wider">Arus Barang & Retur</span>
+                                <span class="bg-purple-100 text-purple-900 text-[10px] font-black px-2 py-0.5 rounded-full">${consignments.length} Batch</span>
+                            </div>
+                            <div class="text-xl font-extrabold text-purple-950 mt-2">
+                                <span>${aggInQty}</span> <span class="text-xs text-slate-400 font-normal">Masuk</span> • 
+                                <span class="text-rose-600">${aggRetQty}</span> <span class="text-xs text-slate-400 font-normal">Retur</span>
+                            </div>
+                            <div class="text-[11px] text-purple-700 font-semibold mt-1">Retur 100% Ditanggung Vendor</div>
+                        </div>
+                    </div>
+
+                    <!-- BATCH SELECTOR PILLS -->
+                    <div class="bg-white p-4 rounded-2xl shadow-sm border border-slate-200/80 flex items-center justify-between flex-wrap gap-3">
+                        <div class="flex items-center gap-2 overflow-x-auto py-1 max-w-full">
+                            <span class="text-xs font-bold text-slate-500 uppercase shrink-0 mr-1">Pilih Batch Laporan:</span>
+                            ${consignments.map(b => {
+                                const isSel = (selectedBatch && selectedBatch.id === b.id);
+                                const isDone = b.status === 'settled';
+                                return `
+                                <button type="button" onclick="Actions.selectConsignmentBatch('${b.id}')" class="px-3.5 py-2 rounded-xl text-xs font-bold transition shrink-0 flex items-center gap-2 border touch-target ${isSel ? 'bg-slate-900 text-white border-slate-900 shadow-md' : 'bg-slate-50 hover:bg-slate-100 text-slate-700 border-slate-200'}">
+                                    <span>${isDone ? '✅' : '⏳'}</span>
+                                    <span>${b.vendor} (${b.branch})</span>
+                                    <span class="text-[10px] opacity-75 font-mono">${b.startDate}</span>
+                                </button>`;
+                            }).join('')}
+                        </div>
+                    </div>
+
+                    ${!selectedBatch ? `
+                    <div class="bg-white rounded-2xl p-12 text-center text-slate-400 border border-slate-200/80">
+                        <span class="text-4xl">🍞</span>
+                        <h4 class="font-bold text-slate-700 text-base mt-2">Tidak ada data batch konsinyasi</h4>
+                        <p class="text-xs text-slate-400 mt-1">Klik tombol <b>"Terima Drop Titipan Baru"</b> di atas untuk membuat rekapan surat titip baru.</p>
+                    </div>` : `
+                    
+                    <!-- TABEL LAPORAN UTAMA (PERSIS FORMAT EXCEL KELANIS) -->
+                    <div class="bg-white rounded-2xl shadow-sm overflow-hidden border border-slate-200/80 space-y-4">
+                        <!-- HEADER SECTION OF THE REPORT -->
+                        <div class="p-6 border-b border-slate-200/80 bg-gradient-to-r from-slate-50 via-white to-amber-50/40 flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+                            <div>
+                                <div class="flex items-center gap-2">
+                                    <span class="px-2.5 py-0.5 text-[10px] font-black uppercase rounded-full ${selectedBatch.status === 'settled' ? 'bg-emerald-100 text-emerald-800 border border-emerald-300' : 'bg-amber-100 text-amber-800 border border-amber-300'}">
+                                        ${selectedBatch.status === 'settled' ? '✓ SETTLEMENT LUNAS / SELESAI' : '⏳ DROP AKTIF / SEDANG BERJALAN'}
+                                    </span>
+                                    <span class="text-xs text-slate-400 font-mono font-bold">${selectedBatch.batchNumber}</span>
+                                </div>
+                                <h3 class="text-xl font-black text-slate-900 mt-1.5 tracking-tight">${selectedBatch.title || ('Laporan Barang Titipan ' + selectedBatch.branch + ' Periode ' + selectedBatch.startDate)}</h3>
+                                <div class="flex flex-wrap items-center gap-4 text-xs text-slate-500 mt-1">
+                                    <span><b>Pemilik:</b> ${selectedBatch.vendor}</span>
+                                    <span>•</span>
+                                    <span><b>Lokasi:</b> ${selectedBatch.branch}</span>
+                                    <span>•</span>
+                                    <span><b>Tanggal Drop:</b> ${selectedBatch.startDate}</span>
+                                    ${selectedBatch.settlementDate ? `<span>•</span><span><b>Tgl Settlement:</b> ${selectedBatch.settlementDate}</span>` : ''}
+                                    <span>•</span>
+                                    <span><b>Bagi Hasil Laba:</b> <span class="font-bold text-emerald-700">${selectedBatch.commissionRate || 10}%</span></span>
+                                </div>
+                            </div>
+
+                            <!-- ACTION BUTTONS -->
+                            <div class="flex items-center gap-2 flex-wrap">
+                                <button type="button" onclick="Actions.printConsignmentReport('${selectedBatch.id}')" class="px-3.5 py-2.5 bg-slate-900 hover:bg-slate-800 text-white rounded-xl text-xs font-bold shadow-sm transition flex items-center gap-1.5 touch-target" title="Cetak Lembar Laporan / Kwitansi Resmi">
+                                    <span>🖨️</span> Cetak Berita Acara
+                                </button>
+                                <button type="button" onclick="Actions.exportConsignmentToCSV('${selectedBatch.id}')" class="px-3.5 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-bold shadow-sm transition flex items-center gap-1.5 touch-target" title="Download Format Excel">
+                                    <span>📥</span> Export Excel / CSV
+                                </button>
+                                <button type="button" onclick="Actions.openConsignmentSettlementModal('${selectedBatch.id}')" class="px-3.5 py-2.5 bg-amber-500 hover:bg-amber-600 text-white rounded-xl text-xs font-bold shadow-sm transition flex items-center gap-1.5 touch-target" title="Input Retur & Selesaikan Pembayaran">
+                                    <span>🔄</span> ${selectedBatch.status === 'settled' ? 'Edit Settlement' : 'Selesaikan Settlement'}
+                                </button>
+                                <button type="button" onclick="Actions.deleteConsignment('${selectedBatch.id}')" class="p-2.5 bg-rose-50 hover:bg-rose-100 text-rose-600 border border-rose-200 rounded-xl text-xs font-bold transition touch-target" title="Hapus Dokumen Batch Ini">
+                                    🗑️
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- EXCEL-STYLE STRUCTURED TABLE -->
+                        <div class="overflow-x-auto">
+                            <table class="w-full text-xs text-left border-collapse">
+                                <thead>
+                                    <!-- HEADER GROUP 1 -->
+                                    <tr class="bg-slate-200 text-slate-800 font-bold border-y border-slate-300 uppercase tracking-wider text-center">
+                                        <th rowspan="2" class="p-3 border-r border-slate-300 w-10">No</th>
+                                        <th rowspan="2" class="p-3 border-r border-slate-300 w-24">Pemilik</th>
+                                        <th rowspan="2" class="p-3 border-r border-slate-300 min-w-[160px] text-left">Nama Barang</th>
+                                        <th rowspan="2" class="p-3 border-r border-slate-300 w-14">Satuan</th>
+                                        <th colspan="4" class="p-2 border-r border-slate-300 bg-sky-100 text-sky-900 font-black">Barang Masuk</th>
+                                        <th colspan="4" class="p-2 border-r border-slate-300 bg-emerald-100 text-emerald-900 font-black">Barang Terjual</th>
+                                        <th rowspan="2" class="p-3 border-r border-slate-300 bg-rose-50 text-rose-900 w-20">Sisa yang Tidak Terjual</th>
+                                        <th colspan="3" class="p-2 bg-rose-100 text-rose-900 font-black">Laba Koperasi ${selectedBatch.commissionRate || 10} %</th>
+                                    </tr>
+                                    <!-- HEADER GROUP 2 (SUB-COLUMNS) -->
+                                    <tr class="bg-slate-100 text-slate-700 font-bold border-b border-slate-300 text-center">
+                                        <!-- Masuk -->
+                                        <th class="p-2.5 border-r border-slate-200 bg-sky-50/70">Tanggal</th>
+                                        <th class="p-2.5 border-r border-slate-200 bg-sky-50/70 w-14">Jumlah</th>
+                                        <th class="p-2.5 border-r border-slate-200 bg-sky-50/70 text-right w-20">Harga</th>
+                                        <th class="p-2.5 border-r border-slate-300 bg-sky-50/70 text-right w-24">Total</th>
+                                        <!-- Terjual -->
+                                        <th class="p-2.5 border-r border-slate-200 bg-emerald-50/70">Tanggal</th>
+                                        <th class="p-2.5 border-r border-slate-200 bg-emerald-50/70 w-14">Jumlah</th>
+                                        <th class="p-2.5 border-r border-slate-200 bg-emerald-50/70 text-right w-20">Harga</th>
+                                        <th class="p-2.5 border-r border-slate-300 bg-emerald-50/70 text-right w-24">Total</th>
+                                        <!-- Laba Koperasi -->
+                                        <th class="p-2.5 border-r border-slate-200 bg-rose-50 text-right w-24">Modal</th>
+                                        <th class="p-2.5 border-r border-slate-200 bg-rose-50 text-right w-24">Bayar (${100 - (selectedBatch.commissionRate || 10)}%)</th>
+                                        <th class="p-2.5 bg-rose-50 text-right w-24 text-rose-700">Laba (${selectedBatch.commissionRate || 10}%)</th>
+                                    </tr>
+                                </thead>
+                                <tbody class="divide-y divide-slate-200">
+                                    ${(selectedBatch.items || []).map((item, idx) => {
+                                        const inQ = parseInt(item.inQty) || 0;
+                                        const soldQ = parseInt(item.soldQty) || 0;
+                                        const retQ = parseInt(item.returnQty) || 0;
+                                        const pr = parseInt(item.price) || 0;
+
+                                        const inTotal = inQ * pr;
+                                        const soldTotal = soldQ * pr;
+                                        const laba = soldTotal * bRate;
+                                        const bayar = soldTotal - laba;
+
+                                        return `
+                                        <tr class="hover:bg-slate-50 transition ${retQ > 0 ? 'bg-amber-50/20' : ''}">
+                                            <td class="p-2.5 border-r border-slate-200 text-center text-slate-500 font-semibold">${idx + 1}</td>
+                                            <td class="p-2.5 border-r border-slate-200 font-medium text-slate-700">${selectedBatch.vendor}</td>
+                                            <td class="p-2.5 border-r border-slate-200 font-bold text-slate-900">${item.name}</td>
+                                            <td class="p-2.5 border-r border-slate-200 text-center text-slate-600">${item.unit || 'Pcs'}</td>
+                                            
+                                            <!-- Masuk -->
+                                            <td class="p-2.5 border-r border-slate-200 text-center text-slate-500 text-[11px]">${item.inDate || selectedBatch.startDate}</td>
+                                            <td class="p-2.5 border-r border-slate-200 text-center font-bold text-slate-800">${inQ}</td>
+                                            <td class="p-2.5 border-r border-slate-200 text-right font-mono text-slate-600">${(pr).toLocaleString('id-ID')}</td>
+                                            <td class="p-2.5 border-r border-slate-300 text-right font-mono font-bold text-sky-800">${(inTotal).toLocaleString('id-ID')}</td>
+                                            
+                                            <!-- Terjual -->
+                                            <td class="p-2.5 border-r border-slate-200 text-center text-slate-500 text-[11px]">${item.soldDate || selectedBatch.settlementDate || selectedBatch.startDate}</td>
+                                            <td class="p-2.5 border-r border-slate-200 text-center font-extrabold text-emerald-800">${soldQ}</td>
+                                            <td class="p-2.5 border-r border-slate-200 text-right font-mono text-slate-600">${(pr).toLocaleString('id-ID')}</td>
+                                            <td class="p-2.5 border-r border-slate-300 text-right font-mono font-bold text-emerald-900">${(soldTotal).toLocaleString('id-ID')}</td>
+
+                                            <!-- Sisa / Retur -->
+                                            <td class="p-2.5 border-r border-slate-300 text-center font-extrabold ${retQ > 0 ? 'text-rose-600 bg-rose-50' : 'text-slate-400'}">${retQ}</td>
+
+                                            <!-- Laba Koperasi -->
+                                            <td class="p-2.5 border-r border-slate-200 text-right font-mono text-slate-800">${(soldTotal).toLocaleString('id-ID')}</td>
+                                            <td class="p-2.5 border-r border-slate-200 text-right font-mono font-bold text-slate-900 bg-amber-50/40">${(bayar).toLocaleString('id-ID')}</td>
+                                            <td class="p-2.5 text-right font-mono font-black text-rose-700 bg-rose-50/50">${(laba).toLocaleString('id-ID')}</td>
+                                        </tr>`;
+                                    }).join('')}
+                                </tbody>
+                                <!-- FOOTER GRAND TOTAL -->
+                                <tfoot>
+                                    <tr class="bg-slate-300 text-slate-900 font-extrabold border-t-2 border-slate-400 text-xs">
+                                        <td colspan="4" class="p-3 border-r border-slate-300 text-center uppercase tracking-wider">TOTAL KESELURUHAN</td>
+                                        
+                                        <!-- Total Masuk -->
+                                        <td class="p-3 border-r border-slate-200"></td>
+                                        <td class="p-3 border-r border-slate-200 text-center font-black text-slate-900">${bInQty}</td>
+                                        <td class="p-3 border-r border-slate-200"></td>
+                                        <td class="p-3 border-r border-slate-300 text-right font-mono text-sky-950 font-black">${(bInTotal).toLocaleString('id-ID')}</td>
+                                        
+                                        <!-- Total Terjual -->
+                                        <td class="p-3 border-r border-slate-200"></td>
+                                        <td class="p-3 border-r border-slate-200 text-center font-black text-emerald-950">${bSoldQty}</td>
+                                        <td class="p-3 border-r border-slate-200"></td>
+                                        <td class="p-3 border-r border-slate-300 text-right font-mono text-emerald-950 font-black">${(bSoldTotal).toLocaleString('id-ID')}</td>
+
+                                        <!-- Total Sisa -->
+                                        <td class="p-3 border-r border-slate-300 text-center font-black text-rose-700">${bRetQty}</td>
+
+                                        <!-- Total Laba & Pembayaran -->
+                                        <td class="p-3 border-r border-slate-200 text-right font-mono font-black text-slate-900">${(bModal).toLocaleString('id-ID')}</td>
+                                        <td class="p-3 border-r border-slate-200 text-right font-mono font-black text-amber-950 bg-amber-100/60">${(bBayar).toLocaleString('id-ID')}</td>
+                                        <td class="p-3 text-right font-mono font-black text-rose-900 bg-rose-200/60">${(bLaba).toLocaleString('id-ID')}</td>
+                                    </tr>
+                                </tfoot>
+                            </table>
+                        </div>
+
+                        <!-- SUMMARY BOX UNDER TABLE -->
+                        <div class="p-6 bg-slate-50 border-t border-slate-200/80 flex flex-col md:flex-row justify-between items-center gap-4 text-xs">
+                            <div class="space-y-1 text-slate-600">
+                                <div><b>Terbilang Pembayaran Vendor:</b> <i>${formatRp(bBayar)} Rupiah</i></div>
+                                <div><b>Status Laporan:</b> ${selectedBatch.status === 'settled' ? '<span class="text-emerald-700 font-bold">✓ Sudah Direkonsiliasi & Selesai</span>' : '<span class="text-amber-700 font-bold">⏳ Menunggu Tutup Shift / Tukar Faktur</span>'}</div>
+                            </div>
+                            <div class="flex items-center gap-3">
+                                <div class="text-right">
+                                    <div class="text-slate-400 font-bold uppercase text-[10px]">Total Hak Koperasi:</div>
+                                    <div class="text-lg font-black text-emerald-700">${formatRp(bLaba)}</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    `}
+                </div>`;
+            },
+
             Reports: () => {
                 const repFilter = State.filters.reports;
 
@@ -2331,6 +2793,700 @@
 
         const Actions = {
             // FITUR BINTANG: INLINE INSTANT STOCK POPOVER / MODAL
+            
+            // ==========================================
+            // KONSINYASI & BARANG TITIPAN HANDLERS
+            // ==========================================
+            selectConsignmentBatch: (batchId) => {
+                State.selectedConsignmentId = batchId;
+                renderPage();
+            },
+
+            openNewConsignmentModal: () => {
+                const now = new Date();
+                const dateStr = now.toISOString().slice(0,10).replace(/-/g,'');
+                const timeStr = String(now.getHours()).padStart(2,'0') + String(now.getMinutes()).padStart(2,'0');
+                const batchNumber = `TITIP-SR-${dateStr}-${timeStr}`;
+                const todayIso = now.toISOString().split('T')[0];
+
+                State.tempConsignmentItems = JSON.parse(JSON.stringify(window.SARI_ROTI_PRESETS)).map(p => ({
+                    name: p.name,
+                    unit: p.unit,
+                    price: p.price,
+                    inQty: 0
+                }));
+
+                const renderItemInputs = () => {
+                    const tbody = document.getElementById('csg-items-tbody');
+                    if (!tbody) return;
+                    tbody.innerHTML = State.tempConsignmentItems.map((item, idx) => `
+                    <tr class="border-b border-slate-100 hover:bg-slate-50">
+                        <td class="p-2 text-center text-slate-400 font-bold">${idx + 1}</td>
+                        <td class="p-2">
+                            <input type="text" value="${item.name}" onchange="Actions.updateTempConsignmentItem(${idx}, 'name', this.value)" class="w-full p-2 border border-slate-200 rounded-lg text-xs font-bold" required>
+                        </td>
+                        <td class="p-2">
+                            <input type="text" value="${item.unit || 'Pcs'}" onchange="Actions.updateTempConsignmentItem(${idx}, 'unit', this.value)" class="w-16 p-2 border border-slate-200 rounded-lg text-xs text-center" required>
+                        </td>
+                        <td class="p-2">
+                            <input type="number" value="${item.price}" onchange="Actions.updateTempConsignmentItem(${idx}, 'price', parseInt(this.value)||0)" class="w-24 p-2 border border-slate-200 rounded-lg text-xs font-mono text-right" required>
+                        </td>
+                        <td class="p-2">
+                            <input type="number" value="${item.inQty || 0}" min="0" onchange="Actions.updateTempConsignmentItem(${idx}, 'inQty', parseInt(this.value)||0)" class="w-20 p-2 border-2 border-sky-400 rounded-lg text-xs font-bold text-center bg-sky-50/40" required>
+                        </td>
+                        <td class="p-2 text-right font-mono font-bold text-sky-900" id="csg-subtotal-${idx}">
+                            ${((item.inQty || 0) * (item.price || 0)).toLocaleString('id-ID')}
+                        </td>
+                        <td class="p-2 text-center">
+                            <button type="button" onclick="Actions.removeConsignmentItemRow(${idx})" class="p-1 text-rose-500 hover:bg-rose-50 rounded font-bold">✕</button>
+                        </td>
+                    </tr>`).join('');
+                    Actions.recalcNewConsignmentModalTotal();
+                };
+
+                const content = `
+                <div class="p-2 space-y-4 max-h-[85vh] flex flex-col">
+                    <div class="flex justify-between items-center border-b border-slate-100 pb-3">
+                        <div>
+                            <div class="flex items-center gap-2">
+                                <span class="text-xl">🍞</span>
+                                <h3 class="text-lg font-black text-slate-900">Form Penerimaan Drop Barang Titipan (Konsinyasi)</h3>
+                            </div>
+                            <p class="text-xs text-slate-500 mt-0.5">Catat surat jalan / drop masuk baru dari Sari Roti atau mitra titipan lainnya.</p>
+                        </div>
+                        <button onclick="closeModal()" class="text-slate-400 hover:text-slate-700 p-1 rounded-lg touch-target">✕</button>
+                    </div>
+
+                    <form onsubmit="Actions.submitConsignmentDrop(event)" class="space-y-4 flex-1 overflow-y-auto">
+                        <!-- META FIELDS -->
+                        <div class="grid grid-cols-1 sm:grid-cols-4 gap-3 bg-slate-50 p-4 rounded-xl border border-slate-200">
+                            <div>
+                                <label class="text-[11px] font-bold text-slate-500 uppercase block mb-1">No. Bukti Titip</label>
+                                <input type="text" id="csgBatchNumber" value="${batchNumber}" class="w-full p-2.5 border border-slate-300 rounded-lg text-xs font-mono font-bold bg-white" required>
+                            </div>
+                            <div>
+                                <label class="text-[11px] font-bold text-slate-500 uppercase block mb-1">Pemilik / Vendor</label>
+                                <input type="text" id="csgVendor" value="Sari Roti" class="w-full p-2.5 border border-slate-300 rounded-lg text-xs font-bold bg-white" required>
+                            </div>
+                            <div>
+                                <label class="text-[11px] font-bold text-slate-500 uppercase block mb-1">Cabang / Lokasi</label>
+                                <select id="csgBranch" class="w-full p-2.5 border border-slate-300 rounded-lg text-xs font-bold bg-white">
+                                    <option value="Kelanis Kantor">Kelanis Kantor</option>
+                                    <option value="Cabang Utama">Cabang Utama</option>
+                                    <option value="Cabang Express">Cabang Express</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label class="text-[11px] font-bold text-slate-500 uppercase block mb-1">Tanggal Drop Masuk</label>
+                                <input type="date" id="csgStartDate" value="${todayIso}" class="w-full p-2.5 border border-slate-300 rounded-lg text-xs font-bold bg-white" required>
+                            </div>
+                        </div>
+
+                        <!-- COMMISSION RATE & PRESET ACTIONS -->
+                        <div class="flex justify-between items-center flex-wrap gap-2 pt-1">
+                            <div class="flex items-center gap-2">
+                                <span class="text-xs font-bold text-slate-600 uppercase">Margin Laba Koperasi:</span>
+                                <input type="number" id="csgCommissionRate" value="10" min="1" max="100" class="w-16 p-2 border border-slate-300 rounded-lg text-xs font-black text-center" onchange="Actions.recalcNewConsignmentModalTotal()">
+                                <span class="text-xs font-bold text-slate-500">%</span>
+                            </div>
+                            <div class="flex items-center gap-2">
+                                <button type="button" onclick="Actions.loadSariRotiPresetItems()" class="px-3 py-1.5 bg-amber-50 hover:bg-amber-100 text-amber-800 border border-amber-200 rounded-lg text-xs font-bold flex items-center gap-1">
+                                    <span>⚡</span> Reset 17 Varian Sari Roti
+                                </button>
+                                <button type="button" onclick="Actions.addConsignmentItemRow()" class="px-3 py-1.5 bg-sky-50 hover:bg-sky-100 text-sky-700 border border-sky-200 rounded-lg text-xs font-bold flex items-center gap-1">
+                                    <span>➕</span> Tambah Baris Produk
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- ITEMS TABLE -->
+                        <div class="border border-slate-200 rounded-xl overflow-hidden max-h-64 overflow-y-auto">
+                            <table class="w-full text-xs text-left">
+                                <thead class="bg-slate-100 text-slate-600 font-bold sticky top-0 uppercase text-[10px]">
+                                    <tr>
+                                        <th class="p-2 text-center w-8">No</th>
+                                        <th class="p-2">Nama Barang Titipan</th>
+                                        <th class="p-2 text-center w-16">Satuan</th>
+                                        <th class="p-2 text-right w-24">Harga Jual</th>
+                                        <th class="p-2 text-center w-20">Qty Masuk</th>
+                                        <th class="p-2 text-right w-28">Subtotal</th>
+                                        <th class="p-2 text-center w-10">Aksi</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="csg-items-tbody" class="divide-y divide-slate-100"></tbody>
+                            </table>
+                        </div>
+
+                        <!-- LIVE ESTIMATION FOOTER -->
+                        <div class="bg-gradient-to-r from-sky-50 to-emerald-50 p-4 rounded-xl border border-sky-200/80 flex justify-between items-center flex-wrap gap-3">
+                            <div>
+                                <span class="text-xs font-bold text-slate-600 block">Total Qty Drop Masuk: <b id="csg-modal-total-qty" class="text-slate-900 font-mono">0 Pcs</b></span>
+                                <span class="text-[11px] text-emerald-700 font-medium">Estimasi Bagi Hasil Laba Koperasi (10%): <b id="csg-modal-laba-est" class="font-mono">Rp 0</b></span>
+                            </div>
+                            <div class="text-right">
+                                <span class="text-[11px] text-slate-500 font-bold uppercase block">Total Nilai Barang Titipan:</span>
+                                <span id="csg-modal-total-val" class="text-xl font-black text-sky-900 font-mono">Rp 0</span>
+                            </div>
+                        </div>
+
+                        <button type="submit" class="w-full py-3.5 bg-gradient-to-r from-amber-500 to-orange-600 hover:from-amber-600 hover:to-orange-700 text-white font-extrabold rounded-xl shadow-lg transition text-sm touch-target">
+                            💾 Simpan Surat Drop Barang Titipan
+                        </button>
+                    </form>
+                </div>`;
+
+                showModal(content);
+                setTimeout(() => renderItemInputs(), 50);
+            },
+
+            updateTempConsignmentItem: (idx, key, val) => {
+                if (State.tempConsignmentItems[idx]) {
+                    State.tempConsignmentItems[idx][key] = val;
+                    const subEl = document.getElementById(`csg-subtotal-${idx}`);
+                    if (subEl) {
+                        const item = State.tempConsignmentItems[idx];
+                        subEl.innerText = ((item.inQty || 0) * (item.price || 0)).toLocaleString('id-ID');
+                    }
+                    Actions.recalcNewConsignmentModalTotal();
+                }
+            },
+
+            addConsignmentItemRow: () => {
+                State.tempConsignmentItems.push({
+                    name: "Produk Titipan Baru",
+                    unit: "Pcs",
+                    price: 10000,
+                    inQty: 1
+                });
+                const tbody = document.getElementById('csg-items-tbody');
+                if (tbody) {
+                    const idx = State.tempConsignmentItems.length - 1;
+                    const item = State.tempConsignmentItems[idx];
+                    const tr = document.createElement('tr');
+                    tr.className = "border-b border-slate-100 hover:bg-slate-50";
+                    tr.innerHTML = `
+                        <td class="p-2 text-center text-slate-400 font-bold">${idx + 1}</td>
+                        <td class="p-2"><input type="text" value="${item.name}" onchange="Actions.updateTempConsignmentItem(${idx}, 'name', this.value)" class="w-full p-2 border border-slate-200 rounded-lg text-xs font-bold" required></td>
+                        <td class="p-2"><input type="text" value="${item.unit}" onchange="Actions.updateTempConsignmentItem(${idx}, 'unit', this.value)" class="w-16 p-2 border border-slate-200 rounded-lg text-xs text-center" required></td>
+                        <td class="p-2"><input type="number" value="${item.price}" onchange="Actions.updateTempConsignmentItem(${idx}, 'price', parseInt(this.value)||0)" class="w-24 p-2 border border-slate-200 rounded-lg text-xs font-mono text-right" required></td>
+                        <td class="p-2"><input type="number" value="${item.inQty}" min="0" onchange="Actions.updateTempConsignmentItem(${idx}, 'inQty', parseInt(this.value)||0)" class="w-20 p-2 border-2 border-sky-400 rounded-lg text-xs font-bold text-center bg-sky-50/40" required></td>
+                        <td class="p-2 text-right font-mono font-bold text-sky-900" id="csg-subtotal-${idx}">${(item.inQty * item.price).toLocaleString('id-ID')}</td>
+                        <td class="p-2 text-center"><button type="button" onclick="Actions.removeConsignmentItemRow(${idx})" class="p-1 text-rose-500 hover:bg-rose-50 rounded font-bold">✕</button></td>
+                    `;
+                    tbody.appendChild(tr);
+                    Actions.recalcNewConsignmentModalTotal();
+                }
+            },
+
+            removeConsignmentItemRow: (idx) => {
+                State.tempConsignmentItems.splice(idx, 1);
+                Actions.reRenderTempConsignmentRows();
+            },
+
+            loadSariRotiPresetItems: () => {
+                State.tempConsignmentItems = JSON.parse(JSON.stringify(window.SARI_ROTI_PRESETS)).map(p => ({
+                    name: p.name,
+                    unit: p.unit,
+                    price: p.price,
+                    inQty: 0
+                }));
+                Actions.reRenderTempConsignmentRows();
+            },
+
+            reRenderTempConsignmentRows: () => {
+                const tbody = document.getElementById('csg-items-tbody');
+                if (!tbody) return;
+                tbody.innerHTML = State.tempConsignmentItems.map((item, idx) => `
+                <tr class="border-b border-slate-100 hover:bg-slate-50">
+                    <td class="p-2 text-center text-slate-400 font-bold">${idx + 1}</td>
+                    <td class="p-2"><input type="text" value="${item.name}" onchange="Actions.updateTempConsignmentItem(${idx}, 'name', this.value)" class="w-full p-2 border border-slate-200 rounded-lg text-xs font-bold" required></td>
+                    <td class="p-2"><input type="text" value="${item.unit || 'Pcs'}" onchange="Actions.updateTempConsignmentItem(${idx}, 'unit', this.value)" class="w-16 p-2 border border-slate-200 rounded-lg text-xs text-center" required></td>
+                    <td class="p-2"><input type="number" value="${item.price}" onchange="Actions.updateTempConsignmentItem(${idx}, 'price', parseInt(this.value)||0)" class="w-24 p-2 border border-slate-200 rounded-lg text-xs font-mono text-right" required></td>
+                    <td class="p-2"><input type="number" value="${item.inQty || 0}" min="0" onchange="Actions.updateTempConsignmentItem(${idx}, 'inQty', parseInt(this.value)||0)" class="w-20 p-2 border-2 border-sky-400 rounded-lg text-xs font-bold text-center bg-sky-50/40" required></td>
+                    <td class="p-2 text-right font-mono font-bold text-sky-900" id="csg-subtotal-${idx}">${((item.inQty || 0) * (item.price || 0)).toLocaleString('id-ID')}</td>
+                    <td class="p-2 text-center"><button type="button" onclick="Actions.removeConsignmentItemRow(${idx})" class="p-1 text-rose-500 hover:bg-rose-50 rounded font-bold">✕</button></td>
+                </tr>`).join('');
+                Actions.recalcNewConsignmentModalTotal();
+            },
+
+            recalcNewConsignmentModalTotal: () => {
+                let totalQty = 0, totalVal = 0;
+                State.tempConsignmentItems.forEach(i => {
+                    const q = parseInt(i.inQty) || 0;
+                    const p = parseInt(i.price) || 0;
+                    totalQty += q;
+                    totalVal += (q * p);
+                });
+                const rate = parseInt(document.getElementById('csgCommissionRate')?.value) || 10;
+                const estLaba = totalVal * (rate / 100);
+
+                const qEl = document.getElementById('csg-modal-total-qty');
+                const vEl = document.getElementById('csg-modal-total-val');
+                const lEl = document.getElementById('csg-modal-laba-est');
+
+                if (qEl) qEl.innerText = `${totalQty} Pcs`;
+                if (vEl) vEl.innerText = formatRp(totalVal);
+                if (lEl) lEl.innerText = formatRp(estLaba);
+            },
+
+            submitConsignmentDrop: async (e) => {
+                e.preventDefault();
+                const batchNumber = document.getElementById('csgBatchNumber').value.trim();
+                const vendor = document.getElementById('csgVendor').value.trim();
+                const branch = document.getElementById('csgBranch').value;
+                const startDate = document.getElementById('csgStartDate').value;
+                const commissionRate = parseInt(document.getElementById('csgCommissionRate').value) || 10;
+
+                const validItems = State.tempConsignmentItems.filter(i => (parseInt(i.inQty) || 0) > 0).map((i, idx) => ({
+                    no: idx + 1,
+                    name: i.name,
+                    unit: i.unit || 'Pcs',
+                    price: parseInt(i.price) || 0,
+                    inQty: parseInt(i.inQty) || 0,
+                    inDate: startDate,
+                    soldQty: parseInt(i.inQty) || 0, // default terjual = inQty jika belum rekonsiliasi
+                    soldDate: startDate,
+                    returnQty: 0
+                }));
+
+                if (validItems.length === 0) {
+                    return window.showToast("Setidaknya satu produk harus memiliki Qty Masuk > 0!", "warning");
+                }
+
+                const newBatch = {
+                    batchNumber,
+                    vendor,
+                    branch,
+                    startDate,
+                    settlementDate: "",
+                    status: "active",
+                    commissionRate,
+                    vendorShareRate: 100 - commissionRate,
+                    title: `Laporan Barang Titipan ${branch} Periode ${startDate}`,
+                    notes: "Drop baru barang titipan",
+                    createdAt: new Date().toISOString(),
+                    settledAt: null,
+                    items: validItems
+                };
+
+                try {
+                    const docRef = await window.addDoc(window.collection(window.db, "consignments"), newBatch);
+                    newBatch.id = docRef.id || `csg_${Date.now()}`;
+
+                    State.data.consignments.unshift(newBatch);
+                    State.selectedConsignmentId = newBatch.id;
+
+                    closeModal();
+                    window.showToast("✅ Surat Titipan Berhasil Disimpan!", "success");
+                    renderPage();
+                } catch (err) {
+                    window.showToast("Gagal menyimpan titipan: " + err.message, "error");
+                }
+            },
+
+            openConsignmentSettlementModal: (batchId) => {
+                const batch = State.data.consignments.find(c => c.id === batchId);
+                if (!batch) return window.showToast("Data batch tidak ditemukan", "error");
+
+                const todayIso = new Date().toISOString().split('T')[0];
+                const items = JSON.parse(JSON.stringify(batch.items || []));
+
+                const content = `
+                <div class="p-2 space-y-4 max-h-[85vh] flex flex-col">
+                    <div class="flex justify-between items-center border-b border-slate-100 pb-3">
+                        <div>
+                            <h3 class="text-lg font-black text-slate-900">Rekonsiliasi Retur & Settlement (${batch.vendor})</h3>
+                            <p class="text-xs text-slate-500 mt-0.5">Input jumlah sisa/retur barang basi yang ditarik salesman untuk mengunci pembayaran & laba.</p>
+                        </div>
+                        <button onclick="closeModal()" class="text-slate-400 hover:text-slate-700 p-1 rounded-lg touch-target">✕</button>
+                    </div>
+
+                    <form onsubmit="Actions.submitConsignmentSettlement(event, '${batch.id}')" class="space-y-4 flex-1 overflow-y-auto">
+                        <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 bg-slate-50 p-4 rounded-xl border border-slate-200 text-xs">
+                            <div><b>No. Batch:</b> ${batch.batchNumber}</div>
+                            <div><b>Cabang:</b> ${batch.branch}</div>
+                            <div>
+                                <label class="font-bold block mb-1">Tanggal Settlement / Tukar Faktur:</label>
+                                <input type="date" id="settleDateInput" value="${batch.settlementDate || todayIso}" class="p-2 border border-slate-300 rounded-lg font-bold bg-white w-full" required>
+                            </div>
+                        </div>
+
+                        <div class="border border-slate-200 rounded-xl overflow-hidden max-h-64 overflow-y-auto">
+                            <table class="w-full text-xs text-left">
+                                <thead class="bg-slate-100 text-slate-600 font-bold sticky top-0 uppercase text-[10px]">
+                                    <tr>
+                                        <th class="p-2.5">Nama Produk</th>
+                                        <th class="p-2.5 text-center">Harga</th>
+                                        <th class="p-2.5 text-center">Qty Masuk</th>
+                                        <th class="p-2.5 text-center bg-rose-50 text-rose-800">Sisa / Retur</th>
+                                        <th class="p-2.5 text-center bg-emerald-50 text-emerald-800">Qty Terjual</th>
+                                        <th class="p-2.5 text-right">Omset Laku</th>
+                                    </tr>
+                                </thead>
+                                <tbody class="divide-y divide-slate-100" id="settle-tbody">
+                                    ${items.map((i, idx) => `
+                                    <tr class="hover:bg-slate-50">
+                                        <td class="p-2.5 font-bold text-slate-800">${i.name}</td>
+                                        <td class="p-2.5 text-center font-mono">${(i.price||0).toLocaleString('id-ID')}</td>
+                                        <td class="p-2.5 text-center font-bold text-slate-600" id="s-in-${idx}">${i.inQty}</td>
+                                        <td class="p-2.5 text-center bg-rose-50/50">
+                                            <input type="number" id="s-ret-${idx}" value="${i.returnQty || 0}" min="0" max="${i.inQty}" oninput="Actions.updateSettlementCalc(${idx}, ${i.inQty}, ${i.price})" class="w-16 p-1.5 border border-rose-300 rounded-lg text-center font-bold text-rose-700 bg-white" required>
+                                        </td>
+                                        <td class="p-2.5 text-center font-extrabold text-emerald-800 bg-emerald-50/50" id="s-sold-${idx}">${(i.inQty - (i.returnQty||0))}</td>
+                                        <td class="p-2.5 text-right font-mono font-bold text-slate-900" id="s-total-${idx}">${((i.inQty - (i.returnQty||0)) * i.price).toLocaleString('id-ID')}</td>
+                                    </tr>`).join('')}
+                                </tbody>
+                            </table>
+                        </div>
+
+                        <div class="bg-gradient-to-r from-emerald-50 to-amber-50 p-4 rounded-xl border border-emerald-200 flex justify-between items-center flex-wrap gap-4 text-xs">
+                            <div>
+                                <span class="font-bold text-slate-600 block">Kewajiban Bayar Vendor (${batch.vendorShareRate || 90}%): <b id="s-total-bayar" class="font-mono text-amber-900 text-sm">Rp 0</b></span>
+                                <span class="font-bold text-emerald-800 block mt-0.5">Laba Bersih Koperasi (${batch.commissionRate || 10}%): <b id="s-total-laba" class="font-mono text-emerald-950 text-sm">Rp 0</b></span>
+                            </div>
+                            <div class="text-right">
+                                <span class="text-slate-500 font-bold uppercase text-[10px] block">Total Omset Terjual (Gross):</span>
+                                <span id="s-total-gross" class="text-xl font-black text-slate-900 font-mono">Rp 0</span>
+                            </div>
+                        </div>
+
+                        <div class="flex gap-2">
+                            <button type="button" onclick="closeModal()" class="flex-1 py-3 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold rounded-xl text-xs touch-target">Batal</button>
+                            <button type="submit" class="flex-[2] py-3 bg-emerald-600 hover:bg-emerald-700 text-white font-extrabold rounded-xl shadow-md text-xs touch-target">
+                                ✅ Kunci Settlement & Tandai Selesai
+                            </button>
+                        </div>
+                    </form>
+                </div>`;
+
+                showModal(content);
+                setTimeout(() => {
+                    items.forEach((i, idx) => Actions.updateSettlementCalc(idx, i.inQty, i.price));
+                }, 50);
+            },
+
+            updateSettlementCalc: (idx, inQty, price) => {
+                const retEl = document.getElementById(`s-ret-${idx}`);
+                const soldEl = document.getElementById(`s-sold-${idx}`);
+                const totEl = document.getElementById(`s-total-${idx}`);
+                if (!retEl || !soldEl || !totEl) return;
+
+                let retVal = parseInt(retEl.value) || 0;
+                if (retVal > inQty) { retVal = inQty; retEl.value = inQty; }
+                const soldVal = inQty - retVal;
+                soldEl.innerText = soldVal;
+                totEl.innerText = (soldVal * price).toLocaleString('id-ID');
+
+                // Recalc Grand Totals in settlement modal
+                let gross = 0;
+                const rows = document.querySelectorAll('#settle-tbody tr');
+                rows.forEach((r, i) => {
+                    const s = parseInt(document.getElementById(`s-sold-${i}`)?.innerText) || 0;
+                    const p = parseInt(document.getElementById(`s-ret-${i}`)?.getAttribute('oninput')?.match(/,s*(d+))/)?.[1]) || 0;
+                    gross += (s * p);
+                });
+
+                const rate = 0.1; // 10%
+                const laba = gross * rate;
+                const bayar = gross - laba;
+
+                document.getElementById('s-total-gross').innerText = formatRp(gross);
+                document.getElementById('s-total-bayar').innerText = formatRp(bayar);
+                document.getElementById('s-total-laba').innerText = formatRp(laba);
+            },
+
+            submitConsignmentSettlement: async (e, batchId) => {
+                e.preventDefault();
+                const batch = State.data.consignments.find(c => c.id === batchId);
+                if (!batch) return;
+
+                const settleDate = document.getElementById('settleDateInput').value;
+                const updatedItems = (batch.items || []).map((item, idx) => {
+                    const retQty = parseInt(document.getElementById(`s-ret-${idx}`)?.value) || 0;
+                    const soldQty = item.inQty - retQty;
+                    return {
+                        ...item,
+                        returnQty: retQty,
+                        soldQty: soldQty,
+                        soldDate: settleDate
+                    };
+                });
+
+                const updatePayload = {
+                    settlementDate: settleDate,
+                    status: 'settled',
+                    settledAt: new Date().toISOString(),
+                    items: updatedItems
+                };
+
+                try {
+                    const docRef = window.doc(window.db, "consignments", batchId);
+                    await window.updateDoc(docRef, updatePayload);
+
+                    Object.assign(batch, updatePayload);
+                    closeModal();
+                    window.showToast("✅ Settlement Konsinyasi Berhasil Disimpan!", "success");
+                    renderPage();
+                } catch (err) {
+                    window.showToast("Gagal simpan settlement: " + err.message, "error");
+                }
+            },
+
+            deleteConsignment: async (batchId) => {
+                const batch = State.data.consignments.find(c => c.id === batchId);
+                if (!batch) return window.showToast("Data tidak ditemukan", "error");
+
+                const confirmed = await window.promptDestructiveAuth(
+                    "Hapus Laporan Konsinyasi",
+                    `<b>No. Batch:</b> ${batch.batchNumber}<br><b>Mitra:</b> ${batch.vendor}<br><b>Cabang:</b> ${batch.branch}<br><br><span class="text-rose-600 font-semibold">Data akan dihapus permanen dari sistem.</span>`
+                );
+                if (!confirmed) return;
+
+                try {
+                    const docRef = window.doc(window.db, "consignments", batchId);
+                    await window.deleteDoc(docRef);
+
+                    State.data.consignments = State.data.consignments.filter(c => c.id !== batchId);
+                    if (State.selectedConsignmentId === batchId) {
+                        State.selectedConsignmentId = State.data.consignments[0]?.id || null;
+                    }
+                    window.showToast("✅ Laporan Konsinyasi Berhasil Dihapus!", "success");
+                    renderPage();
+                } catch (err) {
+                    window.showToast("Gagal menghapus: " + err.message, "error");
+                }
+            },
+
+            exportConsignmentToCSV: (batchId) => {
+                const batch = State.data.consignments.find(c => c.id === batchId);
+                if (!batch) return window.showToast("Data tidak ditemukan", "error");
+
+                const bRate = (batch.commissionRate || 10) / 100;
+                const rows = [
+                    [`LAPORAN BARANG TITIPAN - ${batch.branch.toUpperCase()}`],
+                    [`Periode: ${batch.startDate} s/d ${batch.settlementDate || batch.startDate}`],
+                    [`Pemilik / Vendor: ${batch.vendor}`],
+                    [`Status: ${batch.status.toUpperCase()}`],
+                    [],
+                    ['No', 'Pemilik', 'Nama Barang', 'Satuan', 'Tgl Masuk', 'Qty Masuk', 'Harga', 'Total Masuk', 'Tgl Terjual', 'Qty Terjual', 'Harga', 'Total Terjual', 'Sisa Tidak Terjual', 'Modal (Gross)', 'Bayar Vendor (90%)', 'Laba Koperasi (10%)']
+                ];
+
+                let tInQ = 0, tInTot = 0, tSoldQ = 0, tSoldTot = 0, tRetQ = 0, tModal = 0, tBayar = 0, tLaba = 0;
+
+                (batch.items || []).forEach((i, idx) => {
+                    const inQ = parseInt(i.inQty) || 0;
+                    const soldQ = parseInt(i.soldQty) || 0;
+                    const retQ = parseInt(i.returnQty) || 0;
+                    const pr = parseInt(i.price) || 0;
+
+                    const inTot = inQ * pr;
+                    const soldTot = soldQ * pr;
+                    const laba = soldTot * bRate;
+                    const bayar = soldTot - laba;
+
+                    tInQ += inQ; tInTot += inTot; tSoldQ += soldQ; tSoldTot += soldTot; tRetQ += retQ; tModal += soldTot; tBayar += bayar; tLaba += laba;
+
+                    rows.push([
+                        idx + 1,
+                        `"${batch.vendor}"`,
+                        `"${i.name}"`,
+                        i.unit || 'Pcs',
+                        i.inDate || batch.startDate,
+                        inQ,
+                        pr,
+                        inTot,
+                        i.soldDate || batch.settlementDate || batch.startDate,
+                        soldQ,
+                        pr,
+                        soldTot,
+                        retQ,
+                        soldTot,
+                        bayar,
+                        laba
+                    ]);
+                });
+
+                rows.push([
+                    'TOTAL', '', '', '', '', tInQ, '', tInTot, '', tSoldQ, '', tSoldTot, tRetQ, tModal, tBayar, tLaba
+                ]);
+
+                downloadCSV(rows, `Laporan_Titipan_${batch.vendor}_${batch.branch}_${batch.startDate}.csv`);
+            },
+
+            printConsignmentReport: (batchId) => {
+                const batch = State.data.consignments.find(c => c.id === batchId);
+                if (!batch) return window.showToast("Data tidak ditemukan", "error");
+
+                const bRate = (batch.commissionRate || 10) / 100;
+                let tInQ = 0, tInTot = 0, tSoldQ = 0, tSoldTot = 0, tRetQ = 0, tModal = 0, tBayar = 0, tLaba = 0;
+
+                const tbody = (batch.items || []).map((i, idx) => {
+                    const inQ = parseInt(i.inQty) || 0;
+                    const soldQ = parseInt(i.soldQty) || 0;
+                    const retQ = parseInt(i.returnQty) || 0;
+                    const pr = parseInt(i.price) || 0;
+
+                    const inTot = inQ * pr;
+                    const soldTot = soldQ * pr;
+                    const laba = soldTot * bRate;
+                    const bayar = soldTot - laba;
+
+                    tInQ += inQ; tInTot += inTot; tSoldQ += soldQ; tSoldTot += soldTot; tRetQ += retQ; tModal += soldTot; tBayar += bayar; tLaba += laba;
+
+                    return `
+                    <tr>
+                        <td style="border:1px solid #000;padding:5px;text-align:center;">${idx + 1}</td>
+                        <td style="border:1px solid #000;padding:5px;text-align:center;">${batch.vendor}</td>
+                        <td style="border:1px solid #000;padding:5px;font-weight:bold;">${i.name}</td>
+                        <td style="border:1px solid #000;padding:5px;text-align:center;">${i.unit || 'Pcs'}</td>
+                        
+                        <td style="border:1px solid #000;padding:5px;text-align:center;">${i.inDate || batch.startDate}</td>
+                        <td style="border:1px solid #000;padding:5px;text-align:center;">${inQ}</td>
+                        <td style="border:1px solid #000;padding:5px;text-align:right;">${(pr).toLocaleString('id-ID')}</td>
+                        <td style="border:1px solid #000;padding:5px;text-align:right;">${(inTot).toLocaleString('id-ID')}</td>
+
+                        <td style="border:1px solid #000;padding:5px;text-align:center;">${i.soldDate || batch.settlementDate || batch.startDate}</td>
+                        <td style="border:1px solid #000;padding:5px;text-align:center;font-weight:bold;">${soldQ}</td>
+                        <td style="border:1px solid #000;padding:5px;text-align:right;">${(pr).toLocaleString('id-ID')}</td>
+                        <td style="border:1px solid #000;padding:5px;text-align:right;font-weight:bold;">${(soldTot).toLocaleString('id-ID')}</td>
+
+                        <td style="border:1px solid #000;padding:5px;text-align:center;font-weight:bold;">${retQ}</td>
+
+                        <td style="border:1px solid #000;padding:5px;text-align:right;">${(soldTot).toLocaleString('id-ID')}</td>
+                        <td style="border:1px solid #000;padding:5px;text-align:right;font-weight:bold;">${(bayar).toLocaleString('id-ID')}</td>
+                        <td style="border:1px solid #000;padding:5px;text-align:right;font-weight:bold;color:#b91c1c;">${(laba).toLocaleString('id-ID')}</td>
+                    </tr>`;
+                }).join('');
+
+                const printWin = window.open('', '_blank');
+                printWin.document.write(`
+                <!DOCTYPE html>
+                <html><head>
+                    <title>${batch.title || 'Laporan Barang Titipan'}</title>
+                    <style>
+                        body { font-family: 'Arial', sans-serif; padding: 20px; color: #000; font-size: 11px; }
+                        .header { display: flex; align-items: center; border-bottom: 3px double #000; padding-bottom: 10px; margin-bottom: 15px; }
+                        .logo { width: 80px; height: auto; margin-right: 15px; }
+                        .kop { text-align: center; flex: 1; }
+                        .kop h1 { margin: 0 0 3px 0; font-size: 16px; font-weight: bold; text-transform: uppercase; }
+                        .kop p { margin: 1px 0; font-size: 10px; }
+                        .title { text-align: center; font-size: 14px; font-weight: bold; text-decoration: underline; margin-bottom: 12px; text-transform: uppercase; }
+                        .meta { display: flex; justify-content: space-between; margin-bottom: 10px; font-size: 11px; }
+                        .meta table td { padding: 2px 5px; }
+                        .content-table { width: 100%; border-collapse: collapse; font-size: 10px; }
+                        .content-table th { border: 1px solid #000; padding: 6px 4px; background: #e5e7eb; font-weight: bold; text-align: center; }
+                        .content-table td { border: 1px solid #000; }
+                        .footer-row td { background: #d1d5db; font-weight: bold; }
+                        .summary-box { border: 1px solid #000; padding: 8px 12px; margin-top: 15px; font-size: 11px; display: flex; justify-content: space-between; }
+                        .sign-section { display: flex; justify-content: space-between; margin-top: 30px; padding: 0 40px; }
+                        .sign-box { text-align: center; width: 220px; font-size: 11px; }
+                        .sign-space { height: 70px; }
+                        @media print { body { padding: 0; } }
+                    </style>
+                </head>
+                <body onload="setTimeout(()=>{window.print();window.close();},500)">
+                    <div class="header">
+                        <img src="https://i.ibb.co.com/WvTwLMn5/image-1.png" class="logo" alt="Logo Kopkar">
+                        <div class="kop">
+                            <h1>Koperasi Karyawan & Retail Mandiri (Adamart)</h1>
+                            <p>Badan Hukum Nomor : 2128/BH/IX/1995 • Unit Usaha Minimarket & Distribusi Retail</p>
+                            <p>Sentra Niaga Retail Terpadu - Gedung Manajemen Operasional</p>
+                        </div>
+                    </div>
+
+                    <div class="title">${batch.title || 'Laporan Barang Titipan Kelanis Kantor'}</div>
+
+                    <div class="meta">
+                        <div>
+                            <table>
+                                <tr><td><b>No. Dokumen</b></td><td>:</td><td>${batch.batchNumber}</td></tr>
+                                <tr><td><b>Mitra / Pemilik</b></td><td>:</td><td>${batch.vendor}</td></tr>
+                                <tr><td><b>Cabang / Lokasi</b></td><td>:</td><td>${batch.branch}</td></tr>
+                            </table>
+                        </div>
+                        <div>
+                            <table>
+                                <tr><td><b>Periode Drop</b></td><td>:</td><td>${batch.startDate}</td></tr>
+                                <tr><td><b>Settlement</b></td><td>:</td><td>${batch.settlementDate || batch.startDate}</td></tr>
+                                <tr><td><b>Bagi Hasil Laba</b></td><td>:</td><td><b>${batch.commissionRate || 10}% Koperasi</b></td></tr>
+                            </table>
+                        </div>
+                    </div>
+
+                    <table class="content-table">
+                        <thead>
+                            <tr>
+                                <th rowspan="2" style="width:25px;">No</th>
+                                <th rowspan="2">Pemilik</th>
+                                <th rowspan="2">Nama Barang</th>
+                                <th rowspan="2">Satuan</th>
+                                <th colspan="4" style="background:#e0f2fe;">Barang Masuk</th>
+                                <th colspan="4" style="background:#dcfce7;">Barang Terjual</th>
+                                <th rowspan="2">Sisa yang Tidak Terjual</th>
+                                <th colspan="3" style="background:#fee2e2;">Laba Koperasi ${batch.commissionRate || 10} %</th>
+                            </tr>
+                            <tr>
+                                <th style="background:#f0f9ff;">Tanggal</th>
+                                <th style="background:#f0f9ff;">Jumlah</th>
+                                <th style="background:#f0f9ff;">Harga</th>
+                                <th style="background:#f0f9ff;">Total</th>
+                                <th style="background:#f0fdf4;">Tanggal</th>
+                                <th style="background:#f0fdf4;">Jumlah</th>
+                                <th style="background:#f0fdf4;">Harga</th>
+                                <th style="background:#f0fdf4;">Total</th>
+                                <th style="background:#fef2f2;">Modal</th>
+                                <th style="background:#fef2f2;">Bayar</th>
+                                <th style="background:#fef2f2;color:#991b1b;">Laba</th>
+                            </tr>
+                        </thead>
+                        <tbody>${tbody}</tbody>
+                        <tfoot>
+                            <tr class="footer-row">
+                                <td colspan="4" style="text-align:center;padding:6px;">TOTAL KESELURUHAN</td>
+                                <td></td>
+                                <td style="text-align:center;">${tInQ}</td>
+                                <td></td>
+                                <td style="text-align:right;">${(tInTot).toLocaleString('id-ID')}</td>
+                                <td></td>
+                                <td style="text-align:center;">${tSoldQ}</td>
+                                <td></td>
+                                <td style="text-align:right;">${(tSoldTot).toLocaleString('id-ID')}</td>
+                                <td style="text-align:center;">${tRetQ}</td>
+                                <td style="text-align:right;">${(tModal).toLocaleString('id-ID')}</td>
+                                <td style="text-align:right;">${(tBayar).toLocaleString('id-ID')}</td>
+                                <td style="text-align:right;color:#991b1b;">${(tLaba).toLocaleString('id-ID')}</td>
+                            </tr>
+                        </tfoot>
+                    </table>
+
+                    <div class="summary-box">
+                        <div>
+                            <b>Rekapitulasi Finansial:</b><br>
+                            • Total Penjualan Kotor (Gross): <b>${formatRp(tModal)}</b><br>
+                            • Kewajiban Bayar Vendor (${batch.vendorShareRate || 90}%): <b>${formatRp(tBayar)}</b>
+                        </div>
+                        <div style="text-align:right;">
+                            <span style="font-size:10px;text-transform:uppercase;">Hak Laba Bersih Koperasi (${batch.commissionRate || 10}%):</span><br>
+                            <b style="font-size:15px;color:#166534;">${formatRp(tLaba)}</b>
+                        </div>
+                    </div>
+
+                    <div class="sign-section">
+                        <div class="sign-box">
+                            <p>Diserahkan Oleh / Salesman,</p>
+                            <div class="sign-space"></div>
+                            <p><b>( ${batch.vendor} )</b></p>
+                        </div>
+                        <div class="sign-box">
+                            <p>Diverifikasi & Diterima Oleh,</p>
+                            <div class="sign-space"></div>
+                            <p><b>( Pengelola Adamart Kopkar AKM )</b></p>
+                        </div>
+                    </div>
+                </body></html>`);
+                printWin.document.close();
+            },
+
             openQuickStockModal: (barcode, productName, area, currentStock) => {
                 const areaLabel = area.replace('adamart ', '').toUpperCase();
                 const content = `
