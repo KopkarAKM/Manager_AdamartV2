@@ -309,16 +309,16 @@
         const EVOUCHER_API_URL = "https://script.google.com/macros/s/AKfycbyQFkZW0QuBXi082jgXTsVBIy1OfVfhaQYVogvr7uBJBrCuGtkM73tTGqA1dl9ThlfL/exec";
 
                 const BRANCH_CONFIG = [
-            { id: 'cabang utama', name: 'Cabang Utama', code: 'PO-UTM', active: true },
-            { id: 'cabang express', name: 'Cabang Express', code: 'PO-EXP', active: true },
-            { id: 'cabang mitra', name: 'Cabang Mitra', code: 'PO-MTR', active: false }
+            { id: 'adamart 73', name: 'Adamart 73', code: 'PO-73', active: true },
+            { id: 'adamart kelanis', name: 'Adamart Kelanis', code: 'PO-KEL', active: true },
+            { id: 'adamart induksi', name: 'Adamart Induksi', code: 'PO-IND', active: false }
         ];
 
         window.getProductStock = (p) => {
             if (!p) return { utama: 0, express: 0, mitra: 0, total: 0 };
-            const utama = parseInt(p['Stok Area Kasir cabang utama'] ?? 0 ?? 0) || 0;
-            const express = parseInt(p['Stok Area Kasir cabang express'] ?? 0 ?? 0) || 0;
-            const mitra = parseInt(p['Stok Area Kasir cabang mitra'] ?? 0 ?? 0) || 0;
+            const utama = parseInt(p['Stok Area Kasir adamart 73'] ?? p['Stok Area Kasir cabang utama'] ?? p['Stok Area Kasir 73'] ?? 0) || 0;
+            const express = parseInt(p['Stok Area Kasir adamart kelanis'] ?? p['Stok Area Kasir cabang express'] ?? p['Stok Area Kasir kelanis'] ?? 0) || 0;
+            const mitra = parseInt(p['Stok Area Kasir adamart induksi'] ?? p['Stok Area Kasir cabang mitra'] ?? p['Stok Area Kasir induksi'] ?? 0) || 0;
             return {
                 utama,
                 express,
@@ -807,8 +807,7 @@
                 const renderExpiry = (items) => items.length === 0 ? '<div class="text-slate-400 italic text-sm p-4 text-center">Tidak ada barang mendekati expired</div>' : items.map(p => {
                         const expDate = new Date(p.ExpiryDate || p['Tanggal Kadaluarsa']);
                         const diffTime = Math.abs(expDate - today);
-                        const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24)); 
-                        return `<div class="flex justify-between items-center border-b border-slate-100 py-3 last:border-0"><div><div class="font-bold text-sm text-slate-800">${p['Nama Produk']}</div><div class="text-xs text-slate-400 font-medium">Exp: ${expDate.toLocaleDateString('id-ID')}</div></div><span class="bg-amber-100 text-amber-800 text-xs font-bold px-3 py-1 rounded-full border border-amber-200">${diffDays} Hari Lagi</span></div>`;
+                           return `<div class="flex justify-between items-center border-b border-slate-100 py-3 last:border-0"><div><div class="font-bold text-sm text-slate-800">${p['Nama Produk']}</div><div class="text-xs text-slate-400 font-medium">Exp: ${expDate.toLocaleDateString('id-ID')}</div></div><span class="bg-amber-100 text-amber-800 text-xs font-bold px-3 py-1 rounded-full border border-amber-200">${diffDays} Hari Lagi</span></div>`;
                     }).join('');
 
                 const pm = calculatePaymentBreakdown(filteredSales);
@@ -816,32 +815,34 @@
                 const totalRev = filteredSales.reduce((s, i) => s + (i.total || 0), 0);
                 const revUtama = filteredSales.filter(s => {
                     const a = (s.area||'').toLowerCase();
-                    return a.includes('utama') ;
+                    return a.includes('utama') || a.includes('73');
                 }).reduce((s, i) => s + (i.total || 0), 0);
 
                 const revExpress = filteredSales.filter(s => {
                     const a = (s.area||'').toLowerCase();
-                    return a.includes('express') ;
+                    return a.includes('express') || a.includes('kelanis');
                 }).reduce((s, i) => s + (i.total || 0), 0);
 
                 const revMitra = filteredSales.filter(s => {
                     const a = (s.area||'').toLowerCase();
-                    return a.includes('mitra') ;
+                    return a.includes('mitra') || a.includes('induksi');
                 }).reduce((s, i) => s + (i.total || 0), 0);
 
                 const trxTotal = filteredSales.length;
                 const trxUtama = filteredSales.filter(s => {
                     const a = (s.area||'').toLowerCase();
-                    return a.includes('utama') ;
+                    return a.includes('utama') || a.includes('73');
                 }).length;
 
                 const trxExpress = filteredSales.filter(s => {
                     const a = (s.area||'').toLowerCase();
-                    return a.includes('express') ;
+                    return a.includes('express') || a.includes('kelanis');
                 }).length;
 
                 const trxMitra = filteredSales.filter(s => {
                     const a = (s.area||'').toLowerCase();
+                    return a.includes('mitra') || a.includes('induksi');
+                }).length;erCase();
                     return a.includes('mitra') ;
                 }).length;
 
@@ -873,9 +874,9 @@
                                 <span class="text-xs font-bold text-slate-500 uppercase">Area:</span>
                                 <select onchange="window.setFilter('dashboard', 'area', this.value)" class="p-2.5 border-2 border-slate-200 rounded-xl text-xs bg-slate-50 text-slate-800 font-bold focus:outline-none focus:border-sky-400 cursor-pointer touch-target flex-1 sm:flex-none">
                                     <option value="all" ${dashFilter.area === 'all' ? 'selected' : ''}>Semua Area Cabang</option>
-                                    <option value="cabang utama">Cabang Utama</option>
-                                    <option value="cabang express">Cabang Express</option>
-                                    <option value="cabang mitra">Cabang Mitra</option>
+                                    <option value="adamart 73">Adamart 73</option>
+                                    <option value="adamart kelanis">Adamart Kelanis</option>
+                                    <option value="adamart induksi">Adamart Induksi</option>
                                 </select>
                             </div>
                         </div>
@@ -1131,9 +1132,9 @@
                                     <tr>
                                         <th class="p-4">Produk</th>
                                         <th class="p-4 text-center">Tanggal Expired</th>
-                                        <th class="p-4 text-center">Cabang Utama</th>
-                                        <th class="p-4 text-center">Cabang Express</th>
-                                        <th class="p-4 text-center">Cabang Mitra</th>
+                                        <th class="p-4 text-center">Adamart 73</th>
+                                        <th class="p-4 text-center">Adamart Kelanis</th>
+                                        <th class="p-4 text-center">Adamart Induksi</th>
                                         <th class="p-4 text-center">Total Stok</th>
                                         <th class="p-4 text-center">Saran Strategi</th>
                                     </tr>
@@ -1304,9 +1305,9 @@
                             <!-- Filter Cabang -->
                             <select onchange="State.poAreaFilter = this.value; renderPage();" class="p-2.5 border border-slate-300 rounded-xl text-xs bg-slate-50 font-bold focus:outline-none focus:border-sky-400 cursor-pointer touch-target">
                                 <option value="all" ${poAreaFilter === 'all' ? 'selected' : ''}>🏢 Semua Cabang</option>
-                                <option value="cabang utama">Cabang Utama</option>
-                                    <option value="cabang express">Cabang Express</option>
-                                    <option value="cabang mitra">Cabang Mitra</option>
+                                <option value="adamart 73">Adamart 73</option>
+                                    <option value="adamart kelanis">Adamart Kelanis</option>
+                                    <option value="adamart induksi">Adamart Induksi</option>
                             </select>
 
                             <!-- Filter Status -->
@@ -1454,9 +1455,9 @@
 
                             <select onchange="State.poAreaFilter = this.value; renderPage();" class="p-2.5 border border-slate-300 rounded-xl text-xs bg-slate-50 font-bold focus:outline-none focus:border-sky-400 cursor-pointer touch-target">
                                 <option value="all" ${poAreaFilter === 'all' ? 'selected' : ''}>🏢 Semua Cabang</option>
-                                <option value="cabang utama">Cabang Utama</option>
-                                    <option value="cabang express">Cabang Express</option>
-                                    <option value="cabang mitra">Cabang Mitra</option>
+                                <option value="adamart 73">Adamart 73</option>
+                                    <option value="adamart kelanis">Adamart Kelanis</option>
+                                    <option value="adamart induksi">Adamart Induksi</option>
                             </select>
 
                             <select onchange="State.poSort = this.value; renderPage();" class="p-2.5 border border-sky-300 bg-sky-50 text-sky-900 rounded-xl text-xs font-bold focus:outline-none focus:border-sky-500 cursor-pointer touch-target">
@@ -1619,9 +1620,9 @@
                                 <tr>
                                     <th class="p-4">Produk & ABC</th>
                                     <th class="p-4">HPP vs Jual</th>
-                                    <th class="p-4 text-center">Stok Utama</th>
-                                    <th class="p-4 text-center">Stok Express</th>
-                                    <th class="p-4 text-center">Stok Mitra</th>
+                                    <th class="p-4 text-center">Stok Adamart 73</th>
+                                    <th class="p-4 text-center">Stok Kelanis</th>
+                                    <th class="p-4 text-center">Stok Induksi</th>
                                     <th class="p-4 text-center">Aksi</th>
                                 </tr>
                             </thead>
@@ -1658,19 +1659,19 @@
                                         
                                         <!-- TAP STOK CELL FOR INLINE INSTANT POPOVER -->
                                         <td class="p-4 text-center">
-                                            <button type="button" onclick="Actions.openQuickStockModal('${p.Barcode}', '${cleanName}', 'Cabang Utama', ${s73})" class="px-3 py-1.5 rounded-xl border border-slate-200 bg-white hover:bg-sky-50 hover:border-sky-300 font-bold ${checkStock(s73)} transition flex items-center justify-center gap-1.5 mx-auto touch-target shadow-2xs group" title="Tap untuk Quick Update Stok Cabang Utama">
+                                            <button type="button" onclick="Actions.openQuickStockModal('${p.Barcode}', '${cleanName}', 'Adamart 73', ${s73})" class="px-3 py-1.5 rounded-xl border border-slate-200 bg-white hover:bg-sky-50 hover:border-sky-300 font-bold ${checkStock(s73)} transition flex items-center justify-center gap-1.5 mx-auto touch-target shadow-2xs group" title="Tap untuk Quick Update Stok Adamart 73">
                                                 <span>${s73}</span>
                                                 <span class="text-[11px] text-slate-300 group-hover:text-sky-600 font-normal">✏️</span>
                                             </button>
                                         </td>
                                         <td class="p-4 text-center">
-                                            <button type="button" onclick="Actions.openQuickStockModal('${p.Barcode}', '${cleanName}', 'Cabang Mitra', ${sInd})" class="px-3 py-1.5 rounded-xl border border-slate-200 bg-white hover:bg-sky-50 hover:border-sky-300 font-bold ${checkStock(sInd)} transition flex items-center justify-center gap-1.5 mx-auto touch-target shadow-2xs group" title="Tap untuk Quick Update Stok Cabang Mitra">
+                                            <button type="button" onclick="Actions.openQuickStockModal('${p.Barcode}', '${cleanName}', 'Adamart Induksi', ${sInd})" class="px-3 py-1.5 rounded-xl border border-slate-200 bg-white hover:bg-sky-50 hover:border-sky-300 font-bold ${checkStock(sInd)} transition flex items-center justify-center gap-1.5 mx-auto touch-target shadow-2xs group" title="Tap untuk Quick Update Stok Adamart Induksi">
                                                 <span>${sInd}</span>
                                                 <span class="text-[11px] text-slate-300 group-hover:text-sky-600 font-normal">✏️</span>
                                             </button>
                                         </td>
                                         <td class="p-4 text-center">
-                                            <button type="button" onclick="Actions.openQuickStockModal('${p.Barcode}', '${cleanName}', 'Cabang Express', ${sKel})" class="px-3 py-1.5 rounded-xl border border-slate-200 bg-white hover:bg-sky-50 hover:border-sky-300 font-bold ${checkStock(sKel)} transition flex items-center justify-center gap-1.5 mx-auto touch-target shadow-2xs group" title="Tap untuk Quick Update Stok Cabang Express">
+                                            <button type="button" onclick="Actions.openQuickStockModal('${p.Barcode}', '${cleanName}', 'Adamart Kelanis', ${sKel})" class="px-3 py-1.5 rounded-xl border border-slate-200 bg-white hover:bg-sky-50 hover:border-sky-300 font-bold ${checkStock(sKel)} transition flex items-center justify-center gap-1.5 mx-auto touch-target shadow-2xs group" title="Tap untuk Quick Update Stok Adamart Kelanis">
                                                 <span>${sKel}</span>
                                                 <span class="text-[11px] text-slate-300 group-hover:text-sky-600 font-normal">✏️</span>
                                             </button>
@@ -1822,9 +1823,9 @@
                                     <span class="text-xs font-bold text-slate-500 uppercase">Area:</span>
                                     <select onchange="window.setFilter('returns', 'area', this.value)" class="p-2.5 border-2 border-slate-200 rounded-xl text-xs bg-slate-50 text-slate-800 font-bold focus:outline-none focus:border-orange-400 cursor-pointer touch-target flex-1 sm:flex-none">
                                         <option value="all" ${retFilter.area === 'all' ? 'selected' : ''}>Semua Area Cabang</option>
-                                        <option value="cabang utama">Cabang Utama</option>
-                                    <option value="cabang express">Cabang Express</option>
-                                    <option value="cabang mitra">Cabang Mitra</option>
+                                        <option value="adamart 73">Adamart 73</option>
+                                    <option value="adamart kelanis">Adamart Kelanis</option>
+                                    <option value="adamart induksi">Adamart Induksi</option>
                                     </select>
                                 </div>
                             </div>
@@ -1951,9 +1952,9 @@
                                     <span class="text-xs font-bold text-slate-500 uppercase">Area:</span>
                                     <select onchange="window.setFilter('audits', 'area', this.value)" class="p-2.5 border-2 border-slate-200 rounded-xl text-xs bg-slate-50 text-slate-800 font-bold focus:outline-none focus:border-indigo-400 cursor-pointer touch-target flex-1 sm:flex-none">
                                         <option value="all" ${audFilter.area === 'all' ? 'selected' : ''}>Semua Area Cabang</option>
-                                        <option value="cabang utama">Cabang Utama</option>
-                                    <option value="cabang express">Cabang Express</option>
-                                    <option value="cabang mitra">Cabang Mitra</option>
+                                        <option value="adamart 73">Adamart 73</option>
+                                    <option value="adamart kelanis">Adamart Kelanis</option>
+                                    <option value="adamart induksi">Adamart Induksi</option>
                                     </select>
                                 </div>
                             </div>
@@ -2160,10 +2161,10 @@
                             <div>
                                 <label class="font-bold text-slate-500 block mb-1">Lokasi Cabang:</label>
                                 <select onchange="window.setFilter('consignment', 'area', this.value)" class="w-full p-2.5 border border-slate-300 rounded-xl bg-white font-semibold touch-target">
-                                    <option value="all" ${csgFilter.area === 'all' ? 'selected' : ''}>Semua Lokasi</option>
-                                    <option value="Kelanis" ${csgFilter.area === 'Kelanis' ? 'selected' : ''}>Kelanis Kantor</option>
-                                    <option value="Utama" ${csgFilter.area === 'Utama' ? 'selected' : ''}>Cabang Utama</option>
-                                    <option value="Express" ${csgFilter.area === 'Express' ? 'selected' : ''}>Cabang Express</option>
+                                    <option value="all" ${csgFilter.area === 'all' ? 'selected' : ''}>Semua Cabang</option>
+                                    <option value="Kelanis" ${csgFilter.area === 'Kelanis' ? 'selected' : ''}>Adamart Kelanis</option>
+                                    <option value="73" ${csgFilter.area === '73' ? 'selected' : ''}>Adamart 73 (Utama)</option>
+                                    <option value="Express" ${csgFilter.area === 'Express' ? 'selected' : ''}>Adamart Express</option>
                                 </select>
                             </div>
                         </div>
@@ -2429,9 +2430,9 @@
                                     <span class="text-xs font-bold text-slate-500 uppercase">Area:</span>
                                     <select id="reportArea" onchange="window.setFilter('reports', 'area', this.value)" class="p-2.5 border-2 border-slate-200 rounded-xl text-xs bg-slate-50 text-slate-800 font-bold focus:outline-none focus:border-emerald-400 cursor-pointer touch-target flex-1 sm:flex-none">
                                         <option value="all" ${repFilter.area === 'all' ? 'selected' : ''}>Semua Area Cabang</option>
-                                        <option value="cabang utama">Cabang Utama</option>
-                                    <option value="cabang express">Cabang Express</option>
-                                    <option value="cabang mitra">Cabang Mitra</option>
+                                        <option value="adamart 73">Adamart 73</option>
+                                    <option value="adamart kelanis">Adamart Kelanis</option>
+                                    <option value="adamart induksi">Adamart Induksi</option>
                                     </select>
                                 </div>
                             </div>
@@ -2871,9 +2872,9 @@
                             <div>
                                 <label class="text-[11px] font-bold text-slate-500 uppercase block mb-1">Cabang / Lokasi</label>
                                 <select id="csgBranch" class="w-full p-2.5 border border-slate-300 rounded-lg text-xs font-bold bg-white">
-                                    <option value="Kelanis Kantor">Kelanis Kantor</option>
-                                    <option value="Cabang Utama">Cabang Utama</option>
-                                    <option value="Cabang Express">Cabang Express</option>
+                                    <option value="Adamart Kelanis">Adamart Kelanis (Kelanis Kantor)</option>
+                                    <option value="Adamart 73">Adamart 73 (Cabang Utama)</option>
+                                    <option value="Adamart Express">Adamart Express</option>
                                 </select>
                             </div>
                             <div>
