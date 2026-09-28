@@ -3127,7 +3127,7 @@
                                     ${items.map((i, idx) => `
                                     <tr class="hover:bg-slate-50">
                                         <td class="p-2.5 font-bold text-slate-800">${i.name}</td>
-                                        <td class="p-2.5 text-center font-mono">${(i.price||0).toLocaleString('id-ID')}</td>
+                                        <td class="p-2.5 text-center font-mono" id="s-price-${idx}" data-price="${i.price || 0}">${(i.price||0).toLocaleString('id-ID')}</td>
                                         <td class="p-2.5 text-center font-bold text-slate-600" id="s-in-${idx}">${i.inQty}</td>
                                         <td class="p-2.5 text-center bg-rose-50/50">
                                             <input type="number" id="s-ret-${idx}" value="${i.returnQty || 0}" min="0" max="${i.inQty}" oninput="Actions.updateSettlementCalc(${idx}, ${i.inQty}, ${i.price})" class="w-16 p-1.5 border border-rose-300 rounded-lg text-center font-bold text-rose-700 bg-white" required>
@@ -3172,6 +3172,7 @@
                 if (!retEl || !soldEl || !totEl) return;
 
                 let retVal = parseInt(retEl.value) || 0;
+                if (retVal < 0) { retVal = 0; retEl.value = 0; }
                 if (retVal > inQty) { retVal = inQty; retEl.value = inQty; }
                 const soldVal = inQty - retVal;
                 soldEl.innerText = soldVal;
@@ -3181,18 +3182,22 @@
                 let gross = 0;
                 const rows = document.querySelectorAll('#settle-tbody tr');
                 rows.forEach((r, i) => {
-                    const s = parseInt(document.getElementById(`s-sold-${i}`)?.innerText) || 0;
-                    const p = parseInt(document.getElementById(`s-ret-${i}`)?.getAttribute('oninput')?.match(/,s*(d+))/)?.[1]) || 0;
-                    gross += (s * p);
+                    const rowSold = parseInt(document.getElementById(`s-sold-${i}`)?.innerText) || 0;
+                    const rowPrice = parseInt(document.getElementById(`s-price-${i}`)?.getAttribute('data-price')) || 0;
+                    gross += (rowSold * rowPrice);
                 });
 
                 const rate = 0.1; // 10%
                 const laba = gross * rate;
                 const bayar = gross - laba;
 
-                document.getElementById('s-total-gross').innerText = formatRp(gross);
-                document.getElementById('s-total-bayar').innerText = formatRp(bayar);
-                document.getElementById('s-total-laba').innerText = formatRp(laba);
+                const grossEl = document.getElementById('s-total-gross');
+                const bayarEl = document.getElementById('s-total-bayar');
+                const labaEl = document.getElementById('s-total-laba');
+
+                if (grossEl) grossEl.innerText = formatRp(gross);
+                if (bayarEl) bayarEl.innerText = formatRp(bayar);
+                if (labaEl) labaEl.innerText = formatRp(laba);
             },
 
             submitConsignmentSettlement: async (e, batchId) => {
