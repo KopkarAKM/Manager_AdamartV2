@@ -4959,6 +4959,8 @@
             document.querySelectorAll('.po-logistics-row').forEach(r => {
                 r.style.display = r.innerText.toLowerCase().includes(query) ? '' : 'none';
             }); 
+        };
+
         window.recalculateRestockBudget = () => {
             const checks = document.querySelectorAll('.restock-check:checked');
             let totalItems = checks.length;
